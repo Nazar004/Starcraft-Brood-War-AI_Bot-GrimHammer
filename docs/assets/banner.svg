@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300">
+<defs><linearGradient id="bg"><stop stop-color="#101722"/><stop offset="1" stop-color="#202e3d"/></linearGradient><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#506477" stroke-opacity=".13"/></pattern></defs>
+<rect width="1200" height="300" rx="16" fill="url(#bg)"/><rect width="1200" height="300" rx="16" fill="url(#grid)"/>
+<path d="M58 62V238M58 62H94M58 238H94" fill="none" stroke="#e3a446" stroke-width="4"/>
+<text x="105" y="105" fill="#e3a446" font-family="Arial,sans-serif" font-size="18" letter-spacing="5">TERRAN COMMAND SYSTEM</text>
+<text x="100" y="174" fill="#eff5f9" font-family="Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="2">GRIMHAMMER</text>
+<text x="105" y="220" fill="#aabac8" font-family="Arial,sans-serif" font-size="21">StarCraft: Brood War • C++ • BWAPI</text>
+<g fill="none" stroke="#e3a446" stroke-width="5" stroke-linejoin="round"><path d="M922 218H1078L1090 200V175L1074 159H1005L993 141H940L924 159H908V202Z"/><path d="M950 142V119H1000L1018 142M980 119V95H1088V107H1006"/><path d="M917 187H1082"/><circle cx="941" cy="202" r="9"/><circle cx="970" cy="202" r="9"/><circle cx="999" cy="202" r="9"/><circle cx="1028" cy="202" r="9"/><circle cx="1057" cy="202" r="9"/></g>
+</svg>

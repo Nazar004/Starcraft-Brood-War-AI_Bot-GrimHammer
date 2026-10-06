@@ -1,0 +1,190 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="15.0">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{843656FD-9BFD-47BF-8460-7BFE9710EA2C}</ProjectGuid>
+    <RootNamespace>BWAPILIB</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(ProjectDir)..\build\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\build\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <TargetName>BWAPILIB</TargetName>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(ProjectDir)..\build\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)..\build\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PreBuildEvent />
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x0501;NTDDI_VERSION=0x05010300;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <PreLinkEvent />
+    <Lib>
+      <UseUnicodeResponseFiles>false</UseUnicodeResponseFiles>
+      <MinimumRequiredVersion>5.01</MinimumRequiredVersion>
+    </Lib>
+    <PostBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PreBuildEvent />
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(BWAPI_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x0501;NTDDI_VERSION=0x05010300;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalOptions>/Zc:threadSafeInit- %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <PreLinkEvent />
+    <Lib>
+      <UseUnicodeResponseFiles>false</UseUnicodeResponseFiles>
+      <MinimumRequiredVersion>5.01</MinimumRequiredVersion>
+    </Lib>
+    <PostBuildEvent />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\AIModule.cpp" />
+    <ClCompile Include="Source\BroodwarOutputDevice.cpp" />
+    <ClCompile Include="Source\BulletType.cpp" />
+    <ClCompile Include="Source\BWAPI.cpp" />
+    <ClCompile Include="Source\Color.cpp" />
+    <ClCompile Include="Source\DamageType.cpp" />
+    <ClCompile Include="Source\Error.cpp" />
+    <ClCompile Include="Source\Event.cpp" />
+    <ClCompile Include="Source\ExplosionType.cpp" />
+    <ClCompile Include="Source\Filters.cpp" />
+    <ClCompile Include="Source\Forceset.cpp" />
+    <ClCompile Include="Source\Game.cpp" />
+    <ClCompile Include="Source\GameType.cpp" />
+    <ClCompile Include="Source\Order.cpp" />
+    <ClCompile Include="Source\Player.cpp" />
+    <ClCompile Include="Source\Playerset.cpp" />
+    <ClCompile Include="Source\PlayerType.cpp" />
+    <ClCompile Include="Source\Position.cpp" />
+    <ClCompile Include="Source\Race.cpp" />
+    <ClCompile Include="Source\Region.cpp" />
+    <ClCompile Include="Source\Regionset.cpp" />
+    <ClCompile Include="Source\Streams.cpp" />
+    <ClCompile Include="Source\TechType.cpp" />
+    <ClCompile Include="Source\Unit.cpp" />
+    <ClCompile Include="Source\Unitset.cpp" />
+    <ClCompile Include="UnitCommand.cpp" />
+    <ClCompile Include="Source\UnitCommandType.cpp" />
+    <ClCompile Include="Source\UnitSizeType.cpp" />
+    <ClCompile Include="Source\UnitType.cpp" />
+    <ClCompile Include="Source\UpgradeType.cpp" />
+    <ClCompile Include="Source\WeaponType.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\AIModule.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\BestFilter.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\BroodwarOutputDevice.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Bulletset.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\BulletType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Color.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\ComparisonFilter.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\CoordinateType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Filters.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Forceset.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\InterfaceEvent.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Latency.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Playerset.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Regionset.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\SetContainer.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Streams.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\UnaryFilter.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Unitset.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\DamageType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Error.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Event.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\EventType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\ExplosionType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Flag.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\GameType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Input.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Order.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\PlayerType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Position.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Race.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\TechType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\TournamentAction.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\Type.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\UnitCommand.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\UnitCommandType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\UnitSizeType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\UnitType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\UpgradeType.h" />
+    <ClInclude Include="$(BWAPI_DIR)\include\BWAPI\WeaponType.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

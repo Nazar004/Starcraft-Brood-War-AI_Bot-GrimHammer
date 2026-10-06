@@ -1,0 +1,341 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="15.0">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>GrimHammer</ProjectName>
+    <ProjectGuid>{2E63AE74-758A-4607-9DE4-D28E814A6E13}</ProjectGuid>
+    <RootNamespace>ExampleAIModule</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetName>Steamhammer</TargetName>
+    <TargetName Condition="'$(Configuration)'=='Debug'">Steamhammer_d</TargetName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\build\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\build\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\build\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\build\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</IgnoreImportLibrary>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">BasicDesignGuidelineRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <RunCodeAnalysis Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</RunCodeAnalysis>
+    <CodeAnalysisIgnoreGeneratedCode Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CodeAnalysisIgnoreGeneratedCode>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Steamhammer_d</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\BOSS\source;$(ProjectDir)..\Source;$(BWAPI_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(ProjectDir)..\..\build\$(Configuration)\BWAPILIB.lib;$(ProjectDir)..\..\build\$(Configuration)\BOSS_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\BOSS\source;$(ProjectDir)..\Source;$(BWAPI_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnablePREfast>false</EnablePREfast>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <StringPooling>true</StringPooling>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Link>
+      <AdditionalDependencies>$(ProjectDir)..\..\build\$(Configuration)\BWAPILIB.lib;$(ProjectDir)..\..\build\$(Configuration)\BOSS.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateMapFile>true</GenerateMapFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Source\Map\Base.cpp" />
+    <ClCompile Include="..\Source\Map\Bases.cpp" />
+    <ClCompile Include="..\Source\Production\BOSimulator.cpp" />
+    <ClCompile Include="..\Source\Production\BOSSManager.cpp" />
+    <ClCompile Include="..\Source\Construction\BuildingManager.cpp" />
+    <ClCompile Include="..\Source\Construction\BuildingPlacer.cpp" />
+    <ClCompile Include="..\Source\Production\BuildOrder.cpp" />
+    <ClCompile Include="..\Source\Production\BuildOrderQueue.cpp" />
+    <ClCompile Include="..\Source\Combat\Simulation\CombatSimulation.cpp" />
+    <ClCompile Include="..\Source\Combat\CombatCommander.cpp" />
+    <ClCompile Include="..\Source\Core\Common.cpp" />
+    <ClCompile Include="..\Source\Core\Dll.cpp" />
+    <ClCompile Include="..\Source\Combat\Simulation\FAP.cpp" />
+    <ClCompile Include="..\Source\Core\GameCommander.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Learning\GameRecord.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Learning\GameRecordNow.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\Grid.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridAttacks.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridBuildable.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridCreep.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridDistances.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridInset.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridRoom.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridSafePath.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridTasks.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridTileRoom.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridWalk.cpp" />
+    <ClCompile Include="..\Source\Map\Grids\GridZone.cpp" />
+    <ClCompile Include="..\Source\Intelligence\InformationManager.cpp" />
+    <ClCompile Include="..\Source\Utilities\JSONTools.cpp" />
+    <ClCompile Include="..\Source\Utilities\Logger.cpp" />
+    <ClCompile Include="..\Source\Production\MacroAct.cpp" />
+    <ClCompile Include="..\Source\Production\MacroCommand.cpp" />
+    <ClCompile Include="..\Source\Map\MapGrid.cpp" />
+    <ClCompile Include="..\Source\Map\MapPartitions.cpp" />
+    <ClCompile Include="..\Source\Map\MapTools.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\MicroAirToAir.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\MicroDetectors.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroGhost.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroGoliath.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\MicroManager.cpp" />
+    <ClCompile Include="..\Source\Core\Config.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\Micro.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroMedics.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\MicroMelee.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\MicroRanged.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroVultures.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroTanks.cpp" />
+    <ClCompile Include="..\Source\Combat\Micro\MicroTransports.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Learning\OpeningTiming.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Learning\OpeningTimingRecord.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Learning\OpponentModel.cpp" />
+    <ClCompile Include="..\Source\Intelligence\OpponentPlan.cpp" />
+    <ClCompile Include="..\Source\Combat\OpsBoss.cpp" />
+    <ClCompile Include="..\Source\Utilities\ParseUtils.cpp" />
+    <ClCompile Include="..\Source\Intelligence\PlayerSnapshot.cpp" />
+    <ClCompile Include="..\Source\Production\ProductionGoal.cpp" />
+    <ClCompile Include="..\Source\Production\ProductionManager.cpp" />
+    <ClCompile Include="..\Source\Utilities\Random.cpp" />
+    <ClCompile Include="..\Source\Map\ResourceInfo.cpp" />
+    <ClCompile Include="..\Source\Intelligence\ScoutManager.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Skills\Skill.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillBattles.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillGasSteal.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillKit.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillOpeningTiming.cpp" />
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillUnitTimings.cpp" />
+    <ClCompile Include="..\Source\Combat\Squads\Squad.cpp" />
+    <ClCompile Include="..\Source\Combat\Squads\SquadData.cpp" />
+    <ClCompile Include="..\Source\Combat\Squads\SquadOrder.cpp" />
+    <ClCompile Include="..\Source\Construction\StaticDefense.cpp" />
+    <ClCompile Include="..\Source\Strategy\StrategyManager.cpp" />
+    <ClCompile Include="..\Source\Core\Task.cpp" />
+    <ClCompile Include="..\Source\Core\Tasks.cpp" />
+    <ClCompile Include="..\Source\Core\The.cpp" />
+    <ClCompile Include="..\Source\Utilities\TimerManager.cpp" />
+    <ClCompile Include="..\Source\Utilities\UABAssert.cpp" />
+    <ClCompile Include="..\Source\Core\UAlbertaBotModule.cpp" />
+    <ClCompile Include="..\Source\Intelligence\UnitData.cpp" />
+    <ClCompile Include="..\Source\Utilities\UnitUtil.cpp" />
+    <ClCompile Include="..\Source\Economy\WorkerData.cpp" />
+    <ClCompile Include="..\Source\Economy\WorkerManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Source\Map\Base.h" />
+    <ClInclude Include="..\Source\Map\Bases.h" />
+    <ClInclude Include="..\Source\Production\BOSimulator.h" />
+    <ClInclude Include="..\Source\Production\BOSSManager.h" />
+    <ClInclude Include="..\Source\Construction\BuildingData.h" />
+    <ClInclude Include="..\Source\Construction\BuildingManager.h" />
+    <ClInclude Include="..\Source\Construction\BuildingPlacer.h" />
+    <ClInclude Include="..\Source\Production\BuildOrder.h" />
+    <ClInclude Include="..\Source\Production\BuildOrderQueue.h" />
+    <ClInclude Include="..\Source\Combat\Simulation\CombatSimulation.h" />
+    <ClInclude Include="..\Source\Combat\CombatCommander.h" />
+    <ClInclude Include="..\Source\Core\Common.h" />
+    <ClInclude Include="..\Source\Map\Grids\DistanceMap.hpp" />
+    <ClInclude Include="..\Source\Combat\Simulation\FAP.h" />
+    <ClInclude Include="..\Source\Core\GameCommander.h" />
+    <ClInclude Include="..\Source\Intelligence\Learning\GameRecord.h" />
+    <ClInclude Include="..\Source\Intelligence\Learning\GameRecordNow.h" />
+    <ClInclude Include="..\Source\Map\Grids\Grid.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridAttacks.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridBuildable.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridCreep.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridDistances.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridInset.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridRoom.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridSafePath.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridTasks.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridTileRoom.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridWalk.h" />
+    <ClInclude Include="..\Source\Map\Grids\GridZone.h" />
+    <ClInclude Include="..\Source\Intelligence\InformationManager.h" />
+    <ClInclude Include="..\Source\Utilities\JSONTools.h" />
+    <ClInclude Include="..\Source\Utilities\Logger.h" />
+    <ClInclude Include="..\Source\Production\MacroAct.h" />
+    <ClInclude Include="..\Source\Production\MacroCommand.h" />
+    <ClInclude Include="..\Source\Map\MapGrid.h" />
+    <ClInclude Include="..\Source\Map\MapPartitions.h" />
+    <ClInclude Include="..\Source\Map\MapTools.h" />
+    <ClInclude Include="..\Source\Combat\Micro\MicroAirToAir.h" />
+    <ClInclude Include="..\Source\Combat\Micro\MicroDetectors.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroGhost.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroGoliath.h" />
+    <ClInclude Include="..\Source\Combat\Micro\MicroManager.h" />
+    <ClInclude Include="..\Source\Core\Config.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Micro.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroMedics.h" />
+    <ClInclude Include="..\Source\Combat\Micro\MicroMelee.h" />
+    <ClInclude Include="..\Source\Combat\Micro\MicroRanged.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroVultures.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroTanks.h" />
+    <ClInclude Include="..\Source\Combat\Micro\MicroTransports.h" />
+    <ClInclude Include="..\Source\Intelligence\Learning\OpeningTiming.h" />
+    <ClInclude Include="..\Source\Intelligence\Learning\OpeningTimingRecord.h" />
+    <ClInclude Include="..\Source\Intelligence\Learning\OpponentModel.h" />
+    <ClInclude Include="..\Source\Intelligence\OpponentPlan.h" />
+    <ClInclude Include="..\Source\Combat\OpsBoss.h" />
+    <ClInclude Include="..\Source\Utilities\ParseUtils.h" />
+    <ClInclude Include="..\Source\Intelligence\PlayerSnapshot.h" />
+    <ClInclude Include="..\Source\Production\ProductionGoal.h" />
+    <ClInclude Include="..\Source\Production\ProductionManager.h" />
+    <ClInclude Include="..\Source\Utilities\Random.h" />
+    <ClInclude Include="..\Source\Map\ResourceInfo.h" />
+    <ClInclude Include="..\Source\Intelligence\ScoutManager.h" />
+    <ClInclude Include="..\Source\Intelligence\Skills\Skill.h" />
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillBattles.h" />
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillGasSteal.h" />
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillKit.h" />
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillOpeningTiming.h" />
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillUnitTimings.h" />
+    <ClInclude Include="..\Source\Combat\Squads\Squad.h" />
+    <ClInclude Include="..\Source\Combat\Squads\SquadData.h" />
+    <ClInclude Include="..\Source\Combat\Squads\SquadOrder.h" />
+    <ClInclude Include="..\Source\Construction\StaticDefense.h" />
+    <ClInclude Include="..\Source\Strategy\StrategyManager.h" />
+    <ClInclude Include="..\Source\Core\Task.h" />
+    <ClInclude Include="..\Source\Core\Tasks.h" />
+    <ClInclude Include="..\Source\Core\The.h" />
+    <ClInclude Include="..\Source\Utilities\TimerManager.h" />
+    <ClInclude Include="..\Source\Utilities\UABAssert.h" />
+    <ClInclude Include="..\Source\Core\UAlbertaBotModule.h" />
+    <ClInclude Include="..\Source\Intelligence\UnitData.h" />
+    <ClInclude Include="..\Source\Utilities\UnitUtil.h" />
+    <ClInclude Include="..\Source\Economy\WorkerData.h" />
+    <ClInclude Include="..\Source\Economy\WorkerManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\BioInfantryFront.h" />
+    <ClInclude Include="..\Source\Strategy\BioProductionPolicy.h" />
+    <ClInclude Include="..\Source\Construction\BunkerPlacementPolicy.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\ExpansionVultureReservation.h" />
+    <None Include="..\Source\Map\Grids\GridAirDistances.cpp" />
+    <ClInclude Include="..\Source\Map\Grids\GridAirDistances.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroMarines.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\TerranFormation.h" />
+    <ClInclude Include="..\Source\Combat\Micro\Terran\TerranSiegeSafety.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\allocators.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\document.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\encodedstream.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\encodings.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\error\en.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\error\error.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\filereadstream.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\filewritestream.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\biginteger.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\diyfp.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\dtoa.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\ieee754.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\itoa.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\meta.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\pow10.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\stack.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\strfunc.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\strtod.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\memorybuffer.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\memorystream.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\msinttypes\inttypes.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\msinttypes\stdint.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\pointer.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\prettywriter.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\rapidjson.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\reader.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\stringbuffer.h" />
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\writer.h" />
+    <None Include="..\Source\README.md" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
