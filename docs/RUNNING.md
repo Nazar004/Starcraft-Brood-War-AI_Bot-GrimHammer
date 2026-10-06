@@ -1,17 +1,19 @@
-# Запуск в игре
+# Running GrimHammer
 
-Используйте установленную StarCraft: Brood War с BWAPI, совместимым с SDK сборки. Текущая рабочая среда проекта — StarCraft 1.16.1.
+Use StarCraft: Brood War **1.16.1** with a BWAPI installation compatible with the SDK used to build the bot.
 
-1. Соберите Release DLL по [инструкции](BUILD.md).
-2. Скопируйте `build/Release/Steamhammer.dll` в `bwapi-data/AI/Steamhammer.dll` внутри папки игры.
-3. Скопируйте `config/GrimHammer.json` в `bwapi-data/AI/GrimHammer.json`.
-4. В установленном `bwapi-data/bwapi.ini` настройте параметр `ai` на `bwapi-data/AI/Steamhammer.dll` и выберите **Terran** для бота.
-5. Запустите игру своим обычным способом через BWAPI или тестовый runner.
+1. [Build](BUILD.md) the Release DLL.
+2. Copy `build/Release/Steamhammer.dll` to `bwapi-data/AI/Steamhammer.dll` in your game directory.
+3. Copy [GrimHammer.json](../config/GrimHammer.json) to `bwapi-data/AI/GrimHammer.json`.
+4. Set the `ai` option in `bwapi-data/bwapi.ini` to `bwapi-data/AI/Steamhammer.dll`.
+5. Select **Terran** and launch the game through your BWAPI launcher or tournament runner.
 
-Пути `IO` в JSON задаются относительно папки игры. Для истории противников используются `bwapi-data/read/`, `bwapi-data/write/` и `bwapi-data/AI/om/`. При переносе бота на другую машину создайте нужные папки и проверьте доступ на запись.
+## Configuration
 
-В репозиторий включён текущий рабочий JSON с отладочным выводом. При настройке скорости и отображения изменяйте секции `BWAPI` и `Debug`. Для экспериментов храните копию как `*.local.json`: такие файлы исключены из Git; перед запуском устанавливайте выбранную копию под ожидаемым именем `GrimHammer.json`.
+`GrimHammer.json` contains bot settings and opening build orders. The `BWAPI` and `Debug` sections control game speed and on-screen information.
 
-Бот играет только за Terran. Для анализа противников используются сведения о Terran, Protoss и Zerg. Это часть разведки и симуляции боя.
+Paths in the `IO` section are relative to the game directory. Create the configured data directories, including `bwapi-data/read/`, `bwapi-data/write/`, and `bwapi-data/AI/om/`, and ensure they are writable.
 
-Для сообщения о проблеме сохраните название карты, стратегию, игровой кадр, реплей и соответствующий фрагмент лога. Реплеи и логи не добавляются в историю исходников автоматически.
+For local experiments, keep configuration copies as `*.local.json`. Install your selected configuration as `bwapi-data/AI/GrimHammer.json` before running the bot.
+
+GrimHammer plays Terran and can face opponents of any race. For general BWAPI setup information, see the [BWAPI documentation](https://bwapi.github.io/).

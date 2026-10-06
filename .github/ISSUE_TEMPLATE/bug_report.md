@@ -1,19 +1,21 @@
 ---
-name: Ошибка в поведении бота
-about: Производство, микро, оборона или сбой
+name: Bug report
+about: Report a gameplay issue or crash
 title: ""
 labels: ""
 assignees: ""
 ---
 
-**Что произошло:**
+**Description:**
 
-**Что ожидалось:**
+**Expected behavior:**
 
-**Карта, стратегия, раса противника:**
+**Observed behavior:**
 
-**Версия / commit, BWAPI, игровой кадр:**
+**Steps to reproduce:**
 
-**Как повторить:**
+**Map, strategy, and opponent race:**
 
-**Реплей, скриншот или фрагмент лога:**
+**Version or commit, BWAPI version, and game frame:**
+
+**Replay, screenshot, or relevant logs:**

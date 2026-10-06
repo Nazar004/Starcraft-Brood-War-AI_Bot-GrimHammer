@@ -1,11 +1,18 @@
-# Работа с исходниками
+# Contributing
 
-- Начните с [карты исходников](Steamhammer/Source/README.md).
-- Держите `.cpp` и `.h` рядом в подходящей подсистеме. Добавляйте их в проект Visual Studio и filters.
-- Меняйте собственные стратегии Terran; сведения о вражеских Protoss и Zerg нужны разведке и симуляции боя.
-- Перед коммитом соберите Release / Win32. Изменения поведения проверяйте в игре, указывая карту и стратегию.
-- Делайте отдельный коммит на понятную задачу: например `Fix medic patient selection` или `Tune BioTank production scaling`.
-- Не коммитьте DLL, SDK, сборочный кеш, историю противников, архивы и локальные конфигурации.
-- Сохраняйте лицензии и уведомления сторонних библиотек.
+Start with the [source guide](Steamhammer/Source/README.md).
 
-В баг-репорте опишите ожидаемое и фактическое поведение, приложите игровой кадр, карту, стратегию и доступный реплей. При изменении микро полезен пример боя до и после исправления.
+- Keep related `.cpp` and `.h` files together in the appropriate subsystem.
+- Register new source files in `GrimHammer.vcxproj` and `.vcxproj.filters`.
+- Build **Release / Win32** before submitting changes. Test gameplay changes in matches or replays.
+- Keep each commit focused on one task and describe its purpose clearly.
+- Keep binaries, SDK files, build output, opponent data, and local configuration out of Git.
+- Preserve third-party copyright notices and licenses.
+
+## Reporting a bug
+
+Describe the expected and observed behavior. Include the commit or version, map, strategy, opponent race, and game frame. Replays, screenshots, and relevant log excerpts help reproduce the issue.
+
+## Pull requests
+
+Explain the problem, the resulting behavior, and how the change was verified. Include the map and strategy when reporting gameplay results.

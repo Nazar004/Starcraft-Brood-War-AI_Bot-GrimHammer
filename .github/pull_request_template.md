@@ -1,9 +1,9 @@
-## Что изменилось
+## Description
 
-Опишите проблему и новое поведение.
+Describe the problem and the resulting behavior.
 
-## Проверка
+## Verification
 
-- Сборка:
-- Игры / реплеи, карта и стратегия:
-- Ограничения проверки:
+- Build:
+- Matches or replays, map, and strategy:
+- Known limitations:
