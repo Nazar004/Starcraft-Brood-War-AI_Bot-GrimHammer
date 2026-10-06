@@ -36,3 +36,21 @@ bwapi-data/AI/om/
 *.local.json
 __pycache__/
 .codex/
+
+# Existing local files retained when importing the clean repository
+/CppProperties.json
+/Steamhammer_3.6.1.json
+/Steamhammer/*_inf.txt
+/Steamhammer/GrimHammer_CrashLog.txt
+/Steamhammer/VisualStudio/UAlbertaBot.*
+/BOSS/.gitignore
+/BOSS/Makefile
+/BOSS/make_windows.bat
+/BOSS/Qt/
+/BOSS/emscripten/
+/BOSS/source/deprecated/
+/BOSS/source/CImg/
+/BOSS/source/BOSS_main.cpp
+/BOSS/VisualStudio/BOSS.sln
+/BOSS/VisualStudio/BOSS_main.*
+/BOSS/VisualStudio/BOSS_combatsearch.vcxproj
