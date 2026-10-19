@@ -1,5 +1,7 @@
 #include "Production/ProductionManager.h"
 #include "Strategy/BioProductionPolicy.h"
+#include "Strategy/Terran/BioTankAssessment.h"
+#include "Strategy/Terran/AirTanksPolicy.h"
 
 #include "Map/Bases.h"
 #include "Construction/BuildingPlacer.h"
@@ -72,6 +74,32 @@ namespace
             terranSCVCountIncludingTraining() >=
             usefulTerranWorkerCap();
     }
+
+    // Only a visible ground attacker at an owned base can interrupt the JSON
+    // opening. Predictions and enemies elsewhere must not spend its savings.
+    int visibleGroundAttackersAtOwnedBase()
+    {
+        int attackers = 0;
+        for (BWAPI::Unit enemy : the.enemy()->getUnits())
+        {
+            if (!enemy || !enemy->exists() || !enemy->isVisible() ||
+                enemy->isFlying() || !enemy->getPosition().isValid() ||
+                !UnitUtil::CanAttackGround(enemy) ||
+                (enemy->getType().isWorker() && !enemy->isAttacking())) continue;
+
+            for (Base* base : the.bases.getAll())
+            {
+                if (base && base->getOwner() == the.self() &&
+                    base->getDepot() && base->getDepot()->exists() &&
+                    enemy->getDistance(base->getPosition()) <= 12 * 32)
+                {
+                    ++attackers;
+                    break;
+                }
+            }
+        }
+        return attackers;
+    }
 }
 
 // NOTE Items that may call BWAPI must be initialized in initialize().
@@ -84,6 +112,7 @@ ProductionManager::ProductionManager()
     , _haveLocationForThisBuilding       (false)
     , _delayBuildingPredictionUntilFrame (0)
     , _unplaceableBunkerSinceFrame       (-1)
+    , _unplaceableMacroBuildingSinceFrame (-1)
     , _nextTerranWallCheckFrame          (0)
     , _terranWallGateOpenUntilFrame      (0)
     , _terranWallLastGateCommandFrame    (-100000)
@@ -867,6 +896,8 @@ void ProductionManager::refreshTerranRulePlan()
 {
     const auto planStarted = std::chrono::steady_clock::now();
     _terranRulePlan = StrategyManager::Instance().getBuildOrderGoal();
+    _lastTerranRuleGoalMs = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - planStarted).count();
     _terranRuleBaseline.clear();
     _terranRuleIssued.clear();
     _terranRulePlanFrame = the.now();
@@ -951,6 +982,19 @@ bool ProductionManager::manageTerranRuleProduction()
         queueAlreadyHasWork
         ? &_queue.getHighestPriorityItem().macroAct
         : nullptr;
+    // Optional AirTanks research must not monopolize independent production
+    // lanes while its Armory/other research building is occupied. The queued
+    // item stays in place and starts normally as soon as its producer is free.
+    bool blockedAirTanksResearch = false;
+    if (StrategyManager::Instance().airTanksPlanActive() && queuedAct &&
+        (queuedAct->isTech() || queuedAct->isUpgrade()) &&
+        the.self()->minerals() >= queuedAct->mineralPrice() &&
+        the.self()->gas() >= queuedAct->gasPrice())
+    {
+        BWAPI::Unit researchProducer = getProducer(*queuedAct);
+        blockedAirTanksResearch = !researchProducer ||
+            !canMakeNow(researchProducer, *queuedAct);
+    }
 
     // A queued mobile unit must not prevent independent strategic
     // infrastructure forever. This is especially important at maximum supply:
@@ -959,6 +1003,7 @@ bool ProductionManager::manageTerranRuleProduction()
     // true barriers and keep their ordering.
     const bool queueBlocksStructuralRules =
         queuedAct &&
+        !blockedAirTanksResearch &&
         (queuedAct->isBuilding() ||
             queuedAct->isAddon() ||
             queuedAct->isTech() ||
@@ -1053,6 +1098,14 @@ bool ProductionManager::manageTerranRuleProduction()
             if (!queuedAct || !act.isCombatUnit())
             {
                 return true;
+            }
+
+            // A temporarily blocked upgrade has no use for idle Factory or
+            // Starport time. Keep its resource reserve for structures, but
+            // let combat units use their own production lanes.
+            if (blockedAirTanksResearch)
+            {
+                return false;
             }
 
             if (!queuedAct->isUnit())
@@ -1176,6 +1229,13 @@ bool ProductionManager::manageTerranRuleProduction()
             continue;
         }
 
+        if (act.isUnit() && act.getUnitType() == BWAPI::UnitTypes::Terran_Marine &&
+            BioTankPolicy::reserveGoliathSupply())
+        {
+            rememberWaitingDecision("WAIT supply for BioTank anti-air counter");
+            continue;
+        }
+
         // A strategy transition may happen between the once-per-second rule
         // refreshes. Never execute a stale ground-production rule after the
         // Carrier/Mutalisk technology response has already become PureAir.
@@ -1269,23 +1329,30 @@ bool ProductionManager::manageTerranRuleProduction()
         {
             if (queueBlocksStructuralRules)
             {
-                // A blocked structural queue item must not hold the next
-                // expansion hostage when there is enough money for both.
-                // BuildingManager accepts an unassigned task and will claim
-                // its own SCV, so the queue can retain its original item.
-                if (act.getUnitType() == BWAPI::UnitTypes::Terran_Command_Center &&
+                // Keep economy and Tanks capacity independent of a blocked
+                // structural/research entry. Protect its full resource reserve,
+                // require a legal site, and post only one unstarted copy.
+                // Opening books and other strategies retain their ordering.
+                const BWAPI::UnitType economyType = act.getUnitType();
+                const bool tankFactoryScaling =
+                    economyType == BWAPI::UnitTypes::Terran_Factory &&
+                    StrategyManager::Instance().getOpeningGroup() == "tanks" &&
+                    the.my.completed.count(economyType) > 0;
+                if ((economyType == BWAPI::UnitTypes::Terran_Command_Center ||
+                     economyType == BWAPI::UnitTypes::Terran_Refinery ||
+                     tankFactoryScaling) &&
+                    !_queue.anyInQueue(economyType) &&
                     canSpendWithoutBreakingReserve(act) &&
-                    BuildingManager::Instance().getNumUnstarted(
-                        BWAPI::UnitTypes::Terran_Command_Center) == 0)
+                    BuildingManager::Instance().getNumUnstarted(economyType) == 0)
                 {
-                    Building expansion = makeBuildingForPrediction(act, false);
-                    if (expansion.desiredPosition.isValid() &&
+                    Building economyBuilding = makeBuildingForPrediction(act, false);
+                    if (economyBuilding.desiredPosition.isValid() &&
                         BuildingManager::Instance().getBuildingLocation(
-                            expansion).isValid())
+                            economyBuilding).isValid())
                     {
                         BuildingManager::Instance().addBuildingTask(
-                            act, expansion.desiredPosition, nullptr, false);
-                        setTerranRuleDecision("BUILD Command Center (parallel)");
+                            act, economyBuilding.desiredPosition, nullptr, false);
+                        setTerranRuleDecision("BUILD " + actName + " (parallel)");
                         ++_terranRuleIssued[key];
                         _terranRuleLastProgressFrame = now;
                         _lastProductionFrame = now;
@@ -1523,7 +1590,7 @@ void ProductionManager::update()
 {
     _slowestProductionPhase = "";
     _slowestProductionPhaseMs = 0.0;
-    _lastTerranRulePlanMs = 0.0;
+    _lastTerranRulePlanMs = _lastTerranRuleGoalMs = 0.0;
     auto phaseStart = std::chrono::steady_clock::now();
     const auto finishPhase = [this, &phaseStart](const char * name)
     {
@@ -1552,7 +1619,11 @@ void ProductionManager::update()
 
     // If we're in trouble, adjust the production queue to help.
     // Includes scheduling supply as needed.
+    _openingDefensiveMarineTarget = 0;
     StrategyManager::Instance().handleUrgentProductionIssues(_queue);
+    StrategyManager::Instance().updateBioTankAttackState();
+    StrategyManager::Instance().updateAirTanksAttackState();
+    StrategyManager::Instance().updateTankAttackState();
     finishPhase("urgent");
 
     // A JSON opening may order the natural before it ever asks for a dynamic
@@ -1630,7 +1701,23 @@ void ProductionManager::update()
     dropExcessQueuedUpgradeBuildings();
     moveLiftedBarracksForTankVision();
     finishPhase("vision");
-    manageBuildOrderQueue();
+
+    // A ground attack at a bio opening's base must not wait behind the next
+    // expensive JSON item. Train at most one Marine per frame from a free
+    // Barracks; the opening queue is otherwise left in its original order.
+    const int openingBaseAttackers =
+        !_outOfBook && the.selfRace() == BWAPI::Races::Terran &&
+        StrategyManager::Instance().getOpeningGroup() == "bio"
+            ? visibleGroundAttackersAtOwnedBase() : 0;
+    bool emergencyMarineStarted = false;
+    if (openingBaseAttackers > 0 && _lastProductionFrame != the.now())
+    {
+        _openingDefensiveMarineTarget = std::max(
+            _openingDefensiveMarineTarget,
+            std::min(12, std::max(6, 4 + 2 * openingBaseAttackers)));
+        emergencyMarineStarted = manageOpeningDefensiveMarines(true);
+    }
+    if (!emergencyMarineStarted) manageBuildOrderQueue();
     finishPhase("queue");
 
     // During the JSON opening, turn the currently safe unit-only phase into
@@ -1643,6 +1730,13 @@ void ProductionManager::update()
         manageTerranOpeningGoals();
     }
     finishPhase("opening");
+
+    // Loss replacement is a separate lane. It never inserts another Marine
+    // ahead of JSON technology, workers or other producers.
+    if (_lastProductionFrame != the.now()) manageOpeningDefensiveMarines();
+    finishPhase("reinforce");
+
+    if (_lastProductionFrame != the.now()) manageAirTanksOpeningVultures();
 
     // If an existing queue item could not start (for example a Ghost whose
     // only Barracks is busy), let an independent producer execute a rule. A
@@ -1785,8 +1879,8 @@ void ProductionManager::prepareIdleFactoryMachineShop()
 
 // BOSS occasionally returns dozens of duplicate Command Centers in one
 // out-of-book plan. Keep opening-book expansion sequences intact, but in the
-// repeating macro planner allow only one future expansion at a time. Once a
-// Command Center has entered BuildingManager, even that queued copy is excess.
+// repeating macro planner allow only one future expansion at a time. AirTanks
+// can prepare one more gas expansion while its previous CC is constructing.
 void ProductionManager::dropExcessQueuedCommandCenters()
 {
     if (!_outOfBook || the.selfRace() != BWAPI::Races::Terran || _queue.isEmpty())
@@ -1794,11 +1888,15 @@ void ProductionManager::dropExcessQueuedCommandCenters()
         return;
     }
 
+    const BWAPI::UnitType center = BWAPI::UnitTypes::Terran_Command_Center;
+    const bool parallelAirTanksExpansion =
+        StrategyManager::Instance().airTanksPlanActive() &&
+        the.self()->minerals() >= 1600 && the.self()->gas() <= 250 &&
+        BuildingManager::Instance().getNumUnstarted(center) == 0 &&
+        the.my.all.count(center) == the.my.completed.count(center) + 1;
     const int allowedQueued =
-        BuildingManager::Instance().isBeingBuilt(
-            BWAPI::UnitTypes::Terran_Command_Center)
-        ? 0
-        : 1;
+        !BuildingManager::Instance().isBeingBuilt(center) ||
+        parallelAirTanksExpansion ? 1 : 0;
 
     int kept = 0;
     for (int i = int(_queue.size()) - 1; i >= 0; --i)
@@ -2579,6 +2677,7 @@ void ProductionManager::clearBuildingPrediction(bool releaseWorker)
     _predictedTilePosition = BWAPI::TilePositions::None;
     _haveLocationForThisBuilding = false;
     _delayBuildingPredictionUntilFrame = 0;
+    _unplaceableMacroBuildingSinceFrame = -1;
 }
 
 // The late BioTank technology chain must not idle independent Barracks. Keep
@@ -2689,6 +2788,110 @@ bool ProductionManager::manageBioTankOpeningProduction()
     _lastProductionFrame = the.now();
     setTerranRuleDecision("BOOK BIO: MAKE " + NiceMacroActName(infantry.getName()) +
         " beside Tank technology");
+    return true;
+}
+
+void ProductionManager::requestOpeningDefensiveMarines(int target)
+{
+    if (!_outOfBook && the.selfRace() == BWAPI::Races::Terran &&
+        !terranOpeningScoutPending())
+    {
+        _openingDefensiveMarineTarget = std::max(_openingDefensiveMarineTarget, target);
+    }
+}
+
+bool ProductionManager::manageOpeningDefensiveMarines(bool immediateBaseAttack)
+{
+    if (_outOfBook || _openingDefensiveMarineTarget <= 0 ||
+        the.selfRace() != BWAPI::Races::Terran || terranOpeningScoutPending())
+        return false;
+
+    const BWAPI::UnitType marineType = BWAPI::UnitTypes::Terran_Marine;
+    // PlayerSnapshot::all includes the active training slot. Count accepted
+    // orders now, not survivors at the end of a four-Marine replacement batch.
+    const int remaining = std::max(0, _openingDefensiveMarineTarget -
+        the.my.all.count(marineType));
+    if (remaining == 0) return false;
+
+    const MacroAct marine(marineType);
+    BWAPI::Unit barracks = getProducer(marine);
+    if (!barracks || !canMakeNow(barracks, marine)) return false;
+
+    // Keep the next real book investment funded while replacing one loss.
+    // Existing Marine entries remain one-shot orders and are consumed by
+    // manageBuildOrderQueue() when BWAPI accepts them, regardless of later deaths.
+    int reserveMinerals = 0, reserveGas = 0;
+    if (!immediateBaseAttack)
+    {
+        for (int i = int(_queue.size()) - 1; i >= 0; --i)
+        {
+            const MacroAct act = _queue[i].macroAct;
+            if (act.isCommand()) break;
+            if (act.isUnit() && !act.isBuilding() && act.whatBuilds() ==
+                BWAPI::UnitTypes::Terran_Barracks) continue;
+            reserveMinerals = act.mineralPrice();
+            reserveGas = act.gasPrice();
+            break;
+        }
+    }
+    if (getFreeMinerals() < reserveMinerals + marine.mineralPrice() ||
+        getFreeGas() < reserveGas) return false;
+    if (!create(barracks, BuildOrderItem(marine))) return false;
+
+    if (immediateBaseAttack)
+    {
+        // This Marine fulfils one existing opening order if there is one.
+        for (int i = int(_queue.size()) - 1; i >= 0; --i)
+        {
+            const MacroAct& act = _queue[i].macroAct;
+            if (act.isCommand()) break;
+            if (act.isUnit() && act.getUnitType() == marineType)
+            {
+                _queue.removeAt(size_t(i));
+                break;
+            }
+        }
+    }
+
+    _lastProductionFrame = the.now();
+    setTerranRuleDecision(std::string(immediateBaseAttack ?
+        "BASE DEFENSE: MAKE 1 Marine, remaining " :
+        "DEFENSE: MAKE 1 Marine, remaining ") +
+        std::to_string(remaining - 1) + " (parallel to book)");
+    return true;
+}
+
+bool ProductionManager::manageAirTanksOpeningVultures()
+{
+    const AirTanks::Variant variant = AirTanks::variantFromName(
+        StrategyManager::Instance().airTanksVariant());
+    if (_outOfBook || !StrategyManager::Instance().airTanksPlanActive() ||
+        (variant != AirTanks::Variant::TankWraith &&
+         variant != AirTanks::Variant::TwoPortWraith) ||
+        _queue.isEmpty() || the.self()->gas() >= 200 ||
+        the.self()->minerals() < 700) return false;
+
+    const MacroAct& next = _queue.getHighestPriorityItem().macroAct;
+    if (next.isCommand() || next.isSupply()) return false;
+    const int tanks = the.my.all.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
+        the.my.all.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode);
+    if (variant == AirTanks::Variant::TwoPortWraith &&
+        tanks < AirTanks::FirstPushTanks) return false;
+    const int vultures = the.my.all.count(BWAPI::UnitTypes::Terran_Vulture);
+    const int target = AirTanks::tankWraithVultureTarget(
+        tanks, the.self()->minerals(), the.self()->gas());
+    if (vultures >= target) return false;
+
+    const MacroAct vulture(BWAPI::UnitTypes::Terran_Vulture);
+    const int reserveMinerals = next.mineralPrice();
+    if (getFreeMinerals() < reserveMinerals + vulture.mineralPrice()) return false;
+    BWAPI::Unit factory = getProducer(vulture);
+    if (!factory || !canMakeNow(factory, vulture) ||
+        !create(factory, BuildOrderItem(vulture))) return false;
+
+    _lastProductionFrame = the.now();
+    setTerranRuleDecision("BOOK AIR: MAKE Vulture from mineral surplus " +
+        std::to_string(vultures + 1) + "/" + std::to_string(target));
     return true;
 }
 
@@ -2837,7 +3040,11 @@ bool ProductionManager::manageTerranOpeningGoals()
     const int reserveGas = reserveTop ? top.gasPrice() : 0;
     const bool wallCorePending = terranWallOpeningTankCorePending();
 
-    const int lastIndex = std::max(0, int(_queue.size()) - 4);
+    // A busy Barracks may have several one-shot Marines in the book. Look
+    // past that batch for an independent producer, keeping all phase barriers.
+    const bool marineBatch = top.isUnit() &&
+        top.getUnitType() == BWAPI::UnitTypes::Terran_Marine;
+    const int lastIndex = std::max(0, int(_queue.size()) - (marineBatch ? 12 : 4));
     for (int i = int(_queue.size()) - 2; i >= lastIndex; --i)
     {
         const BuildOrderItem item = _queue[i];
@@ -2968,6 +3175,13 @@ void ProductionManager::manageBuildOrderQueue()
     // We do nothing if the queue is empty (obviously).
     while (!_queue.isEmpty()) 
     {
+        if (_outOfBook && _queue.getHighestPriorityItem().macroAct.isUnit() &&
+            _queue.getHighestPriorityItem().macroAct.getUnitType() == BWAPI::UnitTypes::Terran_Marine &&
+            BioTankPolicy::reserveGoliathSupply())
+        {
+            setTerranRuleDecision("WAIT supply for BioTank anti-air counter");
+            break;
+        }
         // A bank-filler or urgent Marine can occupy the next free Barracks
         // ahead of the persistent Medic rule. Repair that queue ordering when
         // BioTank is short of its one-Medic-per-five-Marines screen.
@@ -3109,6 +3323,62 @@ void ProductionManager::manageBuildOrderQueue()
             _queue.doneWithHighestPriorityItem();
             _lastProductionFrame = the.now();
             continue;
+        }
+
+        // Repair missing prerequisites before predicting a builder or moving
+        // an add-on into goals. A lost Barracks must not leave a Bunker at the
+        // head of the book waiting forever. Reuse a queued prerequisite and
+        // let existing construction/goals finish without creating duplicates.
+        if (the.selfRace() == BWAPI::Races::Terran &&
+            the.my.all.count(BWAPI::UnitTypes::Terran_SCV) > 0)
+        {
+            BWAPI::UnitType prerequisite =
+                getMissingCompletedTerranPrerequisite(currentItem.macroAct);
+            auto prerequisiteCommitted = [&](BWAPI::UnitType type)
+            {
+                return the.my.all.count(type) > 0 ||
+                    BuildingManager::Instance().getNumUnstarted(type) > 0 ||
+                    getPendingGoalCount(type) > 0;
+            };
+            const bool missingPrerequisite =
+                prerequisite != BWAPI::UnitTypes::None &&
+                prerequisite != BWAPI::UnitTypes::Unknown;
+            const int neededGas = missingPrerequisite
+                ? prerequisite.gasPrice() : currentItem.macroAct.gasPrice();
+            if ((!missingPrerequisite || !prerequisiteCommitted(prerequisite)) &&
+                neededGas > the.self()->gas())
+            {
+                WorkerManager::Instance().setCollectGas(true);
+                if (!prerequisiteCommitted(BWAPI::UnitTypes::Terran_Refinery))
+                    prerequisite = BWAPI::UnitTypes::Terran_Refinery;
+            }
+            if (prerequisite != BWAPI::UnitTypes::None &&
+                prerequisite != BWAPI::UnitTypes::Unknown &&
+                prerequisite != BWAPI::UnitTypes::Terran_SCV &&
+                prerequisite != BWAPI::UnitTypes::Terran_Command_Center &&
+                !prerequisiteCommitted(prerequisite))
+            {
+                const std::string blockedName = currentItem.macroAct.getName();
+                int queuedPrerequisite = -1;
+                for (int i = int(_queue.size()) - 2; i >= 0; --i)
+                {
+                    const MacroAct& act = _queue[size_t(i)].macroAct;
+                    if (act.isUnit() && act.getUnitType() == prerequisite)
+                    {
+                        queuedPrerequisite = i;
+                        break;
+                    }
+                }
+                if (queuedPrerequisite >= 0)
+                    _queue.pullToTop(size_t(queuedPrerequisite));
+                else
+                    _queue.queueAsHighestPriority(MacroAct(prerequisite));
+                clearBuildingPrediction(true);
+                invalidateTerranRulePlan("restore prerequisite for " + blockedName);
+                setTerranRuleDecision("RESTORE " + NiceMacroActName(prerequisite.getName()) +
+                    " before " + NiceMacroActName(blockedName));
+                break;
+            }
         }
 
         // Turn some items into production goals.
@@ -3603,6 +3873,20 @@ BWAPI::Unit ProductionManager::getProducer(MacroAct act) const
                 }),
             candidateProducers.end());
     }
+    // Prefer an available interior Barracks over the exposed wall gate.
+    // Keep the gate usable when it is the only producer.
+    if (act.isUnit() && act.getUnitType() == BWAPI::UnitTypes::Terran_Marine &&
+        the.placer.hasTerranMainWall() && !the.placer.isTerranMainWallReleased())
+    {
+        std::vector<BWAPI::Unit> interior;
+        for (BWAPI::Unit barracks : candidateProducers)
+        {
+            if (barracks && !the.placer.isTerranMainWallBarracks(barracks) &&
+                the.placer.isInsideTerranMainWall(barracks->getPosition()))
+                interior.push_back(barracks);
+        }
+        if (!interior.empty()) candidateProducers.swap(interior);
+    }
     if (candidateProducers.empty())
     {
         return nullptr;
@@ -4044,6 +4328,7 @@ void ProductionManager::predictWorkerMovement(Building & b)
 
     if (_predictedTilePosition.isValid())
     {
+        _unplaceableMacroBuildingSinceFrame = -1;
         if (b.type == BWAPI::UnitTypes::Terran_Bunker)
             _unplaceableBunkerSinceFrame = -1;
         _haveLocationForThisBuilding = true;
@@ -4051,6 +4336,28 @@ void ProductionManager::predictWorkerMovement(Building & b)
     }
     else
     {
+        // This function returns through the prediction branch before the
+        // global jam watchdog. Army/SCV production also resets that watchdog.
+        // Time an unplaceable macro building independently so it cannot hold
+        // every later structure forever. The strategy may request it again.
+        if (the.selfRace() == BWAPI::Races::Terran && _outOfBook &&
+            !_queue.isEmpty())
+        {
+            if (_unplaceableMacroBuildingSinceFrame < 0)
+                _unplaceableMacroBuildingSinceFrame = the.now();
+            if (the.now() - _unplaceableMacroBuildingSinceFrame >= 20 * 24)
+            {
+                const std::string stalledName =
+                    _queue.getHighestPriorityItem().macroAct.getName();
+                _queue.removeHighestPriorityItem();
+                clearBuildingPrediction(true);
+                invalidateTerranRulePlan("unplaceable building: " + stalledName);
+                _lastProductionFrame = the.now();
+                setTerranRuleDecision("REPLAN unplaceable " +
+                    NiceMacroActName(stalledName));
+                return;
+            }
+        }
         // Prediction used to break out before reaching the jam watchdog.
         // A missing wall Bunker tile could therefore freeze the entire book
         // forever, even while supplementary Marines reset production time.
@@ -4424,6 +4731,20 @@ void ProductionManager::drawTerranRuleInformation(int x, int & y)
             ? "waiting for next rule evaluation"
             : _terranDisplayDecision.c_str());
 
+    if (StrategyManager::Instance().airTanksPlanActive())
+    {
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y, "%cAirTanks %c%s: %s",
+            cyan, white, StrategyManager::Instance().airTanksVariant().c_str(),
+            StrategyManager::Instance().airTanksAttackStatus().c_str());
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y, "%cAir fleet: %cWraith %d Valkyrie %d BC %d Vessel %d",
+            cyan, white, the.my.all.count(BWAPI::UnitTypes::Terran_Wraith),
+            the.my.all.count(BWAPI::UnitTypes::Terran_Valkyrie),
+            the.my.all.count(BWAPI::UnitTypes::Terran_Battlecruiser),
+            the.my.all.count(BWAPI::UnitTypes::Terran_Science_Vessel));
+    }
+
     const int reservedMinerals = BuildingManager::Instance().getReservedMinerals();
     const int reservedGas = BuildingManager::Instance().getReservedGas();
     {
@@ -4506,6 +4827,35 @@ void ProductionManager::drawTerranRuleInformation(int x, int & y)
         factoriesCompleted - factoriesIdle,
         factoriesCompleted);
 
+    int gasBaseTarget = 0;
+    for (Base* base : the.bases.getAll())
+    {
+        BWAPI::Unit depot = base ? base->getDepot() : nullptr;
+        if (depot && depot->exists() && depot->getPlayer() == the.self() &&
+            depot->getType() == BWAPI::UnitTypes::Terran_Command_Center &&
+            !depot->isLifted() && !base->getInitialGeysers().empty())
+        {
+            ++gasBaseTarget;
+        }
+    }
+    y += 10;
+    BWAPI::Broodwar->drawTextScreen(
+        x, y, "%cGas: %cRefinery %d/%d  queued %d  unstarted %d",
+        cyan, white, the.my.all.count(BWAPI::UnitTypes::Terran_Refinery),
+        gasBaseTarget, int(_queue.numInQueue(BWAPI::UnitTypes::Terran_Refinery)),
+        int(BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Refinery)));
+
+    if (openingGroup == "airtanks")
+    {
+        const BWAPI::UnitType center = BWAPI::UnitTypes::Terran_Command_Center;
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y,
+            "%cAir expo: %cCC ready %d all %d | queue %d unstarted %d",
+            cyan, white, commandCentersCompleted, the.my.all.count(center),
+            int(_queue.numInQueue(center)),
+            int(BuildingManager::Instance().getNumUnstarted(center)));
+    }
+
     // Factory lane diagnostics. The Tanks strategy now exposes only one
     // Tank/Vulture/Goliath production decision at a time, so this line tells
     // us exactly what the next Factory should make and the composition that
@@ -4537,6 +4887,22 @@ void ProductionManager::drawTerranRuleInformation(int x, int & y)
 
     if (openingGroup == "tanks")
     {
+        const BWAPI::UnitType factoryType = BWAPI::UnitTypes::Terran_Factory;
+        const BWAPI::UnitType depotType = BWAPI::UnitTypes::Terran_Command_Center;
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y,
+            "%cFactory growth: %cready %d all %d target %d | queue %d pending %d",
+            cyan, white, factoriesCompleted, the.my.all.count(factoryType),
+            terranBuildingQueueLimit(factoryType, the.my.all.count(factoryType)),
+            int(_queue.numInQueue(factoryType)),
+            int(BuildingManager::Instance().getNumUnstarted(factoryType)));
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y,
+            "%cExpansion: %cCC ready %d all %d | queue %d pending %d",
+            cyan, white, commandCentersCompleted, the.my.all.count(depotType),
+            int(_queue.numInQueue(depotType)),
+            int(BuildingManager::Instance().getNumUnstarted(depotType)));
+
         const int tankCount =
             the.my.all.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
             the.my.all.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode);
@@ -4625,9 +4991,30 @@ void ProductionManager::drawTerranRuleInformation(int x, int & y)
             "%cBio capacity ready/plan: %cRax %d/%d  Fac %d/%d  Tanks %d%%",
             cyan, white, barracksCompleted, barracksGoal,
             factoriesCompleted, factoryGoal,
-            BioProductionPolicy::tankPercent(the.self()->minerals(), the.self()->gas(),
-                2 * (marines + medics + the.my.all.count(BWAPI::UnitTypes::Terran_Firebat)),
-                _outOfBook));
+            StrategyManager::Instance().bioTankDesiredTankPercent());
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y,
+            "%cBio push: %c%s | Stim %s Siege %s Range %d Armor %d",
+            cyan, white, StrategyManager::Instance().bioTankAttackStatus().c_str(),
+            the.self()->hasResearched(BWAPI::TechTypes::Stim_Packs) ? "yes" : "no",
+            the.self()->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode) ? "yes" : "no",
+            the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::U_238_Shells),
+            the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::Terran_Infantry_Armor));
+        int scanCharges = 0;
+        for (BWAPI::Unit unit : the.self()->getUnits())
+        {
+            if (unit && unit->exists() && unit->isCompleted() &&
+                unit->getType() == BWAPI::UnitTypes::Terran_Comsat_Station)
+            {
+                scanCharges += unit->getEnergy() / 50;
+            }
+        }
+        y += 10;
+        BWAPI::Broodwar->drawTextScreen(x, y,
+            "%cBio support: %cVessel %d | Comsat scans %d | Irradiate %s",
+            cyan, white,
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Science_Vessel),
+            scanCharges, the.self()->hasResearched(BWAPI::TechTypes::Irradiate) ? "yes" : "no");
     }
 
     // Plans occupy fixed rows; changing deficits must not move the live
@@ -4718,12 +5105,15 @@ void ProductionManager::initialize()
     _terranDisplayGoals.clear();
     _terranDisplayDecision.clear();
     _outOfBook = false;
+    _openingDefensiveMarineTarget = 0;
     _lastProductionFrame = the.now();
     clearBuildingPrediction(false);
     _unplaceableBunkerSinceFrame = -1;
     _nextTerranWallCheckFrame = 0;
     _terranWallGateOpenUntilFrame = 0;
     _terranWallLastGateCommandFrame = -100000;
+    _terranWallGateOccupiedSince.clear();
+    _terranWallGateClearing = false;
     _terranWallReleasedForVision = false;
     _nextTerranBarracksVisionFrame = 0;
     _targetGasAmount = 0;
@@ -5309,8 +5699,10 @@ void ProductionManager::manageTerranMainWall()
     // The first real BioTank attack is an irreversible transition out of
     // opening defense. Marine production must never close this route again.
     if (!_terranWallReleasedForVision &&
-        StrategyManager::Instance().bioTankPlanActive() &&
-        StrategyManager::Instance().bioTankPushReady() &&
+        ((StrategyManager::Instance().bioTankPlanActive() &&
+          StrategyManager::Instance().bioTankPushReady()) ||
+         (StrategyManager::Instance().airTanksPlanActive() &&
+          StrategyManager::Instance().airTanksPushReady())) &&
         CombatCommander::Instance().groundSquadAttackOrderActive())
     {
         _terranWallReleasedForVision = true;
@@ -5393,6 +5785,22 @@ void ProductionManager::manageTerranMainWall()
         }
     }
 
+    // A wall at the natural contains the second Command Center, so the
+    // outside-expansion release above can never fire for it. Once a tank
+    // opening has committed its ground squad to an attack, retire this gate
+    // too: repeatedly landing the Barracks would otherwise funnel the whole
+    // army through brief temporary openings. Keep the gate while an enemy is
+    // close enough to enter it.
+    if (!_terranWallReleasedForVision &&
+        the.placer.terranMainWallCoversNatural() &&
+        StrategyManager::Instance().getOpeningGroup() == "tanks" &&
+        CombatCommander::Instance().groundSquadAttackOrderActive() &&
+        !enemyGroundNearGate)
+    {
+        _terranWallReleasedForVision = true;
+        the.placer.markTerranMainWallReleasedForVision();
+    }
+
     const bool barracksProductionQueued =
         _queue.anyInQueue(BWAPI::UnitTypes::Terran_Ghost) ||
         _queue.anyInQueue(BWAPI::UnitTypes::Terran_Marine) ||
@@ -5458,6 +5866,8 @@ void ProductionManager::manageTerranMainWall()
 
     bool friendlyWantsThroughGate = false;
     bool friendlyStillInGate = false;
+    bool gateBlockerStalled = false;
+    std::set<int> currentGateBlockers;
 
     const int gateLeft = wallTile.x * 32;
     const int gateTop = wallTile.y * 32;
@@ -5525,11 +5935,28 @@ void ProductionManager::manageTerranMainWall()
         if (wallBarracks->isLifted() && overlapsDoorway)
         {
             friendlyStillInGate = true;
+            currentGateBlockers.insert(unit->getID());
+            const auto entry = _terranWallGateOccupiedSince.emplace(
+                unit->getID(), the.now());
+            // Walking in circles is movement, but it is not a completed
+            // crossing. Only leaving the footprint resets this deadline.
+            if (the.now() - entry.first->second >= 4 * 24)
+                gateBlockerStalled = true;
         }
+    }
+    for (auto it = _terranWallGateOccupiedSince.begin();
+         it != _terranWallGateOccupiedSince.end(); )
+    {
+        if (currentGateBlockers.count(it->first) == 0)
+            it = _terranWallGateOccupiedSince.erase(it);
+        else
+            ++it;
     }
 
     if (!wallBarracks->isLifted())
     {
+        _terranWallGateOccupiedSince.clear();
+        _terranWallGateClearing = false;
         if (wallBarracks->getTilePosition() != wallTile)
         {
             // Recover a gate displaced by an earlier producer/landing order.
@@ -5570,7 +5997,16 @@ void ProductionManager::manageTerranMainWall()
 
     the.placer.markTerranMainWallOpened();
 
-    if (friendlyWantsThroughGate || friendlyStillInGate)
+    if (enemyGroundNearGate || gateBlockerStalled)
+        _terranWallGateClearing = true;
+
+    // Finish one close operation before accepting more crossing requests.
+    // Keep the same evacuation targets while the Barracks is descending.
+    if (_terranWallGateClearing)
+        the.micro.clearLandingArea(wallBarracks, wallTile, !enemyGroundNearGate);
+
+    if (!_terranWallGateClearing &&
+        (friendlyWantsThroughGate || friendlyStillInGate))
     {
         _terranWallGateOpenUntilFrame =
             std::max(_terranWallGateOpenUntilFrame, the.now() + 24);
@@ -5584,7 +6020,7 @@ void ProductionManager::manageTerranMainWall()
     }
 
     const bool shouldCloseNow =
-        enemyGroundNearGate ||
+        _terranWallGateClearing ||
         (!friendlyStillInGate && the.now() >= _terranWallGateOpenUntilFrame);
 
     if (!shouldCloseNow ||

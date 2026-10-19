@@ -3,6 +3,7 @@
 #include "Core/Config.h"
 #include "Core/Common.h"
 #include "../../../BOSS/source/Timer.hpp"
+#include <iosfwd>
 
 namespace UAlbertaBot
 {
@@ -12,6 +13,8 @@ struct Timer
     std::string name;
     BOSS::Timer timer;
     double highWaterMark;    // maximum milliseconds seen
+    double accumulatedMilliseconds;
+    int samples;
 
     Timer();
     Timer(std::string n);
@@ -25,7 +28,7 @@ class TimerManager
 {
 public:
 
-    enum Type { Total, Assignments, Information, The, OpponentModel, Search, Worker, Production, Building, Combat, Micro, Tasks, NumTypes };
+    enum Type { Total, Assignments, Information, The, OpponentModel, Search, Worker, Production, Building, Combat, Micro, Tasks, Debug, NumTypes };
 
 private:
 
@@ -34,10 +37,13 @@ private:
     int _count;
     double _maxMilliseconds;
     double _totalMilliseconds;
+    int _framesOver55;
+    int _framesOver100;
     int _lastSpikeFrame;
     double _lastSpikeMilliseconds;
     Type _lastSpikeModule;
     double _lastSpikeModuleMilliseconds;
+    std::string _lastSpikeModuleBreakdown;
 
     const int _barWidth;
 
@@ -52,10 +58,14 @@ public:
     double getMilliseconds();      // total elapsed time
     double getMaxMilliseconds();   // over all frames
     double getMeanMilliseconds();  // over all frames
+    std::string currentBreakdown();
+    void writeGameSummary(std::ostream& output) const;
+    void resetStatistics();
     int getLastSpikeFrame() const { return _lastSpikeFrame; }
     double getLastSpikeMilliseconds() const { return _lastSpikeMilliseconds; }
     const char * getLastSpikeModuleName() const;
     double getLastSpikeModuleMilliseconds() const { return _lastSpikeModuleMilliseconds; }
+    const std::string& getLastSpikeModuleBreakdown() const { return _lastSpikeModuleBreakdown; }
 
     void drawModuleTimers(int x, int y);
 };

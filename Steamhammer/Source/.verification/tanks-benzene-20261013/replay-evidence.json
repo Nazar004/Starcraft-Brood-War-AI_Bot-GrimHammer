@@ -1,0 +1,59 @@
+{
+  "replay": "20261013_111438_973__GrimHammer__Benzene1__loss.rep",
+  "map": "Benzene1.1",
+  "frames": 33550,
+  "peak_frame_from_screenshot": 24640,
+  "peak_tanks_ms_from_screenshot": 91.1,
+  "tank_tags_identified_by_siege_unsiege": 53,
+  "window_frames": [
+    24520,
+    24760
+  ],
+  "window_tank_move_commands": 439,
+  "window_tank_tags_with_move": 30,
+  "frequent_move_target_tiles": [
+    {
+      "tile": [
+        15,
+        56
+      ],
+      "count": 66
+    },
+    {
+      "tile": [
+        14,
+        58
+      ],
+      "count": 65
+    },
+    {
+      "tile": [
+        15,
+        57
+      ],
+      "count": 35
+    },
+    {
+      "tile": [
+        14,
+        56
+      ],
+      "count": 19
+    },
+    {
+      "tile": [
+        28,
+        54
+      ],
+      "count": 18
+    },
+    {
+      "tile": [
+        13,
+        59
+      ],
+      "count": 17
+    }
+  ],
+  "caveat": "Replay commands identify moves/orders, not exact living army count or CPU call stacks."
+}

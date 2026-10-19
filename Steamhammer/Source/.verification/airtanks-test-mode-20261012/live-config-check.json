@@ -1,0 +1,12 @@
+{
+  "path": "D:\\DU\\BP\\Starcraft\\Starcraft_1161\\bwapi-data\\AI\\GrimHammer.json",
+  "sha256": "701feaee61b23f16872045ac1d01ea27307e5b4936b50aa18e687f1782cfb1f7",
+  "matches_candidate": true,
+  "forced": {
+    "TvZ": "BioTank",
+    "TvP": "TvP_DeepSix"
+  },
+  "air_disabled_count": 8,
+  "build_run": false,
+  "game_run": false
+}

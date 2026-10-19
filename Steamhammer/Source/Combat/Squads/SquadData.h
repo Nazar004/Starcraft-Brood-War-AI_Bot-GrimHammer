@@ -8,6 +8,9 @@ namespace UAlbertaBot
 class SquadData
 {
     std::map<std::string, Squad> _squads;
+    SquadUpdateProfile _lastUpdateProfile;
+    SquadUpdateProfile _slowestSquadProfile;
+    double _slowestSquadMilliseconds = 0.0;
 
     void    updateAllSquads();
     void    verifySquadUniqueMembership();
@@ -25,6 +28,9 @@ public:
     void            drawSquadInformation(int x, int y);
 
     void            update();
+    const SquadUpdateProfile& lastUpdateProfile() const { return _lastUpdateProfile; }
+    const SquadUpdateProfile& slowestSquadProfile() const { return _slowestSquadProfile; }
+    double slowestSquadMilliseconds() const { return _slowestSquadMilliseconds; }
     void            setRegroup();
 
     bool            squadExists(const std::string & squadName);

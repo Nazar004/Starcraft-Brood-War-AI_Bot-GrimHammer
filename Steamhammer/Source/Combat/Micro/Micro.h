@@ -94,11 +94,15 @@ class Micro
     {
         BWAPI::Position position;
         int untilFrame;
+        BWAPI::Unit landingBuilding = nullptr;
     };
 
     std::map<BWAPI::Unit, MicroState> orders;
     std::map<BWAPI::Unit, TrafficYield> trafficYields;
     int lastTrafficYieldFrame = -100000;
+    std::map<BWAPI::Unit, int> trafficYieldRetryAfter;
+    int trafficProbeFrame = -1;
+    int trafficProbesThisFrame = 0;
     MicroState noOrder;
 
     bool alwaysKite(BWAPI::UnitType type) const;
@@ -116,6 +120,10 @@ public:
     // Ask an idle ground unit in a narrow passage to make room for a stalled
     // allied mover. Only invoked by the slow-path Move progress monitor.
     bool yieldBlockingUnit(BWAPI::Unit mover, const BWAPI::Position& destination);
+    // Briefly own blocker movement until a selected landing site is clear.
+    void clearLandingArea(BWAPI::Unit building, const BWAPI::TilePosition& tile,
+        bool allowOutward = false);
+    bool landingClearanceActive(BWAPI::Unit unit) const;
 
     const MicroState & getMicroState(BWAPI::Unit unit) const;
     bool alreadyCommanded(BWAPI::Unit unit) const;
@@ -166,6 +174,7 @@ public:
 
 
     bool UseTech(BWAPI::Unit unit, BWAPI::TechType tech, BWAPI::Unit target);
+    bool UseTech(BWAPI::Unit unit, BWAPI::TechType tech, BWAPI::Position target);
 
     void CooldownDanceTarget(BWAPI::Unit rangedUnit, BWAPI::Unit target);
 

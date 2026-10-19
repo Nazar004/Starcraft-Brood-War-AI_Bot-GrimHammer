@@ -19,10 +19,15 @@ enum class TerranPlanId
 {
     None,
     BioTank,
+    AirTanks,
+    TvP_DeepSix,
     TvP_Siege,
     TvP_AntiZealot,
     TvP_AntiDragoon,
     TvP_AntiCarrier,
+    TvZ_Sparks,
+    TvZ_PreHive,
+    TvZ_SK,
     TvZ_Mech,
     TvZ_AntiLing,
     TvZ_VulturePressure,
@@ -49,6 +54,7 @@ struct Strategy
     BWAPI::Race _race;
     std::string _openingGroup;
     std::string _terranPlan;
+    std::string _airTanksVariant;
     BuildOrder  _buildOrder;
 
     Strategy()
@@ -64,11 +70,13 @@ struct Strategy
         const BWAPI::Race & race,
         const std::string & openingGroup,
         const std::string & terranPlan,
-        const BuildOrder & buildOrder)
+        const BuildOrder & buildOrder,
+        const std::string & airTanksVariant = "")
         : _name(name)
         , _race(race)
         , _openingGroup(openingGroup)
         , _terranPlan(terranPlan)
+        , _airTanksVariant(airTanksVariant)
         , _buildOrder(buildOrder)
     {
     }
@@ -90,6 +98,13 @@ class StrategyManager
     bool							_openingStaticDefenseDropped;	// make sure we do this at most once ever
     bool _defaultTankGather;
     bool _bioTankFirstPushReleased;
+    bool _tankFirstAttackReleased;
+    bool _airTanksFirstPushReleased;
+    bool _airTanksAirReleased;
+    std::string _airTanksAttackStatus;
+    std::string _airTanksVariant;
+    int _bioFirstAttackFrame;
+    std::string _bioTankAttackStatus;
     std::string _openingTerranPlanName;
     TerranPlanId _terranBaselinePlan;
     TerranPlanId _terranPlan;
@@ -107,6 +122,8 @@ class StrategyManager
     int _tankMassReleaseGoliaths;
     const char * _slowestUrgentStage = "";
     double _slowestUrgentStageMs = 0.0;
+    const char * _slowestGoalStage = "";
+    double _slowestGoalStageMs = 0.0;
 
 
     bool							detectSupplyBlock(BuildOrderQueue & queue) const;
@@ -117,6 +134,8 @@ class StrategyManager
     void							performBuildOrderSearch();
 
 public:
+    const char * slowestGoalStage() const { return _slowestGoalStage; }
+    double slowestGoalStageMilliseconds() const { return _slowestGoalStageMs; }
     const char * slowestUrgentStage() const { return _slowestUrgentStage; }
     double slowestUrgentStageMilliseconds() const { return _slowestUrgentStageMs; }
     
@@ -125,7 +144,20 @@ public:
     int tankMassReleaseTankCount() const;
     bool pureAirPlanActive() const;
     bool bioTankPlanActive() const;
+    bool deepSixPlanActive() const;
+    bool bioTankUsesTanks() const;
+    int bioTankDesiredTankPercent() const;
     bool bioTankPushReady();
+    void updateBioTankAttackState();
+    bool airTanksPlanActive() const;
+    const std::string& airTanksVariant() const { return _airTanksVariant; }
+    bool airTanksPushReady();
+    bool airTanksAirPushReady();
+    bool airTanksAirEscortsGround() const;
+    void updateAirTanksAttackState();
+    void updateTankAttackState();
+    const std::string& airTanksAttackStatus() const { return _airTanksAttackStatus; }
+    const std::string& bioTankAttackStatus() const { return _bioTankAttackStatus; }
     TerranArmyPosture getTerranArmyPosture() const;
     bool isTerranHeavyMixed() const;
     bool isTerranLightMixed() const;
@@ -139,6 +171,8 @@ public:
     int tankMassReleaseGoliathCount() const;
     bool isTerranMineralExpansionEmergency() const;
     BWAPI::TilePosition getTerranDefensiveBunkerTile(int bunkerIndex) const;
+    bool isNoWallRushBunkerPlacementActive() const;
+    bool canBuildTerranDefensiveBunkerAt(BWAPI::TilePosition tile) const;
 
             void                    addStrategy(const std::string & name, const Strategy & strategy);
             void					setOpeningGroup();

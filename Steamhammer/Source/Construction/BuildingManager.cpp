@@ -30,6 +30,7 @@ namespace
 
     std::map<int, ExpansionBuilderRouteState> expansionBuilderRouteStates;
     std::map<int, BWAPI::TilePosition> fallbackCommandCenters;
+    std::map<int, int> fallbackLandingFirstAttemptFrame;
     std::set<int> airRelocatedCommandCenterIDs;
     int fallbackCommandCenterLastFrame = -1;
 
@@ -203,6 +204,7 @@ namespace
         if (now < fallbackCommandCenterLastFrame)
         {
             fallbackCommandCenters.clear();
+            fallbackLandingFirstAttemptFrame.clear();
             airRelocatedCommandCenterIDs.clear();
         }
         fallbackCommandCenterLastFrame = now;
@@ -228,6 +230,7 @@ namespace
                 (!center->isLifted() &&
                  center->getTilePosition() == it->second))
             {
+                fallbackLandingFirstAttemptFrame.erase(it->first);
                 it = fallbackCommandCenters.erase(it);
                 continue;
             }
@@ -240,6 +243,7 @@ namespace
 
             if (!it->second.isValid())
             {
+                fallbackLandingFirstAttemptFrame.erase(it->first);
                 it->second = chooseFallbackCommandCenterDestination();
             }
 
@@ -267,6 +271,7 @@ namespace
                             fallbackDirectionTier(currentAlignment) ||
                         preferredAlignment < currentAlignment - 0.1)
                     {
+                        fallbackLandingFirstAttemptFrame.erase(it->first);
                         it->second = preferred;
                     }
                 }
@@ -280,39 +285,62 @@ namespace
             Base* destination = the.bases.getBaseAtTilePosition(it->second);
             if (!destination || destination->getOwner() != BWAPI::Broodwar->neutral())
             {
+                fallbackLandingFirstAttemptFrame.erase(it->first);
                 it->second = BWAPI::TilePositions::Invalid;
                 ++it;
                 continue;
             }
 
-            if (fallbackLandingThreatened(destination))
-            {
-                it->second = BWAPI::TilePositions::Invalid;
-                ++it;
-                continue;
-            }
             if (!the.placer.preservesGroundExit(center->getType(), it->second))
             {
+                fallbackLandingFirstAttemptFrame.erase(it->first);
                 it->second = BWAPI::TilePositions::Invalid;
                 ++it;
                 continue;
             }
 
+            const bool nearLanding =
+                center->getDistance(destination->getPosition()) <= 5 * 32;
+            // A burrowed unit can make canLand() false without appearing in
+            // the visible threat check. Keep the chosen base and clear its
+            // exact footprint instead of flying between fallback bases.
+            if (center->isLifted() && nearLanding && !center->canLand(it->second))
+            {
+                CombatCommander::Instance().requestExpansionLandingClearance(it->second);
+                ++it;
+                continue;
+            }
+            if (fallbackLandingThreatened(destination))
+            {
+                fallbackLandingFirstAttemptFrame.erase(it->first);
+                it->second = BWAPI::TilePositions::Invalid;
+                ++it;
+                continue;
+            }
             if (!center->isLifted())
             {
                 center->lift();
             }
-            else if (center->getDistance(destination->getPosition()) > 5 * 32)
+            else if (!nearLanding)
             {
+                fallbackLandingFirstAttemptFrame.erase(it->first);
                 if (now - center->getLastCommandFrame() >= 24)
                 {
                     center->move(destination->getPosition());
                 }
             }
-            else if (now - center->getLastCommandFrame() >= 24 &&
-                center->canLand(it->second))
+            else
             {
-                center->land(it->second);
+                const auto attempt = fallbackLandingFirstAttemptFrame.emplace(
+                    it->first, now);
+                // canLand() may accept an unseen blocker and the command may
+                // still fail. A CC that remains airborne after its first
+                // landing order needs the same scan/clearance path.
+                if (now - attempt.first->second >= 3 * 24)
+                    CombatCommander::Instance().requestExpansionLandingClearance(it->second);
+                if (now - center->getLastCommandFrame() >= 24 &&
+                    !center->land(it->second))
+                    CombatCommander::Instance().requestExpansionLandingClearance(it->second);
             }
             ++it;
         }
@@ -355,8 +383,7 @@ namespace
     enum class BlockedExpansionClearResult
     {
         NotBlocked,
-        Handling,
-        TimedOut
+        Handling
     };
 
     int expansionBlockKey(const BWAPI::TilePosition& tile)
@@ -497,13 +524,19 @@ namespace
             enemy->getPlayer() == BWAPI::Broodwar->self() &&
             type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine;
 
-        // Friendly fire is allowed only for our mine inside this footprint.
-        if (!ownMine && enemy->getPlayer() != BWAPI::Broodwar->enemy())
+        const bool mineral = enemy->getPlayer() == BWAPI::Broodwar->neutral() &&
+            type.isMineralField();
+        const bool hostile = enemy->getPlayer() == BWAPI::Broodwar->enemy();
+        const bool destructibleNeutral = enemy->getPlayer() == BWAPI::Broodwar->neutral() &&
+            !enemy->isInvincible() && !type.isResourceContainer();
+        // Friendly units move aside; only our own mine is a friendly attack target.
+        if (!ownMine && !hostile && !destructibleNeutral && !mineral)
         {
             return false;
         }
 
-        if (type.isBuilding() || type.isSpell() || enemy->isFlying())
+        if (type.isSpell() || enemy->isFlying() ||
+            (!mineral && enemy->isInvincible()))
         {
             return false;
         }
@@ -562,9 +595,7 @@ namespace
     {
         Building candidate = b;
         candidate.finalPosition = tile;
-        if (!isTerranExpansionCommandCenterTask(candidate) ||
-            !the.bases.connectedToStart(tile) ||
-            the.groundHitsFixed.inRange(b.type, tile))
+        if (!isTerranExpansionCommandCenterTask(candidate))
         {
             return false;
         }
@@ -599,11 +630,17 @@ namespace
                 continue;
             }
 
-            // Do not reinterpret buildings, minerals or neutral terrain
-            // blockers as hidden mines. Their separate clearance rules apply.
-            if (unit->getType().isBuilding() ||
-                (unit->getPlayer() != BWAPI::Broodwar->self() &&
-                 unit->getPlayer() != BWAPI::Broodwar->enemy()))
+            const BWAPI::UnitType type = unit->getType();
+            const bool ownMobile = unit->getPlayer() == the.self() &&
+                !type.isBuilding();
+            const bool hostile = unit->getPlayer() == the.enemy() &&
+                !unit->isInvincible() && !type.isSpell();
+            const bool neutralObstacle = unit->getPlayer() == BWAPI::Broodwar->neutral() &&
+                (type.isMineralField() ||
+                 (!unit->isInvincible() && !type.isResourceContainer()));
+            // Terrain, our own permanent buildings and invincible scenery
+            // cannot be cleared by a scan or attack.
+            if (!ownMobile && !hostile && !neutralObstacle)
             {
                 return false;
             }
@@ -774,12 +811,6 @@ namespace
             return BlockedExpansionClearResult::NotBlocked;
         }
 
-        if (b.builderUnit->getDistance(buildPosition) > 6 * 32)
-        {
-            eraseBlockedExpansionClearState(blockKey);
-            return BlockedExpansionClearResult::NotBlocked;
-        }
-
         BWAPI::Unit blocker = findExpansionBlocker(b);
         if (!blocker && BWAPI::Broodwar->canBuildHere(
             b.finalPosition,
@@ -792,6 +823,8 @@ namespace
                 // The old build order was interrupted by clearing. Issue it
                 // again now instead of waiting on its expired deadline.
                 b.buildCommandGiven = false;
+                b.startFrame = b.assignedFrame = the.now();
+                b.buildersSent = 0;
             }
             b.blocked = false;
             eraseBlockedExpansionClearState(blockKey);
@@ -823,46 +856,38 @@ namespace
             state.firstBlockedFrame = now;
         }
 
-        auto moveToAnotherExpansion = [&]() -> bool
+        // An assigned expansion owns this slot until it is cleared. Do not
+        // defer it after 12/45 seconds or wait for a second detector.
+        const bool needsDetection = !blocker || blocker->isBurrowed() || blocker->isCloaked();
+        bool scanActive = MapGrid::Instance().scanIsActiveAt(buildPosition);
+        if (needsDetection && !scanActive && now - state.lastScanAttemptFrame >= 24)
         {
-            // Keep the original site available for a later attempt, but do
-            // not reserve another SCV for the same hidden mine indefinitely.
-            the.map.deferExpansion(b.finalPosition, 3 * 60 * 24);
-            const BWAPI::TilePosition alternative =
-                the.map.getNextExpansion(false, true, false);
-            if (!alternative.isValid())
+            state.lastScanAttemptFrame = now;
+            // Cast directly: expansion clearance has no scouting reserve,
+            // visibility restriction or dependency on the combat scan queue.
+            if (the.micro.Scan(buildPosition))
             {
-                state.firstBlockedFrame = now;
-                return false;
+                state.lastScanFrame = now;
+                scanActive = true;
             }
-            DebugQueuePrintf(
-                "Expansion blocked at (%d,%d); retrying accessible base (%d,%d)",
-                b.finalPosition.x, b.finalPosition.y,
-                alternative.x, alternative.y);
-            eraseBlockedExpansionClearState(blockKey);
-            return true;
-        };
-
-        const int MAX_BLOCKED_CLEAR_FRAMES = 24 * 45;
-        if (now - state.firstBlockedFrame >= MAX_BLOCKED_CLEAR_FRAMES)
+        }
+        if (needsDetection && !scanActive)
         {
-            if (moveToAnotherExpansion())
-            {
-                return BlockedExpansionClearResult::TimedOut;
-            }
+            CombatCommander::Instance().requestExpansionVesselDetection(buildPosition);
         }
 
         if (blocker && blocker->exists())
         {
             const bool spiderMine =
                 blocker->getType() == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine;
+            const bool mineral = blocker->getType().isMineralField();
 
             // Spider Mines never trigger on SCVs.  For an expansion footprint
             // the reliable Terran solution is therefore: reveal the mine with
             // Comsat, let the builder SCV kill the detected mine itself, then
             // retry the Command Center.  In particular, never drive a Vulture
             // onto the mine: that can detonate it and is not needed here.
-            if (spiderMine)
+            if (spiderMine || mineral)
             {
                 releaseSupportVulture(state);
             }
@@ -879,14 +904,28 @@ namespace
                 else
                 {
                     DebugQueuePrintf(
-                        "Expansion blocked: detected blocker %s, SCV attacks",
+                        "Expansion blocked: detected blocker %s, SCV clears",
                         blocker->getType().getName().c_str()
                     );
                 }
 
-                the.micro.AttackUnit(b.builderUnit, blocker);
+                if (mineral)
+                {
+                    if (b.builderUnit->isCarryingMinerals() || b.builderUnit->isCarryingGas())
+                    {
+                        the.micro.ReturnCargo(b.builderUnit);
+                    }
+                    else
+                    {
+                        the.micro.MineMinerals(b.builderUnit, blocker);
+                    }
+                }
+                else
+                {
+                    the.micro.AttackUnit(b.builderUnit, blocker);
+                }
 
-                if (!spiderMine &&
+                if (!spiderMine && !mineral &&
                     blocker->getPlayer() != BWAPI::Broodwar->self())
                 {
                     commandSupportVultureForBlockedExpansion(state, b, blocker);
@@ -908,7 +947,7 @@ namespace
 
             DrawUnitTargetTextMap(
                 blocker->getPosition() + BWAPI::Position(0, 8),
-                spiderMine ? "SCV clear mine" : "expo blocker"
+                mineral ? "SCV clear mineral" : spiderMine ? "SCV clear mine" : "expo blocker"
             );
 
             return BlockedExpansionClearResult::Handling;
@@ -959,71 +998,11 @@ namespace
             return BlockedExpansionClearResult::Handling;
         }
 
-        const bool scanActive = MapGrid::Instance().scanIsActiveAt(buildPosition);
-        if (scanActive)
+        if (now - state.lastCommandFrame >= 12 &&
+            b.builderUnit->getDistance(buildPosition) > 3 * 32)
         {
-            state.lastScanFrame = now;
-        }
-        else if (now - state.lastScanAttemptFrame >= 24)
-        {
-            // The exact Command Center footprint is buildable terrain, contains
-            // no visible blocker, yet canBuildHere() still rejects it.  Against
-            // Terran this is commonly a burrowed Spider Mine.  This scan is not
-            // optional scouting: it is required to unblock the expansion, so
-            // use the first Comsat which can actually cast Scanner Sweep (50+
-            // energy) instead of waiting for the old 100-energy reserve.
-            state.lastScanAttemptFrame = now;
-
-            if (CombatCommander::Instance().requestComsatScan(
-                    buildPosition,
-                    ComsatScanPriority::ExpansionClear,
-                    50,
-                    0,
-                    8 * 24,
-                    "expansion blocker",
-                    true))
-            {
-                DebugQueuePrintf(
-                    "Expansion blocked by hidden unit: COMSAT requested at (%d,%d)",
-                    buildPosition.x,
-                    buildPosition.y
-                );
-            }
-        }
-
-        // A queued scan is not a cast scan. If no Comsat can actually fire,
-        // borrow one of two completed Vessels while the other stays with the
-        // army. Its detection also lets the builder attack a buried Mine.
-        bool comsatReady = false;
-        int completedVessels = 0;
-        for (BWAPI::Unit unit : the.self()->getUnits())
-        {
-            if (!unit || !unit->exists() || !unit->isCompleted())
-            {
-                continue;
-            }
-            if (unit->getType() == BWAPI::UnitTypes::Terran_Science_Vessel)
-            {
-                ++completedVessels;
-            }
-            else if (unit->getType() == BWAPI::UnitTypes::Terran_Comsat_Station &&
-                unit->getEnergy() >= 50 &&
-                unit->canUseTech(BWAPI::TechTypes::Scanner_Sweep, buildPosition))
-            {
-                comsatReady = true;
-            }
-        }
-        if (!scanActive && !comsatReady && completedVessels >= 2)
-        {
-            CombatCommander::Instance().requestExpansionVesselDetection(
-                buildPosition);
-        }
-
-        if (!scanActive && !comsatReady && completedVessels < 2 &&
-            now - state.firstBlockedFrame >= 12 * 24 &&
-            moveToAnotherExpansion())
-        {
-            return BlockedExpansionClearResult::TimedOut;
+            the.micro.Move(b.builderUnit, buildPosition);
+            state.lastCommandFrame = now;
         }
 
         // Do not send a Vulture blindly into an unknown hidden blocker.  If the
@@ -1297,6 +1276,10 @@ void BuildingManager::update()
 // If true, the building will be canceled.
 bool BuildingManager::buildingTimedOut(const Building & b) const
 {
+    if (b.blocked && isTerranExpansionCommandCenterTask(b))
+    {
+        return false;
+    }
     return
         the.now() - b.startFrame > 60 * 24 ||
         b.buildersSent > 2;
@@ -1431,6 +1414,9 @@ void BuildingManager::constructAssignedBuildings()
         {
             continue;
         }
+        // A gate evacuation owns this worker for a few frames; retain its
+        // construction task instead of sending it straight back underneath.
+        if (the.micro.landingClearanceActive(b.builderUnit)) continue;
 
         const bool flexibleProduction = ProductionManager::Instance().isOutOfBook() &&
             (b.type == BWAPI::UnitTypes::Terran_Barracks ||
@@ -1497,29 +1483,27 @@ void BuildingManager::constructAssignedBuildings()
         }
         else if (!b.builderUnit->isConstructing())
         {
-            const bool positionExplored = isBuildingPositionExplored(b);
-            if (positionExplored)
+            // Threats can arrive after placement was approved. Release the
+            // unstarted forward Bunker's builder instead of walking it into fire.
+            if (b.type == BWAPI::UnitTypes::Terran_Bunker &&
+                !StrategyManager::Instance().canBuildTerranDefensiveBunkerAt(b.finalPosition))
             {
-                const BlockedExpansionClearResult clearResult =
-                    tryClearBlockedExpansion(b);
-                if (clearResult == BlockedExpansionClearResult::Handling)
-                {
-                    // Keep the attack/move order alive. Retrying Build first
-                    // every frame used to overwrite the SCV's clearing order.
-                    continue;
-                }
-                if (clearResult == BlockedExpansionClearResult::TimedOut)
-                {
-                    b.macroLocation = MacroLocation::Expo;
-                    b.desiredPosition = the.placer.getExpoLocationTile(MacroLocation::Expo);
-                    releaseBuilderUnit(b);
-                    b.buildCommandGiven = false;
-                    b.status = BuildingStatus::Unassigned;
-                    b.buildersSent = std::max(0, b.buildersSent - 1);
-                    the.placer.freeTiles(b);
-                    continue;
-                }
+                if (the.bases.myMain())
+                    the.micro.MoveSafely(b.builderUnit, the.bases.myMain()->getCenter());
+                releaseBuilderUnit(b);
+                the.placer.freeTiles(b);
+                b.status = BuildingStatus::Unassigned;
+                b.buildCommandGiven = false;
+                b.buildersSent = std::max(0, b.buildersSent - 1);
+                continue;
             }
+            const BlockedExpansionClearResult clearResult = tryClearBlockedExpansion(b);
+            if (clearResult == BlockedExpansionClearResult::Handling)
+            {
+                // Preserve clearing/moving orders until the footprint is free.
+                continue;
+            }
+            const bool positionExplored = isBuildingPositionExplored(b);
 
             if (!positionExplored)
             {
@@ -1724,7 +1708,7 @@ void BuildingManager::checkForDeadTerranBuilders()
 
         // Do not spam an SCV that is travelling to the site. A missed or
         // interrupted right-click gets another attempt after a short delay.
-        if (b.builderUnit &&
+        if (b.builderUnit && !the.micro.landingClearanceActive(b.builderUnit) &&
             (assignedNow ||
              (the.now() - b.builderUnit->getLastCommandFrame() >= 48 &&
               the.now() % 24 == 0)))
@@ -1835,7 +1819,11 @@ void BuildingManager::clearAbandonedTerranBuildings()
 {
     for (BWAPI::Unit building : the.self()->getUnits())
     {
+        // Add-ons are built by their parent building and are tracked by
+        // ProductionGoal, not by this worker-building queue. Treating one as
+        // abandoned can cancel it every time this recovery check runs.
         if (building->getType().isBuilding() &&
+            !building->getType().isAddon() &&
             !building->isCompleted() &&
             !building->isBeingConstructed() &&
             building->canCancelConstruction())
@@ -2351,6 +2339,24 @@ BWAPI::TilePosition BuildingManager::getBuildingLocation(const Building & b)
     }
 
     MacroLocation loc = b.macroLocation;
+    int bunkerIndex = the.my.all.count(BWAPI::UnitTypes::Terran_Bunker);
+    if (b.type == BWAPI::UnitTypes::Terran_Bunker)
+    {
+        // Construction tasks can outnumber started Bunkers. Give each task its
+        // own index so two workers cannot both take the close first-Bunker role.
+        for (const Building & earlier : _buildings)
+        {
+            if (&earlier == &b) break;
+            if (earlier.type == b.type &&
+                (earlier.status == BuildingStatus::Unassigned ||
+                 earlier.status == BuildingStatus::Assigned))
+                ++bunkerIndex;
+        }
+        if (bunkerIndex > 0 &&
+            StrategyManager::Instance().isNoWallRushBunkerPlacementActive() &&
+            !StrategyManager::Instance().getTerranDefensiveBunkerTile(bunkerIndex).isValid())
+            return BWAPI::TilePositions::None;
+    }
 
     if (loc == MacroLocation::Tile && b.finalPosition.isValid())
     {
@@ -2360,6 +2366,14 @@ BWAPI::TilePosition BuildingManager::getBuildingLocation(const Building & b)
         }
         if (b.type == BWAPI::UnitTypes::Terran_Bunker)
         {
+            if (!StrategyManager::Instance().canBuildTerranDefensiveBunkerAt(b.finalPosition))
+            {
+                const BWAPI::TilePosition shelter = StrategyManager::Instance().getTerranDefensiveBunkerTile(
+                    bunkerIndex);
+                return shelter.isValid() && the.placer.buildingOK(b, shelter) &&
+                    the.placer.preservesGroundExit(b.type, shelter)
+                    ? shelter : BWAPI::TilePositions::None;
+            }
             // A reserved front tile may become blocked before the builder
             // arrives. Re-select a defensive slot instead of allowing the
             // generic nearby search to move the Bunker behind the tank line.
@@ -2379,7 +2393,7 @@ BWAPI::TilePosition BuildingManager::getBuildingLocation(const Building & b)
             }
             const BWAPI::TilePosition frontTile =
                 StrategyManager::Instance().getTerranDefensiveBunkerTile(
-                    the.my.all.count(BWAPI::UnitTypes::Terran_Bunker));
+                    bunkerIndex);
             return frontTile.isValid() &&
                    the.placer.buildingOK(b, frontTile) &&
                    the.placer.preservesGroundExit(b.type, frontTile)
@@ -2404,7 +2418,7 @@ BWAPI::TilePosition BuildingManager::getBuildingLocation(const Building & b)
     {
         const BWAPI::TilePosition defensiveTile =
             StrategyManager::Instance().getTerranDefensiveBunkerTile(
-                the.my.all.count(BWAPI::UnitTypes::Terran_Bunker));
+                bunkerIndex);
         return defensiveTile.isValid()
             ? defensiveTile : BWAPI::TilePositions::None;
     }
@@ -2425,8 +2439,9 @@ BWAPI::TilePosition BuildingManager::getBuildingLocation(const Building & b)
         b.macroLocation != MacroLocation::Center)
     {
         BWAPI::TilePosition pos = the.placer.getExpoLocationTile(b.macroLocation);
-        if ((the.placer.buildingOK(b, pos) || canClearExpansionFootprint(b, pos)) &&
-            !the.groundHitsFixed.inRange(b.type, pos))
+        if (canClearExpansionFootprint(b, pos) ||
+            (the.placer.buildingOK(b, pos) &&
+             !the.groundHitsFixed.inRange(b.type, pos)))
         {
             return pos;
         }

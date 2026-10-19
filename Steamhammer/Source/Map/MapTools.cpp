@@ -644,6 +644,47 @@ bool MapTools::isGroundTransitionRuntimeWalkable(
     return viaX || viaY;
 }
 
+bool MapTools::isGroundPositionWalkable(
+    BWAPI::Position position, BWAPI::UnitType body, bool runtimeBlocks) const
+{
+    const bool minimum = body == BWAPI::UnitTypes::None;
+    const int left = position.x - (minimum ? 8 : body.dimensionLeft());
+    const int right = position.x + (minimum ? 7 : body.dimensionRight());
+    const int top = position.y - (minimum ? 8 : body.dimensionUp());
+    const int bottom = position.y + (minimum ? 7 : body.dimensionDown());
+    if (!position.isValid() || left < 0 || top < 0 ||
+        right >= BWAPI::Broodwar->mapWidth() * 32 ||
+        bottom >= BWAPI::Broodwar->mapHeight() * 32)
+        return false;
+
+    // isWalkable() from BWAPI only describes terrain. Fortress has closed,
+    // invincible neutral doors standing on otherwise walkable ground.
+    for (int x = left / 8; x <= right / 8; ++x)
+        for (int y = top / 8; y <= bottom / 8; ++y)
+            if (!the.partitions.walkable(x, y) ||
+                (runtimeBlocks && _runtimeBlocked[x / 4][y / 4])) return false;
+    return true;
+}
+
+BWAPI::Position MapTools::getGroundTileWaypoint(
+    BWAPI::TilePosition tile, BWAPI::UnitType body, bool runtimeBlocks) const
+{
+    if (!tile.isValid()) return BWAPI::Positions::Invalid;
+    const BWAPI::Position center = TileCenter(tile);
+    // Prefer the ordinary center. Only a partial edge tile needs the bounded
+    // nine-point search; never construct another full-map distance field here.
+    static const int offsets[9][2] = {
+        { 0, 0 }, { -8, 0 }, { 8, 0 }, { 0, -8 }, { 0, 8 },
+        { -8, -8 }, { 8, -8 }, { -8, 8 }, { 8, 8 }
+    };
+    for (const auto& offset : offsets)
+    {
+        const BWAPI::Position point(center.x + offset[0], center.y + offset[1]);
+        if (isGroundPositionWalkable(point, body, runtimeBlocks)) return point;
+    }
+    return BWAPI::Positions::Invalid;
+}
+
 bool MapTools::getGroundPath(
     BWAPI::TilePosition from,
     BWAPI::TilePosition to,
@@ -790,7 +831,8 @@ BWAPI::Position MapTools::getGroundPathWaypoint(
     BWAPI::Position from,
     BWAPI::Position to,
     int lookAheadTiles,
-    bool runtimeBlocks)
+    bool runtimeBlocks,
+    BWAPI::UnitType body)
 {
     notePathWork(0, 1, 0);
     if (!from.isValid() || !to.isValid())
@@ -879,8 +921,8 @@ BWAPI::Position MapTools::getGroundPathWaypoint(
             // In a packed army many units can hit the same blocked distance
             // gradient in one frame. Each full-map A* costs tens of ms, so
             // spread those detours over eight frames and cap the work per
-            // frame. The normal move controller can keep issuing its direct
-            // destination until this unit's scheduled detour runs.
+            // frame. The caller can use native movement to its final goal
+            // until the scheduled detour runs.
             if (runtimeBlocks)
             {
                 const int frame = BWAPI::Broodwar->getFrameCount();
@@ -890,7 +932,7 @@ BWAPI::Position MapTools::getGroundPathWaypoint(
                     std::vector<BWAPI::TilePosition> detour;
                     if (getGroundPath(current, goal, detour, steps - step, true) && detour.size() >= 2)
                     {
-                        return TileCenter(detour.back());
+                        return getGroundTileWaypoint(detour.back(), body, runtimeBlocks);
                     }
                 }
             }
@@ -901,11 +943,14 @@ BWAPI::Position MapTools::getGroundPathWaypoint(
         currentDistance = bestDistance;
     }
 
-    if (currentDistance == 0)
+    if (currentDistance == 0 && goal == BWAPI::TilePosition(to) &&
+        isGroundPositionWalkable(to, body, runtimeBlocks))
     {
         return to;
     }
-    return TileCenter(current);
+    // A passable build tile need not have a passable center, and a normalized
+    // goal must not turn back into the original position inside an obstacle.
+    return getGroundTileWaypoint(current, body, runtimeBlocks);
 }
 
 const std::vector<BWAPI::TilePosition> & MapTools::getClosestTilesTo(BWAPI::TilePosition pos)
@@ -1061,8 +1106,12 @@ void MapTools::refreshExpansionSafetyScores() const
         int connectedOwnedBases = 0;
         for (Base * owned : ownedBases)
         {
+            // Ground distance is symmetric; put the fixed source in the
+            // destination argument because MapTools creates a missing field
+            // for that argument. All expansion candidates then share one
+            // field per owned base, instead of one field per candidate.
             const int distance = the.map.getGroundDistance(
-                owned->getCenter(), candidate->getCenter());
+                candidate->getCenter(), owned->getCenter());
             if (distance < 0)
             {
                 continue;
@@ -1105,8 +1154,9 @@ void MapTools::refreshExpansionSafetyScores() const
         int enemyMainDistance = -1;
         if (enemyMain && enemyMain->getCenter().isValid())
         {
+            // Reuse the enemy-main field for every candidate as well.
             enemyMainDistance = the.map.getGroundDistance(
-                enemyMain->getCenter(), candidate->getCenter());
+                candidate->getCenter(), enemyMain->getCenter());
             if (enemyMainDistance < 0)
             {
                 enemyMainDistance = enemyMain->getCenter().getApproxDistance(
@@ -1347,8 +1397,9 @@ Base * MapTools::nextExpansion(bool hidden, bool wantMinerals, bool wantGas) con
 			continue;
 		}
 
-        // No good if an enemy building or burrowed unit is in the way (even if out of sight).
-        // No good if an enemy combat unit is nearby.
+        // Terran construction clears removable obstacles inside the exact CC
+        // footprint, including remembered mines. Nearby guards still affect
+        // expansion selection; other races keep the original placement rules.
         bool somethingInTheWay = false;
         for (const auto & kv : InformationManager::Instance().getUnitData(BWAPI::Broodwar->enemy()).getUnits())
         {
@@ -1356,6 +1407,20 @@ Base * MapTools::nextExpansion(bool hidden, bool wantMinerals, bool wantGas) con
 
             if (!ui.goneFromLastPosition)
             {
+                const bool terranClearableObstacle =
+                    player->getRace() == BWAPI::Races::Terran &&
+                    ui.lastPosition.isValid() && !ui.lifted &&
+                    !ui.type.isFlyer() && !ui.type.isInvincible() && !ui.type.isSpell() &&
+                    ui.lastPosition.x + ui.type.dimensionRight() >= topLeft.x * 32 &&
+                    ui.lastPosition.x - ui.type.dimensionLeft() < bottomRight.x * 32 &&
+                    ui.lastPosition.y + ui.type.dimensionDown() >= topLeft.y * 32 &&
+                    ui.lastPosition.y - ui.type.dimensionUp() < bottomRight.y * 32;
+                if (terranClearableObstacle)
+                {
+                    // This exact blocker belongs to construction clearance,
+                    // including remembered buried mines outside current vision.
+                    continue;
+                }
                 if (ui.type.isBuilding() && !ui.lifted || ui.burrowed)
                 {
                     BWAPI::TilePosition lastTilePos(ui.lastPosition);
@@ -1408,10 +1473,14 @@ Base * MapTools::nextExpansion(bool hidden, bool wantMinerals, bool wantGas) con
                 // This knows about visible units only.
                 for (BWAPI::Unit unit : BWAPI::Broodwar->getUnitsOnTile(BWAPI::TilePosition(topLeft.x + x, topLeft.y + y)))
                 {
-                    if (unit->getType().isBuilding() && !unit->isLifted())
-                        // Our own buildings are OK if we can lift them out of the way.
-                        // TODO This is waiting until the code to do the lifting is written.
-                        // !(unit->getPlayer() == BWAPI::Broodwar->self() && unit->canLift()))
+                    const bool terranClearableObstacle =
+                        player->getRace() == BWAPI::Races::Terran &&
+                        (unit->getPlayer() == enemy ||
+                         unit->getPlayer() == BWAPI::Broodwar->neutral()) &&
+                        (unit->getType().isMineralField() ||
+                         (!unit->isInvincible() && !unit->getType().isResourceContainer()));
+                    if (unit->getType().isBuilding() && !unit->isLifted() &&
+                        !terranClearableObstacle)
                     {
                         if (Config::Debug::DrawExpoScores)
                         {

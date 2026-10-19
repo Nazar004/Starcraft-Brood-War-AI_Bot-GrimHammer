@@ -5,10 +5,34 @@
 #include "Intelligence/InformationManager.h"
 #include "Core/The.h"
 #include "Utilities/UnitUtil.h"
+#include "Strategy/StrategyManager.h"
+#include "Combat/Micro/Terran/TerranSiegeSafety.h"
 
 #include <climits>
 
 using namespace UAlbertaBot;
+
+namespace
+{
+    BWAPI::Unit nearbyFriendlySiegeTarget(BWAPI::Unit firebat)
+    {
+        if (!firebat || !firebat->getPosition().isValid()) return nullptr;
+        for (BWAPI::Unit tank : the.self()->getUnits())
+        {
+            if (!tank || !tank->exists() || !tank->isCompleted() ||
+                tank->getType() != BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode)
+                continue;
+            BWAPI::Unit target = tank->getTarget();
+            if (!target) target = tank->getOrderTarget();
+            if (target && target->exists() && target->isVisible() &&
+                !target->isFlying() && target->getPlayer() != the.self() &&
+                target->getPosition().isValid() && tank->isInWeaponRange(target) &&
+                firebat->getDistance(target) < 2 * 32)
+                return target;
+        }
+        return nullptr;
+    }
+}
 
 // NOTE Melee units are ground units only. Scourge is treated as a ranged unit.
 
@@ -46,12 +70,22 @@ void MicroMelee::assignTargets(const BWAPI::Unitset & meleeUnits, const BWAPI::U
         if ((!workerCounterTargetsOnly || allowedWorkerCounterTarget) &&
             !target->isFlying() &&
             target->getType() != BWAPI::UnitTypes::Zerg_Larva &&
-            target->getType() != BWAPI::UnitTypes::Zerg_Egg &&
             !target->isUnderDisruptionWeb())             // melee unit can't attack under dweb
         {
             meleeUnitTargets.insert(target);
         }
     }
+
+    const bool bioAttack = StrategyManager::Instance().bioTankPlanActive() &&
+        order && (order->getType() == SquadOrderTypes::Attack ||
+                  order->getType() == SquadOrderTypes::OmniAttack);
+    if (!bioAttack) _infantryFront.reset();
+    const std::vector<BWAPI::Unit> coveredBuildings = bioAttack
+        ? TerranSiegeSafety::coveredBuildings(targets)
+        : std::vector<BWAPI::Unit>();
+    BWAPI::Unitset firebatTargets = meleeUnitTargets;
+    for (BWAPI::Unit building : coveredBuildings)
+        firebatTargets.erase(building);
 
     // Are any enemies in range to shoot at the melee units?
     bool underThreat = false;
@@ -70,6 +104,27 @@ void MicroMelee::assignTargets(const BWAPI::Unitset & meleeUnits, const BWAPI::U
 
         if (order->isCombatOrder())
         {
+            const bool bioFirebat = bioAttack &&
+                meleeUnit->getType() == BWAPI::UnitTypes::Terran_Firebat;
+            BWAPI::Unit coveredBuilding = bioFirebat
+                ? TerranSiegeSafety::nearestBuilding(meleeUnit, coveredBuildings)
+                : nullptr;
+            BWAPI::Unit shellTarget = bioFirebat
+                ? nearbyFriendlySiegeTarget(meleeUnit) : nullptr;
+            BWAPI::Unit blastSource = coveredBuilding &&
+                meleeUnit->getDistance(coveredBuilding) < 3 * 32
+                    ? coveredBuilding : shellTarget;
+            if (blastSource)
+            {
+                const BWAPI::Position retreat =
+                    TerranSiegeSafety::standoff(meleeUnit, blastSource);
+                if (retreat.isValid() &&
+                    the.partitions.connected(meleeUnit->getPosition(), retreat))
+                    the.micro.MoveSafely(meleeUnit, retreat);
+                else
+                    the.micro.HoldPosition(meleeUnit);
+                continue;
+            }
             if (meleeUnitShouldRetreat(meleeUnit, targets))
             {
                 BWAPI::Unit shieldBattery = InformationManager::Instance().nearestShieldBattery(meleeUnit->getPosition());
@@ -90,10 +145,56 @@ void MicroMelee::assignTargets(const BWAPI::Unitset & meleeUnits, const BWAPI::U
             }
             else
             {
-                BWAPI::Unit target = getTarget(meleeUnit, meleeUnitTargets, underThreat);
+                BWAPI::Unit target = getTarget(meleeUnit,
+                    bioFirebat ? firebatTargets : meleeUnitTargets, underThreat);
+                if (bioFirebat && target && !meleeUnit->isInWeaponRange(target) &&
+                    TerranSiegeSafety::nearestBuilding(target, coveredBuildings, 3 * 32))
+                    target = nullptr;
                 if (target)
                 {
                     the.micro.CatchAndAttackUnit(meleeUnit, target);
+                }
+                else if (bioFirebat)
+                {
+                    BWAPI::Position front = _formationUnits
+                        ? _infantryFront.get(*_formationUnits,
+                            meleeUnit->getPosition(), *order)
+                        : BWAPI::Positions::Invalid;
+                    for (BWAPI::Unit building : coveredBuildings)
+                        if (front.isValid() && building->getDistance(front) < 3 * 32)
+                            front = BWAPI::Positions::Invalid;
+                    if (!front.isValid() && _formationUnits)
+                    {
+                        // A small opening squad may have too few infantry for
+                        // a stable front. Stay with a nearby Marine instead.
+                        int nearest = 10 * 32;
+                        for (BWAPI::Unit ally : *_formationUnits)
+                        {
+                            if (!ally || !ally->exists() || !ally->isCompleted() ||
+                                ally->isLoaded() ||
+                                ally->getType() != BWAPI::UnitTypes::Terran_Marine ||
+                                !ally->getPosition().isValid() ||
+                                !the.partitions.connected(meleeUnit->getPosition(),
+                                    ally->getPosition())) continue;
+                            bool inSplash = false;
+                            for (BWAPI::Unit building : coveredBuildings)
+                                if (ally->getDistance(building) < 3 * 32)
+                                    inSplash = true;
+                            const int distance = meleeUnit->getDistance(ally);
+                            if (!inSplash && distance < nearest)
+                            {
+                                nearest = distance;
+                                front = ally->getPosition();
+                            }
+                        }
+                    }
+                    if (front.isValid() && meleeUnit->getDistance(front) > 2 * 32)
+                        the.micro.MoveSafely(meleeUnit, front);
+                    else if (coveredBuilding &&
+                        meleeUnit->getDistance(coveredBuilding) < 6 * 32)
+                        the.micro.HoldPosition(meleeUnit);
+                    else if (meleeUnit->getDistance(order->getPosition()) > 96)
+                        the.micro.Move(meleeUnit, order->getPosition());
                 }
                 else if (meleeUnit->getDistance(order->getPosition()) > 96)
                 {
@@ -229,12 +330,14 @@ BWAPI::Unit MicroMelee::getTarget(BWAPI::Unit meleeUnit, const BWAPI::Unitset & 
         }
     }
 
-    return bestTarget;
+    return preferThreatToStructure(meleeUnit, bestTarget, targets);
 }
 
 int MicroMelee::getAttackPriority(BWAPI::Unit attacker, BWAPI::Unit target) const
 {
     BWAPI::UnitType targetType = target->getType();
+
+    if (isNeutralEgg(target)) return getBackstopAttackPriority(target);
 
     // A ghost which is nuking is the highest priority by a mile.
     if (targetType == BWAPI::UnitTypes::Terran_Ghost &&

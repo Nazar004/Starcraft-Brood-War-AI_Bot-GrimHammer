@@ -127,6 +127,11 @@ void MicroManager::execute(const UnitCluster & cluster)
             }
         }
 
+        // Map-placed Eggs belong to Neutral, so enemy-only queries never see
+        // them. Add only nearby visible destructible Eggs, not map decorations
+        // elsewhere. Combat enemies retain priority over obstacle cleanup.
+        addNearbyNeutralEggTargets(cluster, targets);
+
         // Filter out targets that we definitely can't attack.
         for (auto it = targets.begin(); it != targets.end(); )
         {
@@ -151,6 +156,10 @@ void MicroManager::execute(const UnitCluster & cluster)
 int MicroManager::getBackstopAttackPriority(BWAPI::Unit target) const
 {
     BWAPI::UnitType targetType = target->getType();
+
+    if (isNeutralEgg(target)) return 3;
+    if (targetType == BWAPI::UnitTypes::Zerg_Egg ||
+        targetType == BWAPI::UnitTypes::Zerg_Lurker_Egg) return 6;
 
     // Nydus canal is critical.
     if (targetType == BWAPI::UnitTypes::Zerg_Nydus_Canal)
@@ -216,6 +225,92 @@ int MicroManager::getBackstopAttackPriority(BWAPI::Unit target) const
 
 }
 
+void MicroManager::addNearbyNeutralEggTargets(const UnitCluster & cluster, BWAPI::Unitset & targets)
+{
+    // Scan the potentially large scenery set once per frame, shared by all
+    // squads and micro managers. Keep only visible, attackable map Eggs.
+    static int cachedFrame = -1;
+    static BWAPI::Unitset visibleEggs;
+    if (cachedFrame != the.now())
+    {
+        cachedFrame = the.now();
+        visibleEggs.clear();
+        for (BWAPI::Unit neutral : BWAPI::Broodwar->getStaticNeutralUnits())
+            if (isNeutralEgg(neutral) && neutral->isVisible() &&
+                neutral->isDetected() && !neutral->isInvincible()) visibleEggs.insert(neutral);
+    }
+    for (BWAPI::Unit neutral : visibleEggs)
+    {
+        if (!isNeutralEgg(neutral)) continue;
+        for (BWAPI::Unit unit : cluster.units)
+            if (unit && unit->exists() && unit->getPosition().isValid() &&
+                UnitUtil::CanAttackGround(unit) && unit->getDistance(neutral) <= 6 * 32)
+            {
+                targets.insert(neutral);
+                break;
+            }
+    }
+}
+
+bool MicroManager::isNeutralEgg(BWAPI::Unit target)
+{
+    return target && target->exists() && target->getPlayer() &&
+        target->getPlayer()->isNeutral() && target->getPosition().isValid() &&
+        (target->getType() == BWAPI::UnitTypes::Zerg_Egg ||
+         target->getType() == BWAPI::UnitTypes::Zerg_Lurker_Egg);
+}
+
+BWAPI::Unit MicroManager::preferThreatToStructure(BWAPI::Unit unit, BWAPI::Unit target,
+    const BWAPI::Unitset & targets) const
+{
+    // Keep the unit-specific focus logic for combat units, mines and casters.
+    // Only structure/neutral cleanup yields to an immediate mobile attacker.
+    if (!unit || !target || (!target->getType().isBuilding() && !isNeutralEgg(target)))
+        return target;
+    BWAPI::Unit threat = nullptr;
+    int bestScore = INT_MIN;
+    for (BWAPI::Unit enemy : targets)
+    {
+        if (!enemy || !enemy->exists() || !enemy->isVisible() || !enemy->isDetected() ||
+            !enemy->getPosition().isValid() || enemy->isInvincible() ||
+            !enemy->getPlayer() || !the.self()->isEnemy(enemy->getPlayer()) ||
+            enemy->getType().isBuilding() || enemy->getType().isSpell() ||
+            enemy->isLockedDown() || enemy->isStasised() || enemy->isMaelstrommed() ||
+            !UnitUtil::CanAttack(unit, enemy) || !UnitUtil::CanAttack(enemy, unit)) continue;
+        const int distance = unit->getDistance(enemy);
+        const int ourRange = UnitUtil::GetAttackRange(unit, enemy);
+        const int enemyRange = UnitUtil::GetAttackRange(enemy, unit);
+        // React before losing hit points. In particular, a marine or tank
+        // attacking a building must not wait for the attacker to reach its
+        // own weapon range (or for the marine to become critically wounded).
+        if (distance > std::max(ourRange + 96, enemyRange + 64) ||
+            (unit->isSieged() && !unit->isInWeaponRange(enemy))) continue;
+        const BWAPI::UnitType type = unit->getType();
+        if (enemy->isUnderDarkSwarm() && !unit->isSieged() &&
+            type != BWAPI::UnitTypes::Terran_Firebat &&
+            UnitUtil::GetAttackRange(unit, enemy) > 32) continue;
+        BWAPI::Unit victim = enemy->getOrderTarget();
+        if (!victim) victim = enemy->getTarget();
+        const bool attacksUs = victim && victim->exists() &&
+            victim->getPlayer() == the.self();
+        // A nearby enemy with an attack order may already be winding up its
+        // first shot; a target order against any of our units is sufficient.
+        if (!attacksUs && !enemy->isAttacking() &&
+            !UnitUtil::AttackOrder(enemy) && !unit->isUnderAttack()) continue;
+        if (!attacksUs && !unit->isUnderAttack() && distance > enemyRange + 32)
+            continue;
+        const int score = (victim == unit ? 384 : attacksUs ? 192 : 0) +
+            (unit->isInWeaponRange(enemy) ? 128 : 0) - distance;
+        if (!threat || score > bestScore ||
+            (score == bestScore && enemy->getID() < threat->getID()))
+        {
+            threat = enemy;
+            bestScore = score;
+        }
+    }
+    return threat ? threat : target;
+}
+
 // The order is DestroyNeutral. Carry it out.
 void MicroManager::destroyNeutralTargets(const BWAPI::Unitset & targets)
 {
@@ -243,6 +338,12 @@ void MicroManager::destroyNeutralTargets(const BWAPI::Unitset & targets)
         }
     }
 
+    BWAPI::Unitset enemies;
+    for (BWAPI::Unit unit : _units)
+        if (unit && unit->exists() && unit->getPosition().isValid())
+            MapGrid::Instance().getUnits(enemies, unit->getPosition(),
+                unit->getType().sightRange(), false, true);
+
     for (BWAPI::Unit unit : _units)
     {
         if (visibleTarget)
@@ -250,7 +351,8 @@ void MicroManager::destroyNeutralTargets(const BWAPI::Unitset & targets)
             // We see a target, so we can issue attack orders to units that can attack.
             if (UnitUtil::CanAttackGround(unit) && unit->isCompleted())
             {
-                the.micro.CatchAndAttackUnit(unit, visibleTarget);
+                the.micro.CatchAndAttackUnit(unit,
+                    preferThreatToStructure(unit, visibleTarget, enemies));
             }
             else if (unit->canMove())
             {

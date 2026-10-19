@@ -122,6 +122,10 @@ namespace UAlbertaBot
         int getAttackPriority(BWAPI::Unit rangedUnit, BWAPI::Unit target);
         BWAPI::Unit getTarget(BWAPI::Unit rangedUnit, const BWAPI::Unitset& targets);
         static void ResetForNewGame();
+        static double defensivePlanMilliseconds();
+        static double gatherPlanMilliseconds();
+        static int defensivePlanBuilds();
+        static int gatherPlanBuilds();
         static void DrawTacticalInformation();
     };
 }

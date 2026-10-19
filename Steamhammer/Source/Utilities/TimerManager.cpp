@@ -1,16 +1,22 @@
 #include "Utilities/TimerManager.h"
+#include <iomanip>
+#include <ostream>
 
 using namespace UAlbertaBot;
 
 Timer::Timer()
     : name("")
     , highWaterMark(0)
+    , accumulatedMilliseconds(0)
+    , samples(0)
 {
 }
 
 Timer::Timer(std::string n)
     : name(n)
     , highWaterMark(0)
+    , accumulatedMilliseconds(0)
+    , samples(0)
 {
 }
 
@@ -18,6 +24,8 @@ TimerManager::TimerManager()
     : _count(0)
     , _maxMilliseconds(0.0)
     , _totalMilliseconds(0.0)
+    , _framesOver55(0)
+    , _framesOver100(0)
     , _lastSpikeFrame(-1)
     , _lastSpikeMilliseconds(0.0)
     , _lastSpikeModule(Total)
@@ -38,6 +46,7 @@ TimerManager::TimerManager()
     _timers[TimerManager::Type::Combat]        = Timer("Combat");
     _timers[TimerManager::Type::Micro]         = Timer("Micro");
     _timers[TimerManager::Type::Tasks]         = Timer("Tasks");
+    _timers[TimerManager::Type::Debug]         = Timer("Debug");
 }
 
 void TimerManager::startTimer(TimerManager::Type t)
@@ -47,14 +56,20 @@ void TimerManager::startTimer(TimerManager::Type t)
 
 void TimerManager::stopTimer(TimerManager::Type t)
 {
-    _timers[t].timer.stop();
-    _timers[t].highWaterMark = std::max(_timers[t].highWaterMark, _timers[t].getMilliseconds());
+    Timer& measured = _timers[t];
+    measured.timer.stop();
+    const double elapsed = measured.getMilliseconds();
+    measured.highWaterMark = std::max(measured.highWaterMark, elapsed);
+    measured.accumulatedMilliseconds += elapsed;
+    ++measured.samples;
     if (t == Total)
     {
         ++_count;
         double ms = getMilliseconds();
         _maxMilliseconds = std::max(_maxMilliseconds, ms);
         _totalMilliseconds += ms;
+        if (ms > 55.0) ++_framesOver55;
+        if (ms > 100.0) ++_framesOver100;
         if (ms >= 40.0 && ms > _lastSpikeMilliseconds)
         {
             _lastSpikeFrame = BWAPI::Broodwar->getFrameCount();
@@ -62,11 +77,13 @@ void TimerManager::stopTimer(TimerManager::Type t)
             _lastSpikeModule = Total;
             _lastSpikeModuleMilliseconds = 0.0;
             double measuredModules = 0.0;
+            std::vector<std::pair<double, std::string>> modules;
             for (auto & entry : _timers)
             {
                 if (entry.first == Total) continue;
                 const double elapsed = entry.second.timer.getElapsedTimeInMilliSec();
                 measuredModules += elapsed;
+                modules.emplace_back(elapsed, entry.second.name);
                 if (elapsed > _lastSpikeModuleMilliseconds)
                 {
                     _lastSpikeModule = entry.first;
@@ -74,6 +91,18 @@ void TimerManager::stopTimer(TimerManager::Type t)
                 }
             }
             const double other = std::max(0.0, ms - measuredModules);
+            modules.emplace_back(other, "Other");
+            std::sort(modules.begin(), modules.end(),
+                [](const std::pair<double, std::string>& a,
+                   const std::pair<double, std::string>& b) { return a.first > b.first; });
+            std::ostringstream summary;
+            summary << std::fixed << std::setprecision(1);
+            for (size_t i = 0; i < std::min<size_t>(4, modules.size()); ++i)
+            {
+                if (i != 0) summary << ' ';
+                summary << modules[i].second << ' ' << modules[i].first;
+            }
+            _lastSpikeModuleBreakdown = summary.str();
             if (other > _lastSpikeModuleMilliseconds)
             {
                 _lastSpikeModule = NumTypes;
@@ -100,6 +129,71 @@ double TimerManager::getMeanMilliseconds()
         return 0.0;
     }
     return _totalMilliseconds / _count;
+}
+
+void TimerManager::writeGameSummary(std::ostream& output) const
+{
+    output << std::fixed << std::setprecision(2);
+    output << "frames=" << _count << " mean_ms="
+        << (_count > 0 ? _totalMilliseconds / _count : 0.0)
+        << " max_ms=" << _maxMilliseconds
+        << " over_55ms=" << _framesOver55
+        << " over_100ms=" << _framesOver100 << '\n';
+    output << "module mean_ms max_ms samples\n";
+    for (const auto& entry : _timers)
+    {
+        const Timer& timer = entry.second;
+        output << timer.name << ' '
+            << (timer.samples > 0
+                ? timer.accumulatedMilliseconds / timer.samples : 0.0)
+            << ' ' << timer.highWaterMark << ' ' << timer.samples << '\n';
+    }
+}
+
+std::string TimerManager::currentBreakdown()
+{
+    const double total = getMilliseconds();
+    double measured = 0.0;
+    std::vector<std::pair<double, std::string>> modules;
+    for (auto& entry : _timers)
+    {
+        if (entry.first == Total) continue;
+        const double elapsed = entry.second.getMilliseconds();
+        measured += elapsed;
+        modules.emplace_back(elapsed, entry.second.name);
+    }
+    modules.emplace_back(std::max(0.0, total - measured), "Other");
+    std::sort(modules.begin(), modules.end(),
+        [](const std::pair<double, std::string>& a,
+           const std::pair<double, std::string>& b) { return a.first > b.first; });
+    std::ostringstream summary;
+    summary << std::fixed << std::setprecision(1);
+    for (size_t i = 0; i < std::min<size_t>(5, modules.size()); ++i)
+    {
+        if (i != 0) summary << ' ';
+        summary << modules[i].second << ' ' << modules[i].first;
+    }
+    return summary.str();
+}
+
+void TimerManager::resetStatistics()
+{
+    _count = 0;
+    _maxMilliseconds = 0.0;
+    _totalMilliseconds = 0.0;
+    _framesOver55 = 0;
+    _framesOver100 = 0;
+    _lastSpikeFrame = -1;
+    _lastSpikeMilliseconds = 0.0;
+    _lastSpikeModule = Total;
+    _lastSpikeModuleMilliseconds = 0.0;
+    _lastSpikeModuleBreakdown.clear();
+    for (auto& entry : _timers)
+    {
+        entry.second.highWaterMark = 0.0;
+        entry.second.accumulatedMilliseconds = 0.0;
+        entry.second.samples = 0;
+    }
 }
 
 const char * TimerManager::getLastSpikeModuleName() const

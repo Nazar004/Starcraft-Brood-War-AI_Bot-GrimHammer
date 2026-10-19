@@ -1,4 +1,5 @@
 #include "Economy/WorkerManager.h"
+#include "Economy/ExpansionFerryPolicy.h"
 
 #include "Map/Bases.h"
 #include "Construction/BuildingManager.h"
@@ -13,6 +14,7 @@
 #include "Utilities/UnitUtil.h"
 
 #include <algorithm>
+#include <chrono>
 #include <map>
 #include <vector>
 
@@ -20,6 +22,44 @@ using namespace UAlbertaBot;
 
 namespace
 {
+    bool isWorkerDefenseTarget(BWAPI::Unit unit)
+    {
+        if (!unit || !unit->exists() || !BWAPI::BroodwarPtr)
+        {
+            return false;
+        }
+        const BWAPI::Player self = BWAPI::Broodwar->self();
+        const BWAPI::Player owner = unit->getPlayer();
+        return self && owner && self->isEnemy(owner) &&
+            !unit->isFlying() &&
+            (!unit->isMoving() || unit->isStuck()) &&
+            unit->isDetected() &&
+            unit->getHitPoints() <= 35 &&
+            !unit->isInvincible() &&
+            !unit->getType().isSpell();
+    }
+
+    const BWAPI::UnitFilter& workerDefenseTargetFilter()
+    {
+        // BWAPI's composed filters capture their left operand by pointer.
+        // Persist a plain function pointer, never a chain of temporaries.
+        static const BWAPI::UnitFilter filter(&isWorkerDefenseTarget);
+        return filter;
+    }
+
+    // Include early returns when measuring worker threat queries.
+    struct WorkerQueryTimer
+    {
+        double& total;
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        explicit WorkerQueryTimer(double& milliseconds) : total(milliseconds) {}
+        ~WorkerQueryTimer()
+        {
+            total += std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - start).count();
+        }
+    };
+
     // Workers which have no usable owned mineral line can still perform
     // long-distance mining from a neutral base. Keep this state outside
     // WorkerData::Minerals because that job assumes a real resource depot at
@@ -68,7 +108,8 @@ WorkerManager & WorkerManager::Instance()
 
 bool WorkerManager::isBusy(BWAPI::Unit worker) const
 {
-    return busy.contains(worker);
+    return busy.contains(worker) || the.micro.landingClearanceActive(worker) ||
+        BuildingManager::Instance().isClearingConstructionFootprint(worker);
 }
 
 void WorkerManager::makeBusy(BWAPI::Unit worker)
@@ -79,12 +120,31 @@ void WorkerManager::makeBusy(BWAPI::Unit worker)
 void WorkerManager::update()
 {
     UAB_ASSERT(busy.empty(), "unexpected busy workers");
+    _slowestUpdatePhase = "";
+    _slowestUpdatePhaseMs = 0.0;
+    _defenseQueryMs = _dangerCheckMs = 0.0;
+    _defenseQueries = _dangerChecks = 0;
+    auto phaseStarted = std::chrono::steady_clock::now();
+    auto recordPhase = [&](const char* name)
+    {
+        const auto now = std::chrono::steady_clock::now();
+        const double elapsed = std::chrono::duration<double, std::milli>(now - phaseStarted).count();
+        if (elapsed > _slowestUpdatePhaseMs)
+        {
+            _slowestUpdatePhase = name;
+            _slowestUpdatePhaseMs = elapsed;
+        }
+        phaseStarted = now;
+    };
 
     // NOTE Combat workers are placed in a combat squad and get their orders there.
     //      We ignore them here.
     updateWorkerStatus();
+    recordPhase("status");
     updateExpansionFerry();
+    recordPhase("ferry");
     clearBlockingMinerals();
+    recordPhase("blocking minerals");
 
     // A new expansion should not have to wait for freshly-produced workers to
     // become useful.  The old rebalanceWorkers() implementation only marked an
@@ -100,20 +160,31 @@ void WorkerManager::update()
         rebalanceWorkers();
     }
 
+    recordPhase("balance");
+
     handleGasWorkers();
+    recordPhase("gas");
     handleIdleWorkers();
+    recordPhase("idle");
     handleReturnCargoWorkers();
+    recordPhase("return cargo");
     handleRepairWorkers();
+    recordPhase("repair");
     handleMineralWorkers();
+    recordPhase("mineral locking");
     handleUnblockWorkers();
+    recordPhase("unblock");
     handlePostedWorkers();
+    recordPhase("posted");
 
     drawWorkerInformation();
     workerData.drawDepotDebugInfo();
+    recordPhase("debug");
 
     // Workers are not busy except while WorkerManager::update() is running, so that
     // other modules can steal workers (which can't be stolen when busy).
     busy.clear();
+    recordPhase("cleanup");
 }
 
 bool WorkerManager::expansionFerryNeededAt(const Base* base) const
@@ -130,7 +201,7 @@ bool WorkerManager::expansionFerryNeededAt(const Base* base) const
     if (!depot || !depot->exists() || !depot->isCompleted() ||
         depot->isFlying() ||
         depot->getType() != BWAPI::UnitTypes::Terran_Command_Center ||
-        workerData.getNumAssignedWorkers(depot) >= 2 ||
+        workerData.getNumAssignedWorkers(depot) >= base->getMaxMineralWorkers() ||
         !main->getGroundSafePaths().isInitialized() ||
         (main->getSafeTileDistance(base->getTilePosition()) >= 0 &&
          !BuildingManager::Instance().isAirRelocatedCommandCenter(depot)))
@@ -246,8 +317,9 @@ void WorkerManager::updateExpansionFerry()
             }
         }
         Base* main = the.bases.myMain();
+        const int sourceReserve = main ? std::min(8, main->getMaxMineralWorkers()) : 0;
         if (!target || !main || !main->getDepot() ||
-            workerData.getNumAssignedWorkers(main->getDepot()) < 8 ||
+            workerData.getNumAssignedWorkers(main->getDepot()) <= sourceReserve ||
             !target->getAirSafePaths().isInitialized())
         {
             return;
@@ -291,7 +363,11 @@ void WorkerManager::updateExpansionFerry()
         _ferryStartFrame = now;
         _ferryLastCommandFrame = -100000;
         _ferryPhase = 1;
-        for (int i = 0; i < 2; ++i)
+        const int neededWorkers = ExpansionFerryPolicy::workersToLoad(
+            bestShip->getSpaceRemaining(), BWAPI::UnitTypes::Terran_SCV.spaceRequired(),
+            target->getMaxMineralWorkers() - workerData.getNumAssignedWorkers(_ferryDepot),
+            workerData.getNumAssignedWorkers(main->getDepot()), sourceReserve);
+        for (int i = 0; i < neededWorkers; ++i)
         {
             BWAPI::Unit bestWorker = nullptr;
             int workerDistance = MAX_DISTANCE;
@@ -300,7 +376,6 @@ void WorkerManager::updateExpansionFerry()
                 if (!worker || !worker->exists() || !worker->isCompleted() ||
                     workerData.getWorkerJob(worker) != WorkerData::Minerals ||
                     workerData.getWorkerDepot(worker) != main->getDepot() ||
-                    worker->isCarryingMinerals() || worker->isCarryingGas() ||
                     worker->getHitPoints() < 40 ||
                     _ferryWorkers.contains(worker))
                 {
@@ -370,13 +445,19 @@ void WorkerManager::updateExpansionFerry()
         {
             _ferryPhase = 2;
         }
-        else if (now - _ferryStartFrame > 20 * 24)
+        else if (now - _ferryStartFrame > (20 + int(_ferryWorkers.size())) * 24)
         {
             _ferryPhase = 4;
         }
         else if (nextWorker && now - _ferryLastCommandFrame >= 16)
         {
-            the.micro.Load(_ferryTransport, nextWorker);
+            // Reserve a full useful load even when some SCVs currently carry
+            // minerals. Let them deposit first instead of silently flying with
+            // only the two workers which happened to have empty hands.
+            if (nextWorker->isCarryingMinerals() || nextWorker->isCarryingGas())
+                the.micro.ReturnCargo(nextWorker);
+            else
+                the.micro.Load(_ferryTransport, nextWorker);
             _ferryLastCommandFrame = now;
         }
         return;
@@ -507,6 +588,37 @@ void WorkerManager::updateExpansionFerry()
 // That's OK; we don't change its status then.
 void WorkerManager::updateWorkerStatus() 
 {
+    // Enemy state is fixed during this update. Evaluate eligibility once for
+    // all workers; rebuilding here also covers direct calls to this method.
+    {
+        WorkerQueryTimer timer(_defenseQueryMs);
+        _workerDefenseTargets.clear();
+        _workerGroundThreats.clear();
+        if (!workerData.getWorkers().empty())
+        {
+            const auto& filter = workerDefenseTargetFilter();
+            for (BWAPI::Unit unit : BWAPI::Broodwar->getAllUnits())
+            {
+                if (filter(unit))
+                {
+                    _workerDefenseTargets.push_back(unit);
+                }
+                if (unit && unit->exists() && unit->isCompleted() &&
+                    unit->getPlayer() == the.enemy() &&
+                    unit->getPosition().isValid() &&
+                    !unit->getType().isWorker() &&
+                    unit->getType() != BWAPI::UnitTypes::Protoss_Interceptor &&
+                    (unit->getType().groundWeapon() != BWAPI::WeaponTypes::None ||
+                     unit->getType() == BWAPI::UnitTypes::Terran_Bunker ||
+                     unit->getType() == BWAPI::UnitTypes::Protoss_Reaver ||
+                     unit->getType() == BWAPI::UnitTypes::Protoss_Carrier))
+                {
+                    _workerGroundThreats.push_back(unit);
+                }
+            }
+        }
+    }
+
     for (BWAPI::Unit worker : workerData.getWorkers())
     {
         if (!worker ||
@@ -1041,6 +1153,16 @@ void WorkerManager::handleRepairWorkers()
             type == BWAPI::UnitTypes::Terran_Goliath ||
             type == BWAPI::UnitTypes::Terran_Vulture;
     };
+    auto isDropRaider = [](BWAPI::Unit unit)
+    {
+        if (!unit) return false;
+        const Squad* squad = CombatCommander::Instance().squadDiagnostics().
+            getUnitSquad(unit);
+        if (!squad) return false;
+        const std::string& name = squad->getName();
+        return name == "VultureHarass1" || name == "VultureHarass2" ||
+            name.compare(0, 18, "OpportunisticRaid_") == 0;
+    };
 
     // Remove leases whose target died, changed owner/type, or is already above
     // the intentional 95% mobile-repair release threshold.
@@ -1058,6 +1180,7 @@ void WorkerManager::handleRepairWorkers()
         const auto live = liveByID.find(it->first);
         if (live == liveByID.end() ||
             !isMobileRepairType(live->second->getType()) ||
+            isDropRaider(live->second) ||
             live->second->getHitPoints() * 100 >=
                 live->second->getType().maxHitPoints() * 95)
         {
@@ -1086,6 +1209,11 @@ void WorkerManager::handleRepairWorkers()
     for (BWAPI::Unit worker : currentRepairers)
     {
         BWAPI::Unit target = workerData.getWorkerRepairUnit(worker);
+        if (isDropRaider(target))
+        {
+            stopRepairing(worker);
+            continue;
+        }
         const bool mobileRepair = target &&
             _mobileRepairPositions.find(target->getID()) !=
                 _mobileRepairPositions.end();
@@ -1446,6 +1574,10 @@ void WorkerManager::handleRepairWorkers()
             {
                 continue;
             }
+            if (isDropRaider(unit))
+            {
+                continue;
+            }
 
             Base * safeBase = nullptr;
             int safeBaseDistance = MAX_DISTANCE;
@@ -1754,11 +1886,28 @@ void WorkerManager::handlePostedWorkers()
 // Fleeing workers are considered Idle; they're not doing anything else.
 bool WorkerManager::maybeFleeDanger(BWAPI::Unit worker, int margin)
 {
+    WorkerQueryTimer timer(_dangerCheckMs);
+    ++_dangerChecks;
     UAB_ASSERT(worker, "Worker was null");
 
     if (worker->getPosition().isValid() &&          // false if we're e.g. in a refinery
         worker->canMove())
     {
+        // The BWAPI closest-unit filter is expensive when repeated for every
+        // worker in a large game. Most workers are far from all ground threats;
+        // use the threats gathered once this frame to skip that query.
+        const int searchRadius = margin +
+            (the.info.enemyHasSiegeMode() ? 12 * 32 : 8 * 32);
+        bool nearbyThreat = false;
+        for (BWAPI::Unit threat : _workerGroundThreats)
+        {
+            if (worker->getDistance(threat) <= searchRadius)
+            {
+                nearbyThreat = true;
+                break;
+            }
+        }
+        if (!nearbyThreat) return false;
         // We consider only the closest enemy unit that can shoot us.
         BWAPI::Unit enemy = the.micro.inWeaponsDanger(worker, margin);
         if (enemy)
@@ -1790,18 +1939,28 @@ bool WorkerManager::maybeFleeDanger(BWAPI::Unit worker, int margin)
 // Returns null if none (the most common case).
 BWAPI::Unit WorkerManager::findEnemyTargetForWorker(BWAPI::Unit worker) const
 {
+    WorkerQueryTimer timer(_defenseQueryMs);
+    ++_defenseQueries;
     UAB_ASSERT(worker, "Worker was null");
+    if (_workerDefenseTargets.empty())
+    {
+        return nullptr;
+    }
 
-	return BWAPI::Broodwar->getClosestUnit(
-		worker->getPosition(),
-		BWAPI::Filter::IsEnemy &&
-		!BWAPI::Filter::IsFlying &&
-		(!BWAPI::Filter::IsMoving || BWAPI::Filter::IsStuck) &&
-		BWAPI::Filter::IsDetected &&
-		BWAPI::Filter::HP <= 35 &&
-		!BWAPI::Filter::IsInvincible &&
-		!BWAPI::Filter::IsSpell,
-		2 * 32);
+    const BWAPI::Position position = worker->getPosition();
+    constexpr int radius = 2 * 32;
+    for (BWAPI::Unit target : _workerDefenseTargets)
+    {
+        // This is the same necessary radius condition used by BWAPI's
+        // getClosestUnit(). Keep its original selection (including ties and
+        // rectangle boundaries) when an eligible nearby target exists.
+        if (target->getDistance(position) <= radius)
+        {
+            return BWAPI::Broodwar->getClosestUnit(
+                position, workerDefenseTargetFilter(), radius);
+        }
+    }
+    return nullptr;
 }
 
 // The worker is defending itself and wants to mineral walk out of trouble.
@@ -1833,10 +1992,14 @@ BWAPI::Unit WorkerManager::findEscapeMinerals(BWAPI::Unit worker) const
 // Return whether self-defense was undertaken.
 bool WorkerManager::defendSelf(BWAPI::Unit worker, BWAPI::Unit resource)
 {
-    // We want to defend ourselves if we are near home and we have a close enemy (the target).
+    // Far from the assigned resource, self-defense cannot take this worker.
+    if (!resource || worker->getDistance(resource) >= 200)
+    {
+        return false;
+    }
     BWAPI::Unit target = findEnemyTargetForWorker(worker);
 
-	if (resource && worker->getDistance(resource) < 200 && target)
+	if (target)
 	{
 		the.micro.CatchAndAttackUnit(worker, target);
 		makeBusy(worker);

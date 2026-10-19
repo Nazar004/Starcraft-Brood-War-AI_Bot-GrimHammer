@@ -20,6 +20,59 @@ void MicroMedics::executeMicro(const BWAPI::Unitset&, const UnitCluster&)
 {
 }
 
+// Search a small local window instead of allocating full-map path arrays
+// for every medic/patient pair. Stop at a safe tile within healing range.
+bool MicroMedics::safeHealApproach(BWAPI::Unit medic, BWAPI::Unit patient,
+    BWAPI::Position& waypoint) const
+{
+    waypoint = BWAPI::Positions::Invalid;
+    if (medic->getDistance(patient) <= 64) return true;
+    const BWAPI::TilePosition start(medic->getPosition());
+    if (!start.isValid()) return false;
+    constexpr int radius = 8;
+    constexpr int side = 2 * radius + 1;
+    constexpr int cells = side * side;
+    bool visited[side][side] = {};
+    BWAPI::TilePosition queue[cells];
+    int parent[cells] = {};
+    int depth[cells] = {};
+    int head = 0, tail = 1;
+    queue[0] = start;
+    visited[radius][radius] = true;
+    const int offsets[][2] = {
+        {1,0}, {-1,0}, {0,1}, {0,-1},
+        {1,1}, {1,-1}, {-1,1}, {-1,-1}
+    };
+    while (head < tail)
+    {
+        const int index = head++;
+        const BWAPI::TilePosition tile = queue[index];
+        const BWAPI::Position center = BWAPI::Position(tile) + BWAPI::Position(16,16);
+        if (index > 0 && patient->getDistance(center) <= 64)
+        {
+            int first = index;
+            while (parent[first] > 0) first = parent[first];
+            waypoint = BWAPI::Position(queue[first]) + BWAPI::Position(16,16);
+            return true;
+        }
+        if (depth[index] >= 24) continue;
+        for (const auto& offset : offsets)
+        {
+            const BWAPI::TilePosition next(tile.x + offset[0], tile.y + offset[1]);
+            const int x = next.x - start.x + radius;
+            const int y = next.y - start.y + radius;
+            if (!next.isValid() || x < 0 || y < 0 || x >= side || y >= side ||
+                visited[x][y] || the.groundHits(next) > 0 ||
+                !the.map.isGroundTransitionRuntimeWalkable(tile, next)) continue;
+            visited[x][y] = true;
+            queue[tail] = next;
+            parent[tail] = index;
+            depth[tail++] = depth[index] + 1;
+        }
+    }
+    return false;
+}
+
 void MicroMedics::update(const UnitCluster& cluster,
     const BWAPI::Unitset& squadUnits, const BWAPI::Position& regroupPosition)
 {
@@ -35,7 +88,7 @@ void MicroMedics::update(const UnitCluster& cluster,
         if (now - it->second.second > 12) it = _claimedPatients.erase(it);
         else ++it;
     for (auto it = _healAssignments.begin(); it != _healAssignments.end(); )
-        if (now - it->second.second > 24) it = _healAssignments.erase(it);
+        if (now - it->second.frame > 24) it = _healAssignments.erase(it);
         else ++it;
     const BWAPI::Unitset medics = Intersection(getUnits(), cluster.units);
     if (medics.empty()) return;
@@ -65,7 +118,7 @@ void MicroMedics::update(const UnitCluster& cluster,
             if (regrouping && regroupPosition.isValid() &&
                 (medic->isUnderAttack() || medic->getDistance(regroupPosition) > 3 * 32))
             {
-                the.micro.MoveNear(medic, regroupPosition);
+                the.micro.MoveSafely(medic, regroupPosition);
                 availableMedics.erase(medic);
                 busyMedics.insert(medic);
                 _healAssignments.erase(medic->getID());
@@ -93,7 +146,7 @@ void MicroMedics::update(const UnitCluster& cluster,
                     TerranSiegeSafety::standoff(medic, building);
                 if (retreat.isValid() &&
                     the.partitions.connected(medic->getPosition(), retreat))
-                    the.micro.MoveNear(medic, retreat);
+                    the.micro.MoveSafely(medic, retreat);
                 else
                     the.micro.HoldPosition(medic);
                 availableMedics.erase(medic);
@@ -151,19 +204,33 @@ void MicroMedics::update(const UnitCluster& cluster,
             medic->getOrder() == BWAPI::Orders::HealMove;
         const auto assigned = _healAssignments.find(medic->getID());
         const bool pending = assigned != _healAssignments.end() &&
-            now - assigned->second.second <=
+            now - assigned->second.frame <=
                 std::max(12, BWAPI::Broodwar->getLatencyFrames() + 6);
-        if (!healingOrder && pending)
-            target = BWAPI::Broodwar->getUnit(assigned->second.first);
+        if (pending)
+            target = BWAPI::Broodwar->getUnit(assigned->second.patientId);
         if ((healingOrder || pending) && canReachPatient(medic, target))
         {
             const auto claimed = _claimedPatients.find(target->getID());
             if (claimed != _claimedPatients.end() &&
                 claimed->second.first != medic->getID()) continue;
-            std::vector<BWAPI::TilePosition> route;
-            if (medic->getDistance(target) > 64 &&
-                !the.map.getGroundPath(BWAPI::TilePosition(medic->getPosition()),
-                    BWAPI::TilePosition(target->getPosition()), route, 24, true)) continue;
+            BWAPI::Position waypoint;
+            if (!safeHealApproach(medic, target, waypoint))
+            {
+                if (claimed != _claimedPatients.end()) _claimedPatients.erase(claimed);
+                _healAssignments.erase(medic->getID());
+                the.micro.HoldPosition(medic);
+                continue;
+            }
+            if (medic->getDistance(target) > 64)
+            {
+                the.micro.Move(medic, waypoint);
+                _healAssignments[medic->getID()] = { target->getID(), now, true };
+            }
+            else if (assigned != _healAssignments.end() && assigned->second.approaching)
+            {
+                if (!the.micro.UseTech(medic, BWAPI::TechTypes::Healing, target)) continue;
+                _healAssignments[medic->getID()] = { target->getID(), now, false };
+            }
             _claimedPatients[target->getID()] = { medic->getID(), now };
             busyMedics.insert(medic);
             continuing.insert(medic);
@@ -203,7 +270,7 @@ void MicroMedics::update(const UnitCluster& cluster,
             // below does not cancel an ongoing heal every frame.
             for (auto it = availableMedics.begin(); it != availableMedics.end(); ++it)
             {
-                if ((*it)->getOrderTarget() == target)
+                if ((*it)->getOrderTarget() == target && (*it)->getDistance(target) <= 64)
                 {
                     busyMedics.insert(*it);
                     availableMedics.erase(it);
@@ -214,26 +281,27 @@ void MicroMedics::update(const UnitCluster& cluster,
         }
 
         BWAPI::Unit closest = nullptr;
+        BWAPI::Position closestWaypoint = BWAPI::Positions::Invalid;
         int closestDistance = 6 * 32 + 1;
         for (BWAPI::Unit medic : availableMedics)
         {
             if (!canReachPatient(medic, target)) continue;
             const int distance = medic->getDistance(target);
-            if (distance < closestDistance)
+            BWAPI::Position waypoint;
+            if (distance < closestDistance && safeHealApproach(medic, target, waypoint))
             {
                 closest = medic;
+                closestWaypoint = waypoint;
                 closestDistance = distance;
             }
         }
         if (closest)
         {
-            std::vector<BWAPI::TilePosition> route;
-            if (closestDistance > 64 &&
-                !the.map.getGroundPath(BWAPI::TilePosition(closest->getPosition()),
-                    BWAPI::TilePosition(target->getPosition()), route, 24, true)) continue;
-            if (the.micro.UseTech(closest, BWAPI::TechTypes::Healing, target))
+            const bool approaching = closestDistance > 64;
+            if (approaching) the.micro.Move(closest, closestWaypoint);
+            if (approaching || the.micro.UseTech(closest, BWAPI::TechTypes::Healing, target))
             {
-                _healAssignments[closest->getID()] = { target->getID(), now };
+                _healAssignments[closest->getID()] = { target->getID(), now, approaching };
                 _claimedPatients[target->getID()] = { closest->getID(), now };
                 busyMedics.insert(closest);
                 availableMedics.erase(closest);
@@ -309,7 +377,7 @@ void MicroMedics::update(const UnitCluster& cluster,
         }
         if (goal.isValid() && medic->getDistance(goal) > 32)
         {
-            the.micro.MoveNear(medic, goal);
+            the.micro.MoveSafely(medic, goal);
         }
         else if (goal.isValid()) the.micro.HoldPosition(medic);
     }

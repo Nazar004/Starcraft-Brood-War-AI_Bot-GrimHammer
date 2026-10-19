@@ -361,22 +361,23 @@ bool ProductionGoal::update()
 
         // canProduce() is only a preliminary check. buildAddon() can still be
         // rejected by StarCraft when a unit overlaps the footprint or the
-        // terrain is invalid. Fall through to the Comsat recovery below.
+        // terrain is invalid. Fall through to the add-on recovery below.
         attempted = false;
     }
 
     if (parent &&
         act.isAddon() &&
         (act.getUnitType() == BWAPI::UnitTypes::Terran_Comsat_Station ||
-         act.getUnitType() == BWAPI::UnitTypes::Terran_Machine_Shop) &&
+         act.getUnitType() == BWAPI::UnitTypes::Terran_Machine_Shop ||
+         act.getUnitType() == BWAPI::UnitTypes::Terran_Control_Tower) &&
         BWAPI::Broodwar->self()->minerals() >= act.mineralPrice() &&
         BWAPI::Broodwar->self()->gas() >= act.gasPrice())
     {
         // A busy producer is a normal temporary wait. Once it is idle,
         // failure to add the add-on means that the footprint or terrain is
         // blocking it. Clear mobile blockers and keep retrying, but do not
-        // reserve this Command Center forever: that would leave an SCV at the
-        // head of the JSON queue and freeze all following production.
+        // keep this producer forever: an impossible footprint must not stop
+        // this goal from trying another eligible building.
         if (parent->isTraining() || parent->isUpgrading() ||
             parent->isResearching() || parent->isLifted())
         {
@@ -398,8 +399,8 @@ bool ProductionGoal::update()
             // Eight seconds is long enough for moved units and command latency
             // to clear. Quarantine this one footprint for 30 seconds, release
             // its producer immediately, and try another eligible building on
-            // the next second. This prevents one impossible Comsat/Machine
-            // Shop position from owning a production lane forever.
+            // the next second. This prevents one impossible Comsat, Machine
+            // Shop or Control Tower position from owning the goal forever.
             if (now >= addonBlockedSinceFrame + 8 * 24)
             {
                 avoidedAddonProducerId = parent->getID();

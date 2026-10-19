@@ -47,6 +47,9 @@ class MicroManager
 protected:
     virtual void	executeMicro(const BWAPI::Unitset & targets, const UnitCluster & cluster) = 0;
     int             getBackstopAttackPriority(BWAPI::Unit target) const;
+    static bool     isNeutralEgg(BWAPI::Unit target);
+    BWAPI::Unit     preferThreatToStructure(BWAPI::Unit unit, BWAPI::Unit target,
+                        const BWAPI::Unitset & targets) const;
 
     void			destroyNeutralTargets(const BWAPI::Unitset & targets);
     bool            checkPositionWalkable(BWAPI::Position pos);
@@ -69,6 +72,8 @@ protected:
 
 public:
     const SquadOrder *  order;      // always set before use, may change often
+
+    static void         addNearbyNeutralEggTargets(const UnitCluster & cluster, BWAPI::Unitset & targets);
 
                         MicroManager();
     virtual				~MicroManager(){}

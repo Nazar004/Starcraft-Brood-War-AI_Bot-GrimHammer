@@ -11,6 +11,15 @@ namespace UAlbertaBot
         int squadSize;
         BWAPI::Unit unitClosestToTarget;
 
+        struct PendingSpell
+        {
+            BWAPI::TechType tech;
+            int targetId;
+            int energyBefore;
+            int deadline;
+            int completedFrame;
+        };
+        std::map<int, PendingSpell> _pendingSpells;
         std::map<int, int> _lastSpellCastFrame;
         int _lastStateFrame;
         BWAPI::Position _detectionRequestPosition;
@@ -19,7 +28,9 @@ namespace UAlbertaBot
         int _expansionDetectionFrame;
 
         bool canCastAnotherSpell(BWAPI::Unit vessel) const;
-        void rememberSpellCast(BWAPI::Unit vessel);
+        bool spellPending(BWAPI::Unit vessel);
+        void rememberSpellCast(BWAPI::Unit vessel, BWAPI::TechType tech,
+            BWAPI::Unit target, const BWAPI::Position& position, int energyBefore);
 
         bool useScienceVesselAbilities(BWAPI::Unit vessel, const BWAPI::Unitset& squadUnits);
 

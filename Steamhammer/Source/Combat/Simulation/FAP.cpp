@@ -301,7 +301,7 @@ namespace UAlbertaBot {
             if (closestHealable->health > closestHealable->maxHealth)
                 closestHealable->health = closestHealable->maxHealth;
 
-            closestHealable->didHealThisFrame = false;
+            closestHealable->didHealThisFrame = true;
         }
     }
 
@@ -449,6 +449,7 @@ namespace UAlbertaBot {
         armor(ui.player->armor(ui.type)),
         flying(ui.type.isFlyer()),
         underSwarm(ui.unit && ui.unit->isVisible() && ui.unit->isUnderDarkSwarm()),  // not too accurate
+        unitSize(ui.type.size()),
 
         groundDamage(ui.player->damage(ui.type.groundWeapon())),
         groundCooldown(ui.type.groundWeapon().damageFactor() && ui.type.maxGroundHits() ? ui.player->weaponDamageCooldown(ui.type) / (ui.type.groundWeapon().damageFactor() * ui.type.maxGroundHits()) : 0),
@@ -530,7 +531,7 @@ namespace UAlbertaBot {
 		// Only flying buildings can land, and they are excluded from the sim, so just check the type.
 		// elevation is initialized to -1 in the constructor.
         if (!ui.type.isFlyer()) {
-            elevation = BWAPI::Broodwar->getGroundHeight(BWAPI::TilePosition(x,y));
+            elevation = BWAPI::Broodwar->getGroundHeight(BWAPI::TilePosition(ui.lastPosition));
         }
 
         // Convert ranges to squared ranges so they can be compared with squared distances.
@@ -555,6 +556,7 @@ namespace UAlbertaBot {
         x = other.x, y = other.y;
         health = other.health, maxHealth = other.maxHealth;
         shields = other.shields, maxShields = other.maxShields;
+        shieldArmor = other.shieldArmor;
         speed = other.speed, armor = other.armor, flying = other.flying, underSwarm = other.underSwarm, unitSize = other.unitSize;
         groundDamage = other.groundDamage, groundCooldown = other.groundCooldown, groundMaxRange = other.groundMaxRange, groundMinRange = other.groundMinRange, groundDamageType = other.groundDamageType;
         airDamage = other.airDamage, airCooldown = other.airCooldown, airMaxRange = other.airMaxRange, airDamageType = other.airDamageType;

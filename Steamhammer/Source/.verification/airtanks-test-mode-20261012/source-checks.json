@@ -1,0 +1,3494 @@
+{
+  "compiled": false,
+  "game_run": false,
+  "checks": [
+    {
+      "check": "eight separately named air openings",
+      "passed": true
+    },
+    {
+      "check": "forced BioTank only TvZ, DeepSix only TvP",
+      "passed": true
+    },
+    {
+      "check": "TvT pools and fallback unchanged",
+      "passed": true
+    },
+    {
+      "check": "all existing definitions preserved",
+      "passed": true
+    },
+    {
+      "check": "all non-strategy configuration preserved",
+      "passed": true
+    },
+    {
+      "check": "BioTank has no TvT eligibility",
+      "passed": true
+    },
+    {
+      "check": "TvZ: draft air excluded from all learning/random choices",
+      "passed": true
+    },
+    {
+      "check": "TvZ: forced choice registered or absent",
+      "passed": true
+    },
+    {
+      "check": "TvP: draft air excluded from all learning/random choices",
+      "passed": true
+    },
+    {
+      "check": "TvP: forced choice registered or absent",
+      "passed": true
+    },
+    {
+      "check": "TvT: draft air excluded from all learning/random choices",
+      "passed": true
+    },
+    {
+      "check": "TvT: forced choice registered or absent",
+      "passed": true
+    },
+    {
+      "check": "TvT: no selectable bio opening",
+      "passed": true
+    },
+    {
+      "check": "TvU: draft air excluded from all learning/random choices",
+      "passed": true
+    },
+    {
+      "check": "TvU: forced choice registered or absent",
+      "passed": true
+    },
+    {
+      "check": "airtanks: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: old/new selector exclusion",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: separate host and plan",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: sources and intended matchup recorded",
+      "passed": true
+    },
+    {
+      "check": "airtanks: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_2PortWraith_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FE_2PortWraith_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias spider mines",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for spider mines",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias armory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for armory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias engineering bay",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for engineering bay",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias ion thrusters",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for ion thrusters",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias goliath",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for goliath",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Fantasy_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for vulture",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias spider mines",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for spider mines",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for wraith",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias armory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for armory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias engineering bay",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for engineering bay",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias academy",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for academy",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias stim packs",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for stim packs",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias medic",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for medic",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Valkonic_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias engineering bay",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for engineering bay",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias science facility",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for science facility",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias science vessel",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for science vessel",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias irradiate",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for irradiate",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias academy",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for academy",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias stim packs",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for stim packs",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias medic",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for medic",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_FastVessel_TvZ: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: command go defensive",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: command go scout",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for barracks",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for tank siege mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for command center",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for marine",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for refinery",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for factory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for machine shop",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: enough Factories",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for siege tank tank mode",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias armory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for armory",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for starport",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for control tower",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: enough Starports",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias academy",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for academy",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for supply depot",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: SDK alias scv",
+      "passed": true
+    },
+    {
+      "check": "airtanks_Battlecruiser_TvT: prerequisites for scv",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Strategy/Terran/BioTankAssessment.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Construction/BuildingManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Construction/BuildingPlacer.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Combat/Micro/Terran/ExpansionVultureReservation.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Map/MapGrid.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Combat/Micro/Micro.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Intelligence/Learning/OpponentModel.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Production/ProductionManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Utilities/Random.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Intelligence/ScoutManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Combat/Micro/Terran/MicroTanks.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: include Combat/Micro/MicroRanged.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Marine",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Creep_Colony",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Comsat_Station",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UpgradeTypes::Charon_Boosters",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Lurker",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Defiler",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Siege_Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_High_Templar",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK Orders::Burrowing",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Goliath",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Dark_Templar",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK TechTypes::Scanner_Sweep",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Larva",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Wraith",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Drone",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Lurker_Egg",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Photon_Cannon",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_SCV",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Mutalisk",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK Orders::PickupBunker",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Egg",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Probe",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Ghost",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Guardian",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Unknown",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Supply_Depot",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Engineering_Bay",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Interceptor",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Dropship",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Command_Center",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Spore_Colony",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Sunken_Colony",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Siege_Tank_Tank_Mode",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Zealot",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Battlecruiser",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Firebat",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Arbiter",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Zergling",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Archon",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Science_Vessel",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Vulture",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Shuttle",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Missile_Turret",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Corsair",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Reaver",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Ultralisk",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Carrier",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Scout",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Vulture_Spider_Mine",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Devourer",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Control_Tower",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::None",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Medic",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Pylon",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Zerg_Cocoon",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Starport",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Valkyrie",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Protoss_Dragoon",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Special_Power_Generator",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp: SDK UnitTypes::Terran_Bunker",
+      "passed": true
+    },
+    {
+      "check": "Core/Config.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Core/Config.cpp: include Core/Config.h",
+      "passed": true
+    },
+    {
+      "check": "Core/Config.cpp: include Utilities/UABAssert.h",
+      "passed": true
+    },
+    {
+      "check": "Core/Config.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Core/Config.h: include BWAPI.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Production/ProductionManager.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Strategy/BioProductionPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Strategy/Terran/BioTankAssessment.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Construction/BuildingPlacer.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Utilities/Random.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Intelligence/ScoutManager.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Marine",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Comsat_Station",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UpgradeTypes::Terran_Infantry_Weapons",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Siege_Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Goliath",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Wraith",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Armory",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_SCV",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UpgradeTypes::U_238_Shells",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Machine_Shop",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Ghost",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Unknown",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Supply_Depot",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Factory",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK Orders::BuildingLand",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Engineering_Bay",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UpgradeTypes::Terran_Infantry_Armor",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Barracks",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Dropship",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Command_Center",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UpgradeTypes::allUpgradeTypes",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK TechTypes::Irradiate",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Academy",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK TechTypes::allTechTypes",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UpgradeTypes::Ion_Thrusters",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Siege_Tank_Tank_Mode",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Battlecruiser",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Firebat",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Vulture",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Missile_Turret",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Science_Vessel",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Science_Facility",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Refinery",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK TechTypes::Spider_Mines",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK TechTypes::Stim_Packs",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK TechTypes::Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::None",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Medic",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK Orders::LiftingOff",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Starport",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Valkyrie",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp: SDK UnitTypes::Terran_Bunker",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/BioProductionPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/Terran/BioTankAssessment.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/Terran/AirTanks.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/Terran/TvZSparks.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/Terran/TvZPreHive.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/Terran/TvZSK.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Strategy/Terran/TvZBioSupport.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Construction/BunkerPlacementPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Map/MapTools.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Map/Grids/GridZone.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Intelligence/Learning/OpponentModel.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Production/ProductionManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Construction/BuildingManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: include Economy/WorkerManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Comsat_Station",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Greater_Spire",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Templar_Archives",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Goliath",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Dark_Templar",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Photon_Cannon",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Probe",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Factory",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Arbiter_Tribunal",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::Personnel_Cloaking",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Dropship",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Battlecruiser",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Zergling",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::Stim_Packs",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::None",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Valkyrie",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Special_Power_Generator",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Charon_Boosters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Defiler",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Siege_Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Queen",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Terran_Vehicle_Plating",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Guardian",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Hydralisk",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Supply_Depot",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Interceptor",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::Lockdown",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Barracks",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Ion_Thrusters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Siege_Tank_Tank_Mode",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Shuttle",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Missile_Turret",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Refinery",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Stargate",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Dragoon",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Starport",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Bunker",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Marine",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Lurker",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Terran_Infantry_Weapons",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_High_Templar",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Wraith",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Armory",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Mutalisk",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::U_238_Shells",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Covert_Ops",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Physics_Lab",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Ghost",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Unknown",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Moebius_Reactor",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Observer",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK Orders::BuildingLand",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Terran_Infantry_Armor",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Engineering_Bay",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Scourge",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Command_Center",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Spore_Colony",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Zealot",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Firebat",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Arbiter",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Science_Vessel",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Vulture",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Reaver",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Scout",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::Terran_Vehicle_Weapons",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Control_Tower",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Fleet_Beacon",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Medic",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Nexus",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Hive",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Lurker_Egg",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Spire",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Overlord",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_SCV",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Machine_Shop",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Robotics_Support_Bay",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::Irradiate",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Academy",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Sunken_Colony",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::EMP_Shockwave",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Robotics_Facility",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Defiler_Mound",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Archon",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Corsair",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Terran_Science_Facility",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UpgradeTypes::None",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK TechTypes::Spider_Mines",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Ultralisk",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Protoss_Carrier",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp: SDK UnitTypes::Zerg_Devourer",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h: include Core/Common.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h: include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h: include Economy/WorkerManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h: include Production/BuildOrder.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h: include Production/BuildOrderQueue.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Utilities/ParseUtils.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Utilities/JSONTools.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Production/BuildOrder.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Intelligence/Learning/OpponentModel.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Utilities/Random.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Utilities/ParseUtils.cpp: include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: include Map/MapGrid.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::ConstructingBuilding",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Marine",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::PickupTransport",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Comsat_Station",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Siege_Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::FireYamatoGun",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Goliath",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Protoss_Dark_Templar",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Scanner_Sweep",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Wraith",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Move",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::ZergBuildingMorph",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::None",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::PickupBunker",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::CastEMPShockwave",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::ReturnGas",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::BuildAddon",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::AttackUnit",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Stop",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::AttackMove",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::CastIrradiate",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Protoss_Interceptor",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Lockdown",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Train",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Irradiate",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::EMP_Shockwave",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Defensive_Matrix",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Siege_Tank_Tank_Mode",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::MoveUnload",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Unsieging",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Firebat",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Vulture",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Healing",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Protoss_Reaver",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::HoldPosition",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Spider_Mines",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Stim_Packs",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Vulture_Spider_Mine",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Protoss_Carrier",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Resource_Mineral_Field",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::CastLockdown",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::MoveToMinerals",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Unload",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK TechTypes::Yamato_Gun",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Sieging",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Medic",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::MedicHeal",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::PlaceMine",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::LiftingOff",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::CastDefensiveMatrix",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::UnusedNothing",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK UnitTypes::Terran_Bunker",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::MoveToGas",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::ReturnMinerals",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Micro.cpp: SDK Orders::Repair",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Combat/Micro/MicroRanged.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Combat/Micro/Terran/MicroMarines.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Combat/Micro/Terran/BioInfantrySafety.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Combat/Micro/Terran/AirTanksMicro.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: include Economy/WorkerManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Marine",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Comsat_Station",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Zerg_Larva",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Protoss_High_Templar",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Zerg_Defiler",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Siege_Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Wraith",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Ghost",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK Orders::NukeTrack",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Protoss_Observer",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Zerg_Scourge",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Dropship",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Siege_Tank_Tank_Mode",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK Orders::Unsieging",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK Orders::NukePaint",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Protoss_Arbiter",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Protoss_Shuttle",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Science_Vessel",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Zerg_Infested_Terran",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Protoss_Reaver",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Vulture_Spider_Mine",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Protoss_Carrier",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK Orders::Sieging",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp: SDK UnitTypes::Terran_Bunker",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Strategy/Terran/AirTanksPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Strategy/Terran/AirTanksWraith.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Strategy/Terran/AirTanksValkyrie.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Strategy/Terran/AirTanksFastVessel.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Strategy/Terran/AirTanksBattlecruiser.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Construction/BuildingManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Charon_Boosters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Terran_Infantry_Weapons",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UnitTypes::Terran_Siege_Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Colossus_Reactor",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Terran_Ship_Weapons",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Terran_Vehicle_Plating",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::U_238_Shells",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Terran_Ship_Plating",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK TechTypes::Cloaking_Field",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Terran_Infantry_Armor",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UnitTypes::Protoss_Interceptor",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK TechTypes::Irradiate",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Ion_Thrusters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UnitTypes::Terran_Siege_Tank_Tank_Mode",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UnitTypes::Terran_Science_Facility",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK TechTypes::Spider_Mines",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK TechTypes::Stim_Packs",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK TechTypes::Tank_Siege_Mode",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UpgradeTypes::Terran_Vehicle_Weapons",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK TechTypes::Yamato_Gun",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanks.h: SDK UnitTypes::Terran_Bunker",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksBattlecruiser.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksBattlecruiser.h: include Strategy/Terran/AirTanksPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksFastVessel.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksFastVessel.h: include Strategy/Terran/AirTanksPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksPolicy.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksValkyrie.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksValkyrie.h: include Strategy/Terran/AirTanksPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksWraith.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/AirTanksWraith.h: include Strategy/Terran/AirTanksPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK Orders::FireYamatoGun",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK TechTypes::Cloaking_Field",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK TechTypes::Yamato_Gun",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK UnitTypes::Terran_Battlecruiser",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK UnitTypes::Terran_Wraith",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK UnitTypes::Zerg_Scourge",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK UnitTypes::Spell_Scanner_Sweep",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK UnitTypes::Terran_Valkyrie",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/AirTanksMicro.h: SDK UnitTypes::Protoss_Carrier",
+      "passed": true
+    },
+    {
+      "check": "parser disables definitions before registration",
+      "passed": true
+    },
+    {
+      "check": "forced selection precedes map/learning application",
+      "passed": true
+    },
+    {
+      "check": "Crazyhammer honors forced selection",
+      "passed": true
+    },
+    {
+      "check": "BioTank test prevents initial macro UCB substitution",
+      "passed": true
+    },
+    {
+      "check": "AirTanks not an automatic UCB macro candidate",
+      "passed": true
+    },
+    {
+      "check": "AirTanks composition returns before bio/mech goals",
+      "passed": true
+    },
+    {
+      "check": "AirTanks not subject to PureAir plan replacement",
+      "passed": true
+    },
+    {
+      "check": "AirTanks not fed by generic bank filler",
+      "passed": true
+    },
+    {
+      "check": "air micro gated to AirTanks",
+      "passed": true
+    },
+    {
+      "check": "per-game independent latches reset",
+      "passed": true
+    }
+  ]
+}

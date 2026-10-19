@@ -596,7 +596,12 @@ bool MacroAct::isProducer(BWAPI::Unit unit) const
                 continue;
             }
 
-            if (requiredType.isAddon())
+            // Only an add-on built by this producer must be attached to it.
+            // Battlecruisers also require Physics Lab, which is attached to
+            // Science Facility, not to their Starport. Global prerequisites
+            // are checked by BWAPI::canMake() after producer selection.
+            if (requiredType.isAddon() &&
+                requiredType.whatBuilds().first == producerType)
             {
                 if (!unit->getAddon() || unit->getAddon()->getType() != requiredType)
                 {

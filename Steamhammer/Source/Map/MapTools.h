@@ -100,6 +100,13 @@ public:
     bool    isGroundTransitionWalkable(BWAPI::TilePosition from, BWAPI::TilePosition to) const;
     bool    isGroundTransitionRuntimeWalkable(BWAPI::TilePosition from, BWAPI::TilePosition to) const;
 
+    // Validate the complete collision box against terrain AND static neutrals.
+    // None means the minimum 16x16 passage used by the coarse distance grid.
+    bool isGroundPositionWalkable(BWAPI::Position position, BWAPI::UnitType body,
+        bool runtimeBlocks = false) const;
+    BWAPI::Position getGroundTileWaypoint(BWAPI::TilePosition tile,
+        BWAPI::UnitType body = BWAPI::UnitTypes::None, bool runtimeBlocks = false) const;
+
     // Extract one deterministic shortest ground route from the cached distance
     // field. This is used for strategic movement/entrance placement instead of
     // trusting high-level Area boundaries which may be ambiguous on open maps.
@@ -107,7 +114,8 @@ public:
                           std::vector<BWAPI::TilePosition> & path, int maxSteps = 256,
                           bool runtimeBlocks = false);
     BWAPI::Position getGroundPathWaypoint(BWAPI::Position from, BWAPI::Position to,
-                                          int lookAheadTiles = 6, bool runtimeBlocks = false);
+                                          int lookAheadTiles = 6, bool runtimeBlocks = false,
+                                          BWAPI::UnitType body = BWAPI::UnitTypes::None);
 
     // Pass only valid tiles to these routines!
     bool	isTerrainWalkable(BWAPI::TilePosition tile) const { return _terrainWalkable[tile.x][tile.y]; };

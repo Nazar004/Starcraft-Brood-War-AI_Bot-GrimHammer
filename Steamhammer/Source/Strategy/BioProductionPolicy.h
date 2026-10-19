@@ -30,6 +30,15 @@ namespace BioProductionPolicy
         return minerals >= 1200 && gas >= 1200 ? 30 : 25;
     }
 
+    // A small artillery core breaks Lurker lines while infantry remains the
+    // production host. A tech warning prepares two Tanks; observed Lurkers
+    // raise that floor gradually, without imposing a ten-Tank attack gate.
+    inline int lurkerTankTarget(int lurkers, bool techWarning)
+    {
+        if (lurkers <= 0) return techWarning ? 2 : 0;
+        return 2 + (std::min(lurkers, 8) + 1) / 2;
+    }
+
     inline int tankCeiling(int infantrySupply, int tankSupply, int percent)
     {
         return std::max(1, infantrySupply * percent / ((100 - percent) * tankSupply));

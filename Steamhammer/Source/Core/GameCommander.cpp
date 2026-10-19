@@ -18,7 +18,12 @@
 #include "Strategy/StrategyManager.h"
 #include "Economy/WorkerManager.h"
 
+#include <algorithm>
 #include <chrono>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 using namespace UAlbertaBot;
 
@@ -142,6 +147,12 @@ void GameCommander::update()
     the.tasks.update();
     _timerManager.stopTimer(TimerManager::Tasks);
 
+    // Drawing is part of the frame budget and must appear in tournament logs.
+    _timerManager.startTimer(TimerManager::Debug);
+    crashCheckpoint("GameCommander::drawDebugInterface");
+    drawDebugInterface();
+    _timerManager.stopTimer(TimerManager::Debug);
+
     _timerManager.stopTimer(TimerManager::Total);
     if (_timerManager.getLastSpikeFrame() == the.now())
     {
@@ -167,27 +178,142 @@ void GameCommander::update()
             StrategyManager::Instance().slowestUrgentStageMilliseconds();
         _lastSpikeTerranRulePlanMs =
             ProductionManager::Instance().lastTerranRulePlanMilliseconds();
+        _lastSpikeTerranRuleGoalMs =
+            ProductionManager::Instance().lastTerranRuleGoalMilliseconds();
+        _lastSpikeGoalStage = StrategyManager::Instance().slowestGoalStage();
+        _lastSpikeGoalStageMs = StrategyManager::Instance().slowestGoalStageMilliseconds();
         _lastSpikeCombatPreparationMs =
             _combatCommander.lastCombatPreparationMilliseconds();
         _lastSpikeSquadsMs =
             _combatCommander.lastSquadUpdateMilliseconds();
+        const SquadData& squadDiagnostics = _combatCommander.squadDiagnostics();
+        _lastSpikeSquadTotals = squadDiagnostics.lastUpdateProfile();
+        _lastSpikeTankDefensePlanMs = MicroTanks::defensivePlanMilliseconds();
+        _lastSpikeTankGatherPlanMs = MicroTanks::gatherPlanMilliseconds();
+        _lastSpikeTankDefensePlanBuilds = MicroTanks::defensivePlanBuilds();
+        _lastSpikeTankGatherPlanBuilds = MicroTanks::gatherPlanBuilds();
+        _lastSpikeSlowestSquad = squadDiagnostics.slowestSquadProfile();
+        _lastSpikeSlowestSquadMs = squadDiagnostics.slowestSquadMilliseconds();
         _lastSpikeTaskName = the.tasks.slowestTaskName(the.now());
         _lastSpikeTaskMs = the.tasks.slowestTaskMilliseconds(the.now());
+        const WorkerManager& workerDiagnostics = WorkerManager::Instance();
+        _lastSpikeWorkerPhase = workerDiagnostics.slowestUpdatePhase();
+        _lastSpikeWorkerPhaseMs = workerDiagnostics.slowestUpdatePhaseMilliseconds();
+        _lastSpikeWorkerDefenseMs = workerDiagnostics.defenseQueryMilliseconds();
+        _lastSpikeWorkerDefenseQueries = workerDiagnostics.defenseQueryCount();
+        _lastSpikeWorkerDangerMs = workerDiagnostics.dangerCheckMilliseconds();
+        _lastSpikeWorkerDangerChecks = workerDiagnostics.dangerCheckCount();
     }
 
-    crashCheckpoint("GameCommander::drawDebugInterface");
-    drawDebugInterface();
+    recordPerformanceSpike();
+
     crashCheckpoint("GameCommander::update - completed frame");
+}
+
+void GameCommander::recordPerformanceSpike()
+{
+    const double milliseconds = _timerManager.getMilliseconds();
+    if (milliseconds <= 55.0 ||
+        (_performanceSpikes.size() >= 10 &&
+         milliseconds <= _performanceSpikes.back().milliseconds))
+        return;
+
+    const int frame = the.now();
+    const MapTools::PathWork path = the.map.pathWorkAtFrame(frame);
+    const SquadData& squads = _combatCommander.squadDiagnostics();
+    const SquadUpdateProfile& totals = squads.lastUpdateProfile();
+    const SquadUpdateProfile& slowest = squads.slowestSquadProfile();
+    const int hotStage = slowest.slowestStage();
+    const int hotMicro = slowest.slowestMicro();
+    const WorkerManager& workers = WorkerManager::Instance();
+    const ProductionManager& production = ProductionManager::Instance();
+    const StrategyManager& strategy = StrategyManager::Instance();
+    std::ostringstream detail;
+    detail << std::fixed << std::setprecision(1);
+    detail << "parts " << _timerManager.currentBreakdown() << '\n';
+    detail << "combat prep " << _combatCommander.lastCombatPreparationMilliseconds()
+        << " squads " << _combatCommander.lastSquadUpdateMilliseconds()
+        << " maps " << path.distanceFields
+        << " all " << GridDistances::computationsAtFrame(frame)
+        << " wp " << path.waypoints << " A* " << path.astar << '\n';
+    detail << "squad " << slowest.squad << ' ' << squads.slowestSquadMilliseconds()
+        << "ms " << slowest.units << "u/" << slowest.clusters
+        << "c hot " << SquadUpdateProfile::stageName(hotStage)
+        << ' ' << slowest.milliseconds[hotStage] << "ms\n";
+    detail << "squad totals status " << totals.milliseconds[SquadUpdateProfile::Status]
+        << " tanks " << totals.milliseconds[SquadUpdateProfile::Tanks]
+        << " combat " << totals.milliseconds[SquadUpdateProfile::Combat]
+        << " FAP " << totals.milliseconds[SquadUpdateProfile::Simulation]
+        << '/' << totals.simulations << '\n';
+    detail << "tank plans defense " << MicroTanks::defensivePlanMilliseconds()
+        << "ms/" << MicroTanks::defensivePlanBuilds()
+        << " gather " << MicroTanks::gatherPlanMilliseconds()
+        << "ms/" << MicroTanks::gatherPlanBuilds() << '\n';
+    detail << "squad micro " << SquadUpdateProfile::microName(hotMicro)
+        << ' ' << slowest.microMilliseconds[hotMicro] << "ms\n";
+    detail << "field sources dist " << path.tileDistanceFields
+        << " move " << path.waypointFields
+        << " place " << path.placementFields
+        << " evict " << path.evictions << '\n';
+    detail << "assign valid " << _assignValidMs << " scout " << _assignScoutMs
+        << " combat " << _assignCombatMs << '\n';
+    detail << "produce " << production.slowestProductionPhase() << ' '
+        << production.slowestProductionPhaseMilliseconds()
+        << "ms plan " << production.lastTerranRulePlanMilliseconds() << "ms\n";
+    detail << "plan " << strategy.slowestGoalStage() << ' '
+        << strategy.slowestGoalStageMilliseconds()
+        << "ms goals " << production.lastTerranRuleGoalMilliseconds()
+        << "ms urgent " << strategy.slowestUrgentStage() << ' '
+        << strategy.slowestUrgentStageMilliseconds() << "ms\n";
+    detail << "worker " << workers.slowestUpdatePhase() << ' '
+        << workers.slowestUpdatePhaseMilliseconds()
+        << "ms defense " << workers.defenseQueryMilliseconds()
+        << '/' << workers.defenseQueryCount()
+        << " danger " << workers.dangerCheckMilliseconds()
+        << '/' << workers.dangerCheckCount() << '\n';
+    detail << "task " << the.tasks.slowestTaskName(frame)
+        << ' ' << the.tasks.slowestTaskMilliseconds(frame) << "ms\n";
+
+    _performanceSpikes.push_back({ frame, milliseconds, detail.str() });
+    std::sort(_performanceSpikes.begin(), _performanceSpikes.end(),
+        [](const PerformanceSpike& a, const PerformanceSpike& b)
+        { return a.milliseconds > b.milliseconds; });
+    if (_performanceSpikes.size() > 10) _performanceSpikes.pop_back();
+}
+
+void GameCommander::writePerformanceReport(bool isWinner) const
+{
+    std::ofstream report((Config::IO::WriteDir +
+        "GrimHammer_Performance.txt").c_str(), std::ios::app);
+    if (!report) return;
+
+    report << "\n=== game " << std::time(nullptr)
+        << " result=" << (isWinner ? "win" : "loss")
+        << " opponent=" << (the.enemy() ? the.enemy()->getName() : "unknown")
+        << " map=" << BWAPI::Broodwar->mapFileName()
+        << " strategy=" << Config::Strategy::StrategyName << " ===\n";
+    _timerManager.writeGameSummary(report);
+    report << "worst_frames (55ms tournament threshold):\n";
+    for (const PerformanceSpike& spike : _performanceSpikes)
+    {
+        report << "peak f" << spike.frame << ' '
+            << std::fixed << std::setprecision(1) << spike.milliseconds
+            << "ms\n" << spike.details;
+    }
+    report << "=== end game ===\n";
 }
 
 void GameCommander::onEnd(bool isWinner)
 {
+    writePerformanceReport(isWinner);
     OpponentModel::Instance().setWin(isWinner);
     OpponentModel::Instance().write();
 
     // Clean up any data structures that may otherwise not be unwound in the correct order.
     // This fixes an end-of-game bug diagnosed by Bruce Nielsen.
     _combatCommander.onEnd();
+    _timerManager.resetStatistics();
+    _performanceSpikes.clear();
 }
 
 void GameCommander::drawDebugInterface()
@@ -263,6 +389,22 @@ int GameCommander::drawGameInformation(int x, int y)
             gray,
             StrategyManager::Instance().getTerranPlanReason().c_str());
         y += 12;
+
+        if (openingGroup == "tanks" && the.selfRace() == BWAPI::Races::Terran)
+        {
+            const int tankCount =
+                the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
+                the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode);
+            const int goliathCount =
+                the.my.completed.count(BWAPI::UnitTypes::Terran_Goliath);
+            BWAPI::Broodwar->drawTextScreen(
+                x, y, "%cTank push %s T%d/%d G%d/%d",
+                CombatCommander::Instance().getAggression() ? green : orange,
+                CombatCommander::Instance().getAggression() ? "ATTACK" : "WAIT",
+                tankCount, StrategyManager::Instance().tankMassReleaseTankCount(),
+                goliathCount, StrategyManager::Instance().tankMassReleaseGoliathCount());
+            y += 12;
+        }
 
         const std::string & wallStatus =
             the.placer.getTerranMainWallStatus();
@@ -406,6 +548,17 @@ int GameCommander::drawGameInformation(int x, int y)
             _timerManager.getLastSpikeModuleName(),
             _timerManager.getLastSpikeModuleMilliseconds());
         y += 12;
+        BWAPI::Broodwar->drawTextScreen(x, y, "\x08parts %s",
+            _timerManager.getLastSpikeModuleBreakdown().c_str());
+        y += 12;
+        if (_lastSpikeWorkerPhaseMs >= 5.0)
+        {
+            BWAPI::Broodwar->drawTextScreen(x, y, "\x08worker %s %.1fms defense %.1f/%d danger %.1f/%d",
+                _lastSpikeWorkerPhase.c_str(), _lastSpikeWorkerPhaseMs,
+                _lastSpikeWorkerDefenseMs, _lastSpikeWorkerDefenseQueries,
+                _lastSpikeWorkerDangerMs, _lastSpikeWorkerDangerChecks);
+            y += 12;
+        }
         BWAPI::Broodwar->drawTextScreen(x, y,
             "\x08combat prep %.1f squads %.1f maps %d all %d wp %d A* %d",
             _lastSpikeCombatPreparationMs,
@@ -415,6 +568,42 @@ int GameCommander::drawGameInformation(int x, int y)
             _lastSpikeGroundWaypoints,
             _lastSpikeAStarCalls);
         y += 12;
+        if (_lastSpikeSquadsMs >= 5.0 && !_lastSpikeSlowestSquad.squad.empty())
+        {
+            const int hotStage = _lastSpikeSlowestSquad.slowestStage();
+            const int hotMicro = _lastSpikeSlowestSquad.slowestMicro();
+            BWAPI::Broodwar->drawTextScreen(x, y,
+                "\x08squad %s %.1fms %du/%dc hot %s %.1fms",
+                _lastSpikeSlowestSquad.squad.c_str(), _lastSpikeSlowestSquadMs,
+                _lastSpikeSlowestSquad.units, _lastSpikeSlowestSquad.clusters,
+                SquadUpdateProfile::stageName(hotStage),
+                _lastSpikeSlowestSquad.milliseconds[hotStage]);
+            y += 12;
+            BWAPI::Broodwar->drawTextScreen(x, y,
+                "\x08squad totals status %.1f tanks %.1f combat %.1f FAP %.1f/%d",
+                _lastSpikeSquadTotals.milliseconds[SquadUpdateProfile::Status],
+                _lastSpikeSquadTotals.milliseconds[SquadUpdateProfile::Tanks],
+                _lastSpikeSquadTotals.milliseconds[SquadUpdateProfile::Combat],
+                _lastSpikeSquadTotals.milliseconds[SquadUpdateProfile::Simulation],
+                _lastSpikeSquadTotals.simulations);
+            y += 12;
+            if (_lastSpikeSquadTotals.milliseconds[SquadUpdateProfile::Tanks] >= 5.0)
+            {
+                BWAPI::Broodwar->drawTextScreen(x, y,
+                    "\x08tank plans defense %.1fms/%d gather %.1fms/%d",
+                    _lastSpikeTankDefensePlanMs, _lastSpikeTankDefensePlanBuilds,
+                    _lastSpikeTankGatherPlanMs, _lastSpikeTankGatherPlanBuilds);
+                y += 12;
+            }
+            if (_lastSpikeSlowestSquad.microMilliseconds[hotMicro] >= 1.0)
+            {
+                BWAPI::Broodwar->drawTextScreen(x, y,
+                    "\x08squad micro %s %.1fms",
+                    SquadUpdateProfile::microName(hotMicro),
+                    _lastSpikeSlowestSquad.microMilliseconds[hotMicro]);
+                y += 12;
+            }
+        }
         BWAPI::Broodwar->drawTextScreen(x, y,
             "\x08field sources dist %d move %d place %d evict %d",
             _lastSpikeDistanceQueryFields, _lastSpikeWaypointFields,
@@ -430,6 +619,15 @@ int GameCommander::drawGameInformation(int x, int y)
             _lastSpikeProductionPhase.c_str(), _lastSpikeProductionPhaseMs,
             _lastSpikeTerranRulePlanMs);
         y += 12;
+        if (_lastSpikeTerranRulePlanMs >= 5.0)
+        {
+            BWAPI::Broodwar->drawTextScreen(x, y,
+                "\x08plan %s %.1fms goals %.1fms rest %.1fms",
+                _lastSpikeGoalStage.c_str(), _lastSpikeGoalStageMs,
+                _lastSpikeTerranRuleGoalMs,
+                std::max(0.0, _lastSpikeTerranRulePlanMs - _lastSpikeTerranRuleGoalMs));
+            y += 12;
+        }
         if (_lastSpikeProductionPhase == "urgent")
         {
             BWAPI::Broodwar->drawTextScreen(x, y,

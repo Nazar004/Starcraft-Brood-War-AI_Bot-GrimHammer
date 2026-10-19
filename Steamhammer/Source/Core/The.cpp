@@ -69,7 +69,9 @@ void The::initialize()
         BWAPI::Broodwar->enemy()->getRace() == BWAPI::Races::Zerg &&
         (Config::Strategy::StrategyName == "TvZ_BioTank_1RaxFE" ||
          Config::Strategy::StrategyName == "TvZ_BioTank_2RaxAcademy" ||
-         Config::Strategy::StrategyName == "TvZ_BioTank_2RaxTech"))
+         Config::Strategy::StrategyName == "TvZ_BioTank_2RaxTech" ||
+         Config::Strategy::StrategyName == "TvZ_PreHive" ||
+         Config::Strategy::StrategyName == "TvZ_SK"))
     {
         placer.disableTerranMainWallForEarlyExpand();
     }

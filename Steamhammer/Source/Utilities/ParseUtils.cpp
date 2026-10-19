@@ -240,6 +240,12 @@ void ParseUtils::ParseConfigFile(const std::string & filename)
                 const std::string &		 name = itr->name.GetString();
                 const rapidjson::Value & val = itr->value;
 
+                // Disabled drafts must stay out of every selection path,
+                // including random choice, opponent history and direct mixes.
+                bool enabled = true;
+                JSONTools::ReadBool("Enabled", val, enabled);
+                if (!enabled) continue;
+
                 BWAPI::Race strategyRace;
                 if (val.HasMember("Race") && val["Race"].IsString())
                 {
@@ -267,6 +273,9 @@ void ParseUtils::ParseConfigFile(const std::string & filename)
                 {
                     terranPlan = val["TerranPlan"].GetString();
                 }
+
+                std::string airTanksVariant;
+                JSONTools::ReadString("AirTanksVariant", val, airTanksVariant);
 
                 // Optional matchup allow-list prevents learning from reviving
                 // a race-specific opening which was deliberately removed from
@@ -329,9 +338,42 @@ void ParseUtils::ParseConfigFile(const std::string & filename)
                 {
                     StrategyManager::Instance().addStrategy(
                         name,
-                        Strategy(name, strategyRace, openingGroup, terranPlan, buildOrder));
+                        Strategy(name, strategyRace, openingGroup, terranPlan, buildOrder, airTanksVariant));
                     openingNames.push_back(name);
                 }
+            }
+        }
+
+        // A matchup can limit opening selection to a tested family while
+        // retaining opponent learning and the weighted matchup/counter mixes.
+        // Validate names against the already parsed, enabled and race-legal
+        // openings. The final check below also catches stale learned choices.
+        bool restrictedOpeningPool = false;
+        if (strategy.HasMember("AllowedOpenings") &&
+            strategy["AllowedOpenings"].IsObject() &&
+            strategy["AllowedOpenings"].HasMember(matchup) &&
+            strategy["AllowedOpenings"][matchup].IsArray())
+        {
+            std::vector<std::string> allowed;
+            const rapidjson::Value & names = strategy["AllowedOpenings"][matchup];
+            for (size_t i = 0; i < names.Size(); ++i)
+            {
+                if (!names[i].IsString()) continue;
+                const std::string name = names[i].GetString();
+                if (std::find(openingNames.begin(), openingNames.end(), name) != openingNames.end() &&
+                    std::find(allowed.begin(), allowed.end(), name) == allowed.end())
+                {
+                    allowed.push_back(name);
+                }
+            }
+            if (!allowed.empty())
+            {
+                openingNames.swap(allowed);
+                restrictedOpeningPool = true;
+            }
+            else
+            {
+                UAB_ASSERT_WARNING(false, "No available openings in AllowedOpenings for %s", matchup);
             }
         }
 
@@ -342,6 +384,51 @@ void ParseUtils::ParseConfigFile(const std::string & filename)
             Config::IO::WriteOpponentModel = false;
         }
 
+        // Explicit testing wins over learning, map overrides and counter mixes.
+        // Clear on every load so an omitted field cannot survive a new game.
+        Config::Strategy::ForcedStrategy.clear();
+        if (strategy.HasMember("ForcedStrategy") && strategy["ForcedStrategy"].IsObject())
+        {
+            // Only listed matchups are forced. For example TvT keeps mech.
+            JSONTools::ReadString(matchup, strategy["ForcedStrategy"], Config::Strategy::ForcedStrategy);
+        }
+        else JSONTools::ReadString("ForcedStrategy", strategy, Config::Strategy::ForcedStrategy);
+        if (!Config::Strategy::ForcedStrategy.empty())
+        {
+            if (std::find(openingNames.begin(), openingNames.end(),
+                Config::Strategy::ForcedStrategy) != openingNames.end())
+            {
+                Config::Strategy::StrategyName = Config::Strategy::ForcedStrategy;
+                openingStrategyDecided = true;
+            }
+            else
+            {
+                UAB_ASSERT_WARNING(false, "Forced strategy unavailable: %s",
+                    Config::Strategy::ForcedStrategy.c_str());
+                Config::Strategy::ForcedStrategy.clear();
+            }
+        }
+
+        // During a matchup-wide opening trial, sample only the enabled
+        // AllowedOpenings. Keep opponent history enabled for later evaluation,
+        // but do not let an old UCB favourite monopolize a short test series.
+        if (!openingStrategyDecided && restrictedOpeningPool &&
+            strategy.HasMember("RandomizeAllowedOpenings") &&
+            strategy["RandomizeAllowedOpenings"].IsArray())
+        {
+            const rapidjson::Value& trials = strategy["RandomizeAllowedOpenings"];
+            for (size_t i = 0; i < trials.Size(); ++i)
+            {
+                if (trials[i].IsString() && matchupStr == trials[i].GetString())
+                {
+                    Config::Strategy::StrategyName = openingNames.at(
+                        Random::Instance().index(openingNames.size()));
+                    openingStrategyDecided = true;
+                    break;
+                }
+            }
+        }
+
         // Learning can only choose after all currently valid strategies are known.
         // This also prevents old records from selecting a strategy removed from JSON.
         if (!Config::Strategy::Crazyhammer)
@@ -350,7 +437,7 @@ void ParseUtils::ParseConfigFile(const std::string & filename)
         }
 
         // 0. If we are Crazyhammer, choose an opening at random.
-        if (Config::Strategy::Crazyhammer && !openingNames.empty())
+        if (!openingStrategyDecided && Config::Strategy::Crazyhammer && !openingNames.empty())
         {
             Config::Strategy::StrategyName = openingNames.at(Random::Instance().index(openingNames.size()));
             openingStrategyDecided = true;
@@ -491,60 +578,35 @@ void ParseUtils::ParseConfigFile(const std::string & filename)
                 openingNames.end(),
                 Config::Strategy::StrategyName) == openingNames.end())
         {
-            UAB_ASSERT_WARNING(
-                false,
-                "Unknown strategy '%s' for our race; using a safe fallback",
-                Config::Strategy::StrategyName.c_str());
-
-            const auto tanks = std::find(
-                openingNames.begin(),
-                openingNames.end(),
-                std::string("Tanks"));
-
-            Config::Strategy::StrategyName =
-                tanks != openingNames.end()
-                ? *tanks
-                : openingNames.front();
-        }
-
-        // For Zerg records the stored cloak flag means a Lurker was seen.
-        // Against a reliably Lurker-heavy opponent, start with
-        // the existing Tank opening rather than committing to BioTank first.
-        const bool predictedTvZLurkers =
-            the.selfRace() == BWAPI::Races::Terran &&
-            the.enemyRace() == BWAPI::Races::Zerg &&
-            OpponentModel::Instance().stronglyPredictsLurkers() &&
-            std::find(openingNames.begin(), openingNames.end(),
-                std::string("Tanks")) != openingNames.end();
-        if (predictedTvZLurkers)
-        {
-            Config::Strategy::StrategyName = "Tanks";
-        }
-
-        // Keep the ordinary TvZ trial within the BioTank family. Honor a
-        // learned BioTank variant; otherwise draw from the current TvZ mix.
-        if (the.selfRace() == BWAPI::Races::Terran &&
-            the.enemyRace() == BWAPI::Races::Zerg &&
-            !predictedTvZLurkers &&
-            std::find(openingNames.begin(), openingNames.end(),
-                std::string("TvZ_BioTank")) != openingNames.end())
-        {
-            if (Config::Strategy::StrategyName.find("TvZ_BioTank") != 0)
+            if (restrictedOpeningPool)
             {
-                std::string bioOpening;
-                if (strategy.HasMember(matchup) &&
-                    _ParseStrategy(strategy[matchup], bioOpening, mapWeightString, ourRaceStr, strategyCombos) &&
-                    bioOpening.find("TvZ_BioTank") == 0 &&
-                    std::find(openingNames.begin(), openingNames.end(), bioOpening) != openingNames.end())
-                {
-                    Config::Strategy::StrategyName = bioOpening;
-                }
-                else
-                {
-                    Config::Strategy::StrategyName = "TvZ_BioTank";
-                }
+                // Old opponent records and counter mixes may still name a
+                // mech opening. Keep selection inside this matchup's pool.
+                Config::Strategy::StrategyName = openingNames.at(
+                    Random::Instance().index(openingNames.size()));
+            }
+            else
+            {
+                UAB_ASSERT_WARNING(
+                    false,
+                    "Unknown strategy '%s' for our race; using a safe fallback",
+                    Config::Strategy::StrategyName.c_str());
+
+                const auto tanks = std::find(
+                    openingNames.begin(),
+                    openingNames.end(),
+                    std::string("Tanks"));
+
+                Config::Strategy::StrategyName =
+                    tanks != openingNames.end()
+                    ? *tanks
+                    : openingNames.front();
             }
         }
+
+        // Keep the strategy selected by explicit configuration, opponent
+        // learning or the matchup mix. TvZ uses the same selection pipeline
+        // as the other matchups; no trial overrides the chosen opening here.
 
         OpponentModel::Instance().setOpening();
     }

@@ -21,18 +21,70 @@ namespace
     std::map<int, int> g_tankSiegeHoldUntil;
     int g_lastTankTransitionStateFrame = -100000;
 
-    // A yield point is at most four build tiles away. Search only a tiny local
-    // window; the general A* path finder allocates full-map arrays even for a
-    // two-tile query and caused avoidable frame spikes on blocked maps.
-    bool shortTrafficYieldPath(
-        const BWAPI::TilePosition& from,
-        const BWAPI::TilePosition& to)
+    // Terrain tiles may contain a walkable corner that is too small for a
+    // Goliath/Tank. Local recovery must fit the full collision box and must not
+    // cross a grounded building, resource or a thin cliff.
+    bool groundBodyFits(BWAPI::UnitType body, const BWAPI::Position& point,
+        const BWAPI::Unitset& obstacles)
     {
+        const int left = point.x - body.dimensionLeft();
+        const int right = point.x + body.dimensionRight();
+        const int top = point.y - body.dimensionUp();
+        const int bottom = point.y + body.dimensionDown();
+        if (left < 0 || top < 0 || right >= BWAPI::Broodwar->mapWidth() * 32 ||
+            bottom >= BWAPI::Broodwar->mapHeight() * 32) return false;
+        for (int x = left / 8; x <= right / 8; ++x)
+            for (int y = top / 8; y <= bottom / 8; ++y)
+                if (!BWAPI::Broodwar->isWalkable(x, y)) return false;
+        for (BWAPI::Unit obstacle : obstacles)
+        {
+            if (!obstacle || !obstacle->exists() || obstacle->isFlying() ||
+                obstacle->isBurrowed()) continue;
+            const BWAPI::UnitType type = obstacle->getType();
+            if (!type.isBuilding() && !type.isResourceContainer() &&
+                type.canMove()) continue;
+            const BWAPI::Position p = obstacle->getPosition();
+            if (right >= p.x - type.dimensionLeft() &&
+                left <= p.x + type.dimensionRight() &&
+                bottom >= p.y - type.dimensionUp() &&
+                top <= p.y + type.dimensionDown()) return false;
+        }
+        return true;
+    }
+
+    bool groundBodySegmentFits(BWAPI::UnitType body,
+        const BWAPI::Position& from, const BWAPI::Position& to,
+        const BWAPI::Unitset& obstacles)
+    {
+        const int steps = std::max(1, (std::max(std::abs(to.x - from.x),
+            std::abs(to.y - from.y)) + 3) / 4);
+        for (int step = 1; step <= steps; ++step)
+        {
+            const BWAPI::Position p(from.x + (to.x - from.x) * step / steps,
+                from.y + (to.y - from.y) * step / steps);
+            if (!groundBodyFits(body, p, obstacles)) return false;
+        }
+        return true;
+    }
+
+    // Bounded local search, including the actual start/end pixels. Prefetch
+    // static obstacles once, and cache rejected cells as well as visited ones.
+    bool shortTrafficYieldPath(BWAPI::Unit unit, const BWAPI::Position& target)
+    {
+        if (!unit || !unit->exists() || !target.isValid()) return false;
+        const BWAPI::Position origin = unit->getPosition();
+        const BWAPI::TilePosition from(origin), to(target);
         if (!from.isValid() || !to.isValid()) return false;
+        BWAPI::Unitset obstacles = BWAPI::Broodwar->getUnitsInRadius(origin, 12 * 32);
+        obstacles.erase(unit);
+        const BWAPI::UnitType body = unit->getType();
+        if (!groundBodyFits(body, target, obstacles)) return false;
+        if (from == to) return groundBodySegmentFits(body, origin, target, obstacles);
         constexpr int radius = 6;
         constexpr int side = radius * 2 + 1;
         constexpr int cells = side * side;
         bool visited[side][side] = {};
+        unsigned char passable[side][side] = {};
         BWAPI::TilePosition queue[cells];
         int steps[cells] = {};
         int head = 0;
@@ -50,6 +102,8 @@ namespace
             const int depth = steps[head++];
             if (current == to) return true;
             if (depth >= 10) continue;
+            const BWAPI::Position currentPoint = current == from
+                ? origin : TileCenter(current);
             for (const auto& offset : offsets)
             {
                 const BWAPI::TilePosition next(
@@ -57,17 +111,59 @@ namespace
                 const int x = next.x - from.x + radius;
                 const int y = next.y - from.y + radius;
                 if (!next.isValid() || x < 0 || x >= side ||
-                    y < 0 || y >= side || visited[x][y] ||
-                    !the.map.isGroundTransitionRuntimeWalkable(current, next))
-                {
-                    continue;
-                }
+                    y < 0 || y >= side || visited[x][y]) continue;
+                const BWAPI::Position nextPoint = next == to ? target : TileCenter(next);
+                if (!passable[x][y])
+                    passable[x][y] = the.map.isRuntimeWalkable(next) &&
+                        groundBodyFits(body, nextPoint, obstacles) ? 2 : 1;
+                if (passable[x][y] != 2 ||
+                    !the.map.isGroundTransitionRuntimeWalkable(current, next) ||
+                    !groundBodySegmentFits(body, currentPoint, nextPoint, obstacles)) continue;
                 visited[x][y] = true;
                 queue[tail] = next;
                 steps[tail++] = depth + 1;
             }
         }
         return false;
+    }
+
+    BWAPI::Position groundMoveDestination(BWAPI::Unit unit,
+        const BWAPI::Position& requested)
+    {
+        if (unit->isFlying() || !unit->getPosition().isValid() ||
+            the.map.isGroundPositionWalkable(requested, unit->getType()))
+            return requested;
+
+        // Formation/base centers can land inside a neutral gate or a cliff.
+        // Project only an invalid goal, using a small local search. Ordinary
+        // movement and routes around obstacles remain native StarCraft paths.
+        const BWAPI::TilePosition tile(requested);
+        BWAPI::Position best = BWAPI::Positions::Invalid;
+        int bestScore = MAX_DISTANCE;
+        const int partition = the.partitions.id(unit->getPosition());
+        for (int radius = 0; radius <= 3; ++radius)
+        {
+            for (int dx = -radius; dx <= radius; ++dx)
+            {
+                for (int dy = -radius; dy <= radius; ++dy)
+                {
+                    if (std::max(std::abs(dx), std::abs(dy)) != radius) continue;
+                    const BWAPI::Position candidate = the.map.getGroundTileWaypoint(
+                        BWAPI::TilePosition(tile.x + dx, tile.y + dy), unit->getType());
+                    if (!candidate.isValid() ||
+                        (partition > 0 && the.partitions.id(candidate) != partition)) continue;
+                    const int score = 4 * candidate.getApproxDistance(requested) +
+                        candidate.getApproxDistance(unit->getPosition());
+                    if (score < bestScore)
+                    {
+                        best = candidate;
+                        bestScore = score;
+                    }
+                }
+            }
+            if (best.isValid()) return best;
+        }
+        return unit->getPosition();
     }
 
     // BWAPI may report the previous order until command latency has elapsed.
@@ -338,7 +434,7 @@ BWAPI::Position MicroState::findMoveRecoveryPosition(BWAPI::Unit u) const
     // Bunker or other grounded building appeared after the cached route was
     // created.
     const BWAPI::Position route =
-        the.map.getGroundPathWaypoint(current, targetPosition, 3, true);
+        the.map.getGroundPathWaypoint(current, targetPosition, 3, true, u->getType());
     if (route.isValid() && current.getApproxDistance(route) >= 24)
     {
         candidates.push_back(route);
@@ -373,8 +469,7 @@ BWAPI::Position MicroState::findMoveRecoveryPosition(BWAPI::Unit u) const
         }
     }
 
-    BWAPI::Position best = BWAPI::Positions::Invalid;
-    int bestScore = MAX_DISTANCE;
+    std::vector<std::pair<int, BWAPI::Position>> ranked;
     const int currentThreat = the.hits(u, currentTile);
     const int currentPartition = the.partitions.id(currentTile);
 
@@ -468,14 +563,14 @@ BWAPI::Position MicroState::findMoveRecoveryPosition(BWAPI::Unit u) const
             extraThreat * 6 * 32 +
             repeatPenalty;
 
-        if (score < bestScore)
-        {
-            bestScore = score;
-            best = candidate;
-        }
+        ranked.emplace_back(score, candidate);
     }
 
-    return best;
+    std::sort(ranked.begin(), ranked.end(),
+        [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (size_t i = 0; i < std::min<size_t>(4, ranked.size()); ++i)
+        if (shortTrafficYieldPath(u, ranked[i].second)) return ranked[i].second;
+    return BWAPI::Positions::Invalid;
 }
 
 // Monitor the order: Check for and try to correct failure to execute.
@@ -516,7 +611,9 @@ void MicroState::monitor(BWAPI::Unit u)
     // During a recovery nudge, do not immediately interpret the intentionally
     // different last Move target as a missing command. Let the unit get clear,
     // then restore the original destination below.
-    if (recoveryUntilFrame > now)
+    if (recoveryUntilFrame > now &&
+        u->getDistance(recoveryPosition) > 12 &&
+        !u->isUnderAttack() && the.hits(u) <= 0)
     {
         lastCheckFrame = now;
         return;
@@ -556,17 +653,26 @@ void MicroState::monitor(BWAPI::Unit u)
         }
     }
 
+    const bool stalledRetargetedGoliath =
+        u->getType() == BWAPI::UnitTypes::Terran_Goliath &&
+        progressPosition.isValid() &&
+        progressPosition.getApproxDistance(u->getPosition()) < 24 &&
+        now - lastProgressFrame >= 24;
+
     // 1. The command might not have been accepted despite the return value.
     if (u->getOrder() != BWAPI::Orders::Move ||
         u->getLastCommand().getType() != BWAPI::UnitCommandTypes::Move ||
         u->getLastCommand().getTargetPosition() != targetPosition)
     {
-        if (u->move(targetPosition))
+        // A repeatedly changed target must not postpone recovery forever.
+        // The current order is valid; below we check whether the unit itself
+        // has moved before sending yet another command to the blocked goal.
+        if (!stalledRetargetedGoliath && u->move(targetPosition))
         {
             lastCheckFrame = now;
             lastActionFrame = now;
         }
-        return;
+        if (!stalledRetargetedGoliath) return;
     }
 
     // 2/3/4. Stuck, frozen, or blocked by friendly traffic. BWAPI's isStuck()
@@ -613,9 +719,14 @@ void MicroState::monitor(BWAPI::Unit u)
     if (recovery.isValid() && u->move(recovery))
     {
         recoveryPosition = recovery;
-        // Long enough to clear one unit footprint, short enough that combat
-        // code regains control quickly.
-        recoveryUntilFrame = now + std::min(14, 7 + recoveryAttempts * 2);
+        // Let the unit reach the escape point. A fixed 7-14 frame nudge
+        // restored the blocked goal before a Tank/Goliath could clear it.
+        // Arrival, danger or the bounded deadline ends recovery early.
+        const double speed = std::max(0.5, u->getPlayer()->topSpeed(u->getType()));
+        const int travelFrames = int(std::ceil(
+            u->getPosition().getApproxDistance(recovery) / speed));
+        recoveryUntilFrame = now + std::min(72, std::max(24,
+            travelFrames + 2 * BWAPI::Broodwar->getLatencyFrames() + 8));
         ++recoveryAttempts;
         lastCheckFrame = now;
         lastActionFrame = now;
@@ -670,19 +781,20 @@ bool MicroState::positionsNearlyEqual(BWAPI::Unit u, const BWAPI::Position & pos
 // The return value is valid if the targetPosition is valid.
 BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 {
+    const BWAPI::Position destination = groundMoveDestination(u, targetPosition);
     // Base distance fields are rooted at the depot and may pull a returning
     // unit into the Supply Depot side of a Terran wall. Cross at the Barracks
     // opening first; after the unit reaches the far side, follow the base grid.
-    if (!u->isFlying() && targetPosition.isValid())
+    if (!u->isFlying() && destination.isValid())
     {
         const BWAPI::Position gate =
             the.placer.terranMainWallTransitWaypoint(
-                u->getPosition(), targetPosition, u->getID());
+                u->getPosition(), destination, u->getID());
         if (gate.isValid()) return gate;
     }
 	if (!targetBase || !u->getTilePosition().isValid())
 	{
-		return targetPosition;
+		return destination;
 	}
 
 	const Grid * distances;
@@ -701,7 +813,7 @@ BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 	// so just go straight to the target position.
 	if (!distances)
 	{
-		return targetPosition;
+		return destination;
 	}
 
 	const int StepSize = 8;
@@ -713,7 +825,7 @@ BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 		here < StepSize ||
 
 		// We're closer to the target than to the base.
-		32 * here >= u->getDistance(targetPosition) ||
+		32 * here >= u->getDistance(destination) ||
 
 		// We're already at the base. Just go to the target.
 		targetBase->isInBase(u))
@@ -722,7 +834,7 @@ BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 		{
 			return dodge(u);
 		}
-		return targetPosition;
+		return destination;
 	}
 
 	// Use the distances map to find our next waypoint.
@@ -769,7 +881,7 @@ BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 				continue;
 			}
 
-			const int directness = TileCenter(next).getApproxDistance(targetPosition);
+			const int directness = TileCenter(next).getApproxDistance(destination);
 			if (d < bestDistance || (d == bestDistance && directness < bestDirectness))
 			{
 				best = next;
@@ -783,13 +895,13 @@ BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 			if (!u->isFlying())
 			{
 				const BWAPI::Position detour =
-					the.map.getGroundPathWaypoint(u->getPosition(), targetPosition, 6, true);
+					the.map.getGroundPathWaypoint(u->getPosition(), destination, 6, true, u->getType());
 				if (detour.isValid())
 				{
 					return detour;
 				}
 			}
-			return targetPosition;
+			return destination;
 		}
 
 		x = best.x;
@@ -805,7 +917,10 @@ BWAPI::Position MicroState::nextDestination(BWAPI::Unit u) const
 	UAB_ASSERT(BWAPI::TilePosition(x, y).isValid(), "bad tile %d,%d", x, y);
 	UAB_ASSERT(distances->at(BWAPI::TilePosition(x, y)) >= 0, "inaccessible tile %d,%d", x, y);
 
-	return TileCenter(BWAPI::TilePosition(x, y));
+    if (u->isFlying()) return TileCenter(BWAPI::TilePosition(x, y));
+    const BWAPI::Position waypoint = the.map.getGroundTileWaypoint(
+        BWAPI::TilePosition(x, y), u->getType(), true);
+    return waypoint.isValid() ? waypoint : destination;
 }
 
 // TODO Try to dodge intelligently.
@@ -953,15 +1068,37 @@ void MicroState::setOrder(BWAPI::Unit u, BWAPI::Order o, BWAPI::Position p)
     // to reduce unnecessary orders. Don't spam Starcraft!
     if (order != o || !positionsNearlyEqual(u, targetPosition, p))
     {
+        // A Goliath can alternate between a choke waypoint and a moving
+        // cluster/target without moving at all. Retain its no-progress clock
+        // across Move-to-Move changes so each new point cannot hide a stall.
+        const bool keepGoliathProgress =
+            order == BWAPI::Orders::Move && o == BWAPI::Orders::Move &&
+            u->getType() == BWAPI::UnitTypes::Terran_Goliath &&
+            progressPosition.isValid() && u->getPosition().isValid() &&
+            progressPosition.getApproxDistance(u->getPosition()) < 24;
+        const bool stalledRetarget =
+            keepGoliathProgress && the.now() - lastProgressFrame >= 24;
         order = o;
         targetPosition = p;
         targetUnit = nullptr;
 
         orderFrame = the.now();
-        executeFrame = -1;
+        // A new Move normally bypasses monitor(). Once a Goliath has stalled,
+        // keep monitoring instead of sending another conflicting Move.
+        executeFrame = stalledRetarget ? the.now() : -1;
+        if (stalledRetarget) needsMonitoring = true;
 
         startPosition = u->getPosition();
-        resetMoveProgress(u);
+        if (keepGoliathProgress)
+        {
+            // Distance to a different goal is not comparable with the old
+            // one, but elapsed time without actual movement still is.
+            progressDistance = u->getDistance(p);
+        }
+        else
+        {
+            resetMoveProgress(u);
+        }
     }
 }
 
@@ -1188,12 +1325,22 @@ const int dotRadius = 2;
 void Micro::update()
 {
     const int now = the.now();
+    for (auto it = trafficYieldRetryAfter.begin(); it != trafficYieldRetryAfter.end(); )
+    {
+        if (!it->first || !it->first->exists() || now >= it->second)
+            it = trafficYieldRetryAfter.erase(it);
+        else
+            ++it;
+    }
     for (auto it = trafficYields.begin(); it != trafficYields.end(); )
     {
         BWAPI::Unit unit = it->first;
         if (!unit || !unit->exists() || now >= it->second.untilFrame ||
             unit->isUnderAttack() || the.hits(unit) > 0 ||
-            unit->isAttackFrame() || unit->isSieged())
+            unit->isAttackFrame() || unit->isSieged() ||
+            (it->second.landingBuilding &&
+             (!it->second.landingBuilding->exists() ||
+              !it->second.landingBuilding->isLifted())))
         {
             it = trafficYields.erase(it);
         }
@@ -1267,7 +1414,7 @@ bool Micro::alwaysKite(BWAPI::UnitType type) const
 // In any other case, return the ultimate destination.
 BWAPI::Position Micro::nextGroundDestination(BWAPI::Unit unit, const BWAPI::Position & destination, const GridDistances * distances) const
 {
-    if (!distances || !unit->getTilePosition().isValid())
+    if (unit->isFlying() || !distances || !unit->getTilePosition().isValid())
     {
         return destination;
     }
@@ -1335,7 +1482,7 @@ BWAPI::Position Micro::nextGroundDestination(BWAPI::Unit unit, const BWAPI::Posi
             if (!unit->isFlying())
             {
                 const BWAPI::Position detour =
-                    the.map.getGroundPathWaypoint(unit->getPosition(), destination, StepSize, true);
+                    the.map.getGroundPathWaypoint(unit->getPosition(), destination, StepSize, true, unit->getType());
                 if (detour.isValid())
                 {
                     return detour;
@@ -1353,7 +1500,11 @@ BWAPI::Position Micro::nextGroundDestination(BWAPI::Unit unit, const BWAPI::Posi
     UAB_ASSERT(BWAPI::TilePosition(x, y).isValid(), "bad tile %d,%d", x, y);
     UAB_ASSERT(distances->at(BWAPI::TilePosition(x, y)) >= 0, "inaccessible tile %d,%d", x, y);
 
-    return TileCenter(BWAPI::TilePosition(x, y));
+    const BWAPI::Position waypoint = the.map.getGroundTileWaypoint(
+        BWAPI::TilePosition(x, y), unit->getType(), true);
+    // A tank cannot use a waypoint that only fits a Marine. Let StarCraft
+    // route to the actual goal instead of repeatedly ordering into the gate.
+    return waypoint.isValid() ? waypoint : destination;
 }
 
 // -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -1366,6 +1517,9 @@ void Micro::resetForNewGame()
 {
     orders.clear();
     trafficYields.clear();
+    trafficYieldRetryAfter.clear();
+    trafficProbeFrame = -1;
+    trafficProbesThisFrame = 0;
     lastTrafficYieldFrame = -100000;
 
     g_lastComsatScanPosition = BWAPI::Positions::Invalid;
@@ -1388,18 +1542,139 @@ bool Micro::trafficYieldActive(BWAPI::Unit unit) const
         the.hits(unit) <= 0;
 }
 
+bool Micro::landingClearanceActive(BWAPI::Unit unit) const
+{
+    const auto it = trafficYields.find(unit);
+    return it != trafficYields.end() && it->second.landingBuilding &&
+        it->second.landingBuilding->exists() &&
+        it->second.landingBuilding->isLifted() && trafficYieldActive(unit);
+}
+
+void Micro::clearLandingArea(
+    BWAPI::Unit building, const BWAPI::TilePosition& tile, bool allowOutward)
+{
+    if (!building || !building->exists() || !building->isLifted() ||
+        building->getPlayer() != the.self() || !tile.isValid()) return;
+
+    const int left = tile.x * 32;
+    const int top = tile.y * 32;
+    const int right = left + building->getType().tileWidth() * 32 - 1;
+    const int bottom = top + building->getType().tileHeight() * 32 - 1;
+    const BWAPI::Position center((left + right) / 2, (top + bottom) / 2);
+    for (BWAPI::Unit unit : the.self()->getUnits())
+    {
+        if (!unit || !unit->exists() || !unit->isCompleted() ||
+            unit->isFlying() || unit->isLoaded() || unit->isSieged() ||
+            unit->isConstructing() || unit->getType().isBuilding() ||
+            !unit->canMove() || !unit->getPosition().isValid()) continue;
+
+        const BWAPI::UnitType type = unit->getType();
+        const auto overlaps = [&](const BWAPI::Position& point, int margin)
+        {
+            return point.x + type.dimensionRight() >= left - margin &&
+                point.x - type.dimensionLeft() <= right + margin &&
+                point.y + type.dimensionDown() >= top - margin &&
+                point.y - type.dimensionUp() <= bottom + margin;
+        };
+        if (!overlaps(unit->getPosition(), 12)) continue;
+
+        auto existing = trafficYields.find(unit);
+        if (landingClearanceActive(unit) &&
+            existing->second.landingBuilding == building)
+        {
+            // Never alternate destinations while a worker is leaving.
+            existing->second.untilFrame = the.now() + 3 * 24;
+            continue;
+        }
+        if (unit->isUnderAttack() || unit->isAttackFrame() ||
+            the.hits(unit) > 0) continue;
+
+        struct Candidate { BWAPI::Position position; int score; };
+        std::vector<Candidate> candidates;
+        const BWAPI::Position origin = unit->getPosition();
+        // When the gate is safe, clear an outgoing unit toward its goal.
+        // Pulling every stalled Tank back inside recreated the crossing jam.
+        // Enemy pressure still forces the protected side for all units.
+        const auto state = orders.find(unit);
+        const BWAPI::Position goal = state != orders.end()
+            ? state->second.getTargetPosition() : BWAPI::Positions::Invalid;
+        const bool preferOutside = allowOutward && goal.isValid() &&
+            !the.placer.isInsideTerranMainWall(goal);
+        for (int dx = -6; dx <= 6; ++dx)
+        {
+            for (int dy = -6; dy <= 6; ++dy)
+            {
+                const BWAPI::Position point = center + BWAPI::Position(dx * 32, dy * 32);
+                const BWAPI::TilePosition candidateTile(point);
+                if (!point.isValid() || !candidateTile.isValid() ||
+                    overlaps(point, 32) || !the.map.isRuntimeWalkable(candidateTile) ||
+                    !the.partitions.connected(origin, point) ||
+                    the.groundHits(candidateTile) > 0) continue;
+
+                bool occupied = false;
+                for (BWAPI::Unit other : BWAPI::Broodwar->getUnitsInRadius(point, 40))
+                {
+                    if (other && other != unit && other->exists() &&
+                        !other->isFlying())
+                    {
+                        occupied = true;
+                        break;
+                    }
+                }
+                if (!occupied)
+                {
+                    for (const auto& lease : trafficYields)
+                    {
+                        if (lease.first != unit && lease.second.untilFrame > the.now() &&
+                            lease.second.position.getApproxDistance(point) < 48)
+                        {
+                            occupied = true;
+                            break;
+                        }
+                    }
+                }
+                if (occupied) continue;
+                const bool inside = the.placer.isInsideTerranMainWall(point);
+                const int score = origin.getApproxDistance(point) +
+                    (inside != preferOutside ? 0 : 8 * 32);
+                candidates.push_back({ point, score });
+            }
+        }
+        std::sort(candidates.begin(), candidates.end(),
+            [](const Candidate& a, const Candidate& b) { return a.score < b.score; });
+        for (size_t i = 0; i < std::min<size_t>(12, candidates.size()); ++i)
+        {
+            const Candidate& candidate = candidates[i];
+            if (!shortTrafficYieldPath(unit, candidate.position)) continue;
+            trafficYields[unit] = { candidate.position, the.now() + 3 * 24, building };
+            // Bypass gate waypoints: this move's purpose is to leave that gate.
+            orders[unit].setOrder(unit, BWAPI::Orders::Move, candidate.position);
+            break;
+        }
+    }
+}
+
 bool Micro::yieldBlockingUnit(
     BWAPI::Unit mover, const BWAPI::Position& destination)
 {
     const int now = the.now();
     if (!mover || !mover->exists() || mover->isFlying() ||
         !mover->getPosition().isValid() || !destination.isValid() ||
-        now - lastTrafficYieldFrame < 8 || trafficYields.size() >= 3 ||
+        now - lastTrafficYieldFrame < 8 || trafficYields.size() >= 6 ||
         mover->isUnderAttack() || the.hits(mover) > 0)
     {
         return false;
     }
-    lastTrafficYieldFrame = now;
+    const auto retry = trafficYieldRetryAfter.find(mover);
+    if (retry != trafficYieldRetryAfter.end() && now < retry->second) return false;
+    if (trafficProbeFrame != now)
+    {
+        trafficProbeFrame = now;
+        trafficProbesThisFrame = 0;
+    }
+    if (trafficProbesThisFrame >= 2) return false;
+    ++trafficProbesThisFrame;
+    trafficYieldRetryAfter[mover] = now + 24;
 
     const BWAPI::Position start = mover->getPosition();
     const BWAPI::TilePosition startTile(start);
@@ -1439,8 +1714,18 @@ bool Micro::yieldBlockingUnit(
             }
         }
     }
+    bool buildingCorridor = false;
+    for (BWAPI::Unit nearby : mover->getUnitsInRadius(5 * 32))
+    {
+        if (nearby && nearby->exists() && !nearby->isFlying() &&
+            nearby->getType().isBuilding())
+        {
+            buildingCorridor = true;
+            break;
+        }
+    }
     if (the.tileRoom.at(startTile) > 16 && !choke &&
-        !movingTank && !tankBlockingInfantry)
+        !buildingCorridor && !movingTank && !tankBlockingInfantry)
         return false;
 
     double dx = double(destination.x - start.x);
@@ -1452,6 +1737,7 @@ bool Micro::yieldBlockingUnit(
 
     // Restrict the search to stopped friendly bodies directly in front of the
     // waiting unit. A defending Siege Tank or a unit fighting an enemy stays.
+    // Terrain room alone cannot identify corridors formed by our buildings.
     for (BWAPI::Unit blocker : mover->getUnitsInRadius(4 * 32))
     {
         if (!blocker || !blocker->exists() || blocker == mover ||
@@ -1491,7 +1777,7 @@ bool Micro::yieldBlockingUnit(
             tankBlockingInfantry &&
             blocker->getType() == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode;
         if ((room <= 0 || room > 14) && !nearChoke &&
-            !tankBehindVulture && !tankInInfantryLane) continue;
+            !buildingCorridor && !tankBehindVulture && !tankInInfantryLane) continue;
 
         const double forward =
             (here.x - start.x) * dx + (here.y - start.y) * dy;
@@ -1535,8 +1821,9 @@ bool Micro::yieldBlockingUnit(
                     ? point.getApproxDistance(choke->center()) -
                       here.getApproxDistance(choke->center())
                     : 0;
-                if (pointRoom < room + 2 &&
-                    (pointLateral < 2 * 32 || chokeGain < 32))
+                const bool clearsLane = pointLateral >= 2 * 32;
+                const bool clearsChoke = nearChoke && chokeGain >= 32;
+                if (pointRoom < room + 2 && !clearsLane && !clearsChoke)
                 {
                     continue;
                 }
@@ -1551,6 +1838,16 @@ bool Micro::yieldBlockingUnit(
                         occupied = true;
                         break;
                     }
+                }
+                if (!occupied)
+                {
+                    for (const auto& lease : trafficYields)
+                        if (lease.second.untilFrame > now &&
+                            lease.second.position.getApproxDistance(point) < 48)
+                        {
+                            occupied = true;
+                            break;
+                        }
                 }
                 if (occupied) continue;
 
@@ -1569,13 +1866,15 @@ bool Micro::yieldBlockingUnit(
         for (size_t i = 0; i < std::min<size_t>(4, candidates.size()); ++i)
         {
             const BWAPI::Position point = candidates[i].position;
-            if (!shortTrafficYieldPath(hereTile, BWAPI::TilePosition(point)))
+            if (!shortTrafficYieldPath(blocker, point))
             {
                 continue;
             }
 
-            Move(blocker, point);
-            trafficYields[blocker] = { point, now + 48 };
+            // Avoid gate routing for a move whose purpose is to leave a lane.
+            orders[blocker].setOrder(blocker, BWAPI::Orders::Move, point);
+            trafficYields[blocker] = { point, now + 72 };
+            lastTrafficYieldFrame = now;
             if (Config::Debug::DrawUnitTargets)
             {
                 BWAPI::Broodwar->drawLineMap(
@@ -2023,11 +2322,12 @@ void Micro::AttackMove(BWAPI::Unit attacker, const BWAPI::Position & targetPosit
         return;
     }
 
+    const BWAPI::Position goal = groundMoveDestination(attacker, targetPosition);
     const BWAPI::Position gate = !attacker->isFlying()
         ? the.placer.terranMainWallTransitWaypoint(
-            attacker->getPosition(), targetPosition, attacker->getID())
+            attacker->getPosition(), goal, attacker->getID())
         : BWAPI::Positions::Invalid;
-    const BWAPI::Position destination = gate.isValid() ? gate : targetPosition;
+    const BWAPI::Position destination = gate.isValid() ? gate : goal;
     BWAPI::UnitCommand currentCommand(attacker->getLastCommand());
     if (currentCommand.getType() == BWAPI::UnitCommandTypes::Attack_Move &&
         currentCommand.getTargetPosition() == destination)
@@ -2068,18 +2368,19 @@ void Micro::Move(BWAPI::Unit unit, const BWAPI::Position & targetPosition, const
         return;
     }
     
+    const BWAPI::Position goal = groundMoveDestination(unit, targetPosition);
     const BWAPI::Position gate = !unit->isFlying()
         ? the.placer.terranMainWallTransitWaypoint(
-            unit->getPosition(), targetPosition, unit->getID())
+            unit->getPosition(), goal, unit->getID())
         : BWAPI::Positions::Invalid;
     BWAPI::Position destination = gate.isValid()
         ? gate
-        : nextGroundDestination(unit, targetPosition, distances);
+        : nextGroundDestination(unit, goal, distances);
 
     orders[unit].setOrder(unit, BWAPI::Orders::Move, destination);
-    if (gate.isValid() && gate != targetPosition)
+    if (gate.isValid() && gate != goal)
     {
-        orders[unit].setFinalMovePosition(targetPosition);
+        orders[unit].setFinalMovePosition(goal);
     }
 
     TotalCommands++;
@@ -2185,6 +2486,8 @@ bool Micro::MoveSafely(BWAPI::Unit unit, const BWAPI::Position & targetPosition,
 
 void Micro::RightClick(BWAPI::Unit unit, BWAPI::Unit target)
 {
+    if (landingClearanceActive(unit)) return;
+
     if (!unit || !unit->exists() || unit->getPlayer() != the.self() ||
         !target || !target->exists())
     {
@@ -2244,6 +2547,8 @@ void Micro::RightClick(BWAPI::Unit unit, BWAPI::Unit target)
 // To mine out blocking minerals with zero resources, or to mineral walk, use RightClick() instead.
 void Micro::MineMinerals(BWAPI::Unit unit, BWAPI::Unit mineralPatch)
 {
+    if (landingClearanceActive(unit)) return;
+
     if (!unit || !unit->exists() || unit->getPlayer() != the.self() ||
         !mineralPatch || !mineralPatch->exists() || !mineralPatch->getType().isMineralField())
     {
@@ -2344,6 +2649,8 @@ bool Micro::LaySpiderMine(BWAPI::Unit unit, const BWAPI::Position& pos)
 
 void Micro::Repair(BWAPI::Unit unit, BWAPI::Unit target)
 {
+    if (landingClearanceActive(unit)) return;
+
     if (!unit || !unit->exists() || unit->getPlayer() != the.self() ||
         !target || !target->exists())
     {
@@ -2385,6 +2692,8 @@ void Micro::Repair(BWAPI::Unit unit, BWAPI::Unit target)
 // One call handles the entire movement, but it can be updated every frame  without harm.
 bool Micro::MoveToBase(BWAPI::Unit unit, Base * targetBase, const BWAPI::Position & targetPosition, bool safe)
 {
+    if (landingClearanceActive(unit)) return false;
+
     if (tankTransitionPending(unit) || (unit && unit->exists() && unit->isSieged()))
     {
         return false;
@@ -2433,6 +2742,8 @@ bool Micro::MoveToBase(BWAPI::Unit unit, Base * targetBase, const BWAPI::Positio
 
 void Micro::ReturnCargo(BWAPI::Unit worker)
 {
+    if (landingClearanceActive(worker)) return;
+
     if (!worker || !worker->exists() || worker->getPlayer() != the.self() ||
         !worker->getType().isWorker())
     {
@@ -2492,6 +2803,8 @@ void Micro::ReturnCargo(BWAPI::Unit worker)
 // Order construction of a building.
 bool Micro::Build(BWAPI::Unit builder, BWAPI::UnitType building, const BWAPI::TilePosition & location)
 {
+    if (landingClearanceActive(builder)) return false;
+
     if (!builder || !builder->exists() || !builder->getType().isWorker() ||
         !builder->getPosition().isValid() || builder->isBurrowed() ||
         builder->getPlayer() != the.self() ||
@@ -2883,14 +3196,45 @@ bool Micro::UseTech(BWAPI::Unit unit, BWAPI::TechType tech, BWAPI::Unit target)
     {
         o = BWAPI::Orders::MedicHeal;
     }
+    else if (tech == BWAPI::TechTypes::Defensive_Matrix)
+    {
+        o = BWAPI::Orders::CastDefensiveMatrix;
+    }
+    else if (tech == BWAPI::TechTypes::Irradiate)
+    {
+        o = BWAPI::Orders::CastIrradiate;
+    }
+    else if (tech == BWAPI::TechTypes::Yamato_Gun)
+    {
+        o = BWAPI::Orders::FireYamatoGun;
+    }
     else
     {
         o = BWAPI::Orders::UnusedNothing;
         UAB_ASSERT(false, "unsupported tech");
     }
-    orders[unit].setOrder(unit, o);
+    if (!unit->useTech(tech, target))
+    {
+        return false;
+    }
+    orders[unit].setOrder(unit, o, target);
+    return true;
+}
 
-    return unit->useTech(tech, target);
+bool Micro::UseTech(BWAPI::Unit unit, BWAPI::TechType tech, BWAPI::Position target)
+{
+    if (!unit || !unit->exists() || unit->getPlayer() != the.self() ||
+        !unit->getPosition().isValid() || !target.isValid() ||
+        tech != BWAPI::TechTypes::EMP_Shockwave)
+    {
+        return false;
+    }
+    if (!unit->useTech(tech, target))
+    {
+        return false;
+    }
+    orders[unit].setOrder(unit, BWAPI::Orders::CastEMPShockwave, target);
+    return true;
 }
 
 

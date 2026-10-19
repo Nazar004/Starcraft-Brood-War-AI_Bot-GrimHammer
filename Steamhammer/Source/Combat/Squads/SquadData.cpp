@@ -76,9 +76,26 @@ Squad & SquadData::createSquad(const std::string & name, size_t priority)
 
 void SquadData::updateAllSquads()
 {
+    _lastUpdateProfile = SquadUpdateProfile();
+    _slowestSquadProfile = SquadUpdateProfile();
+    _slowestSquadMilliseconds = 0.0;
     for (auto & kv : _squads)
     {
+        const auto started = std::chrono::steady_clock::now();
         kv.second.update();
+        const double elapsed = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - started).count();
+        const SquadUpdateProfile& profile = kv.second.lastUpdateProfile();
+        for (size_t i = 0; i < profile.milliseconds.size(); ++i)
+            _lastUpdateProfile.milliseconds[i] += profile.milliseconds[i];
+        for (size_t i = 0; i < profile.microMilliseconds.size(); ++i)
+            _lastUpdateProfile.microMilliseconds[i] += profile.microMilliseconds[i];
+        _lastUpdateProfile.simulations += profile.simulations;
+        if (elapsed > _slowestSquadMilliseconds)
+        {
+            _slowestSquadMilliseconds = elapsed;
+            _slowestSquadProfile = profile;
+        }
     }
 }
 

@@ -244,6 +244,9 @@ void CombatSimulation::setCombatUnits
 {
     fap.clearState();
 
+    // Select enemies for this cluster before searching for the battle center.
+    _whichEnemies = analyzeForEnemies(myUnits);
+
     // Center the circle of interest on the nearest enemy unit, not on one of our own units.
     // That reduces indecision: Enemy actions, not our own, induce us to move.
     BWAPI::Position center = getClosestEnemyCombatUnit(ourCenter, radius);
@@ -258,7 +261,6 @@ void CombatSimulation::setCombatUnits
     PlayerSnapshot snap;
     std::map<BWAPI::UnitType, int> & enemyCounts = snap.unitCounts;
 
-    _whichEnemies = analyzeForEnemies(myUnits);
     _allFriendliesFlying = allFlying(myUnits);
 
     // If all enemies are cloaked and undetected, and can hit us,

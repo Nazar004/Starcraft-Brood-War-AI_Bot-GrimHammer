@@ -185,7 +185,8 @@ void MicroTransports::maybeUnloadTroops()
     const int transportHP = _transportShip->getHitPoints() + _transportShip->getShields();
     
     const int unloadRadius =
-        order && order->getStatus() == "Tank vulture drop"
+        order && (order->getStatus() == "Tank vulture drop" ||
+                  order->getStatus() == "Opportunistic drop")
         ? 3 * 32 : 300;
     if ((transportHP < 50 ||
          (_target.isValid() && _transportShip->getDistance(_target) < unloadRadius)) &&
@@ -218,7 +219,9 @@ bool MicroTransports::shouldUnloadAtDestination() const
     const std::string& status = order->getStatus();
     return
         status == "Go drop!" ||
+        status == "Go partial drop!" ||
         status == "Tank vulture drop" ||
+        status == "Opportunistic drop" ||
         status == "Island cleanup" ||
         status == "Emergency unload";
 }

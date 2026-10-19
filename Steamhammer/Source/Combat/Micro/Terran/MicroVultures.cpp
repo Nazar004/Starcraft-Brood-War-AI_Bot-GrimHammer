@@ -8,6 +8,9 @@
 #include "Utilities/UnitUtil.h"
 #include "Economy/WorkerManager.h"
 #include "Strategy/StrategyManager.h"
+#include "Strategy/Terran/AirTanksPolicy.h"
+#include "Strategy/Terran/AirTanksFormation.h"
+#include "Combat/CombatCommander.h"
 
 #include <algorithm>
 #include <cmath>
@@ -36,7 +39,13 @@ static BWAPI::Position clampToMap(const BWAPI::Position& p)
 
 static bool isWorkerHarassOrder(const SquadOrder* order)
 {
-    return order && order->getRaid();
+    return order && (order->getRaid() ||
+        order->getKey() == "airtanks-vulture-focus");
+}
+
+static bool isDroppedCombatRaid(const SquadOrder* order)
+{
+    return order && order->getKey() == "opportunistic-drop-raid";
 }
 
 // Only a deployed Tank needs a stationary Vulture vision screen. Anchoring
@@ -45,6 +54,15 @@ static BWAPI::Position frontTankAnchor(
     const UnitCluster& cluster, const BWAPI::Position& objective)
 {
     if (!objective.isValid()) return BWAPI::Positions::Invalid;
+
+    if (StrategyManager::Instance().airTanksPlanActive() &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith)
+    {
+        BWAPI::Unit lead = AirTanksFormation::frontTank(
+            CombatCommander::Instance().groundSquadUnits());
+        if (lead) return lead->getPosition();
+    }
 
     BWAPI::Unit frontTank = nullptr;
     int bestDistance = MAX_DISTANCE;
@@ -90,6 +108,140 @@ static BWAPI::Position frontTankAnchor(
         }
     }
     return frontTank ? frontTank->getPosition() : BWAPI::Positions::Invalid;
+}
+
+static bool isGroundArmyEscortVulture(BWAPI::Unit vulture,
+    const SquadOrder* squadOrder)
+{
+    if (!vulture || !squadOrder ||
+        (squadOrder->getType() != SquadOrderTypes::Attack &&
+         squadOrder->getType() != SquadOrderTypes::OmniAttack &&
+         squadOrder->getType() != SquadOrderTypes::Defend) ||
+        isWorkerHarassOrder(squadOrder) || isDroppedCombatRaid(squadOrder) ||
+        squadOrder->getKey() == "air target" ||
+        TerranFormation::isBaseDefenseOrder(*squadOrder) ||
+        StrategyManager::Instance().getTerranArmyPosture() ==
+            TerranArmyPosture::PureAir)
+    {
+        return false;
+    }
+
+    const Squad* owner = CombatCommander::Instance().squadDiagnostics().
+        getUnitSquad(vulture);
+    return owner && owner->getName() == "Ground";
+}
+
+static bool isGroundArmyCore(BWAPI::Unit unit)
+{
+    return unit && unit->exists() && unit->isCompleted() &&
+        !unit->isLoaded() && !unit->isFlying() &&
+        unit->getPosition().isValid() &&
+        unit->getType() != BWAPI::UnitTypes::Terran_Vulture &&
+        !unit->getType().isWorker() && !unit->getType().isBuilding() &&
+        UnitUtil::CanAttackGround(unit);
+}
+
+// A Vulture screens the main ground force even when that force has no deployed
+// Tank (bio, mobile mech, or the first moving Tank). Use the nearest coherent
+// group, not a lone reinforcement at the Factory or the distant attack goal.
+static BWAPI::Position frontGroundArmyAnchor(
+    const UnitCluster& cluster, const BWAPI::Position& objective)
+{
+    if (!cluster.center.isValid() || !objective.isValid())
+        return BWAPI::Positions::Invalid;
+
+    const bool tankWraith = StrategyManager::Instance().airTanksPlanActive() &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith;
+    bool localDeployedTank = false;
+    for (BWAPI::Unit unit : cluster.units)
+        if (unit && unit->exists() && unit->isCompleted() &&
+            unit->getType() == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode)
+        { localDeployedTank = true; break; }
+    if (tankWraith || localDeployedTank)
+    {
+        const BWAPI::Position tank = frontTankAnchor(cluster, objective);
+        if (tank.isValid()) return tank;
+    }
+
+    BWAPI::Position routeReference = cluster.center;
+    for (BWAPI::Unit unit : cluster.units)
+        if (unit && unit->exists() && unit->getPosition().isValid() &&
+            unit->getType() == BWAPI::UnitTypes::Terran_Vulture)
+        { routeReference = unit->getPosition(); break; }
+
+    const BWAPI::Unitset& ground =
+        CombatCommander::Instance().groundSquadUnits();
+    BWAPI::Unit seed = nullptr;
+    int nearest = MAX_DISTANCE;
+    for (BWAPI::Unit unit : cluster.units)
+    {
+        if (!isGroundArmyCore(unit) || !ground.count(unit)) continue;
+        const int distance = unit->getDistance(cluster.center);
+        if (distance < nearest ||
+            (distance == nearest && seed && unit->getID() < seed->getID()))
+        {
+            seed = unit;
+            nearest = distance;
+        }
+    }
+    if (!seed)
+    {
+        // A Vulture-only cluster may contain a new reinforcement. Follow the
+        // forward army group instead of latching onto a lone unit at home.
+        std::vector<BWAPI::Unit> core;
+        for (BWAPI::Unit unit : ground)
+            if (isGroundArmyCore(unit) &&
+                the.partitions.connected(routeReference, unit->getPosition()))
+                core.push_back(unit);
+
+        int bestTier = -1;
+        int bestProgress = MAX_DISTANCE;
+        for (BWAPI::Unit unit : core)
+        {
+            bool grouped = false;
+            for (BWAPI::Unit other : core)
+                if (other != unit && unit->getDistance(other) <= 8 * 32)
+                { grouped = true; break; }
+            const int tier = grouped ? 1 : 0;
+            const int progress = unit->getDistance(objective);
+            const int distance = unit->getDistance(cluster.center);
+            if (tier > bestTier ||
+                (tier == bestTier && (progress < bestProgress ||
+                 (progress == bestProgress && distance < nearest))))
+            {
+                seed = unit;
+                bestTier = tier;
+                bestProgress = progress;
+                nearest = distance;
+            }
+        }
+    }
+    if (!seed) return BWAPI::Positions::Invalid;
+
+    long long x = 0, y = 0;
+    int count = 0;
+    for (BWAPI::Unit unit : ground)
+    {
+        if (!isGroundArmyCore(unit) || unit->getDistance(seed) > 8 * 32 ||
+            !the.partitions.connected(seed->getPosition(), unit->getPosition()))
+            continue;
+        x += unit->getPosition().x;
+        y += unit->getPosition().y;
+        ++count;
+    }
+    if (count <= 1) return seed->getPosition();
+
+    // A group center is steadier than switching to whichever Marine or
+    // Goliath happens to be one pixel ahead on this frame.
+    const BWAPI::Position center(int(x / count), int(y / count));
+    const double dx = double(objective.x - center.x);
+    const double dy = double(objective.y - center.y);
+    const double length = std::sqrt(dx * dx + dy * dy);
+    if (length < 32.0) return center;
+    return BWAPI::Position(
+        int(center.x + dx * 32 / length),
+        int(center.y + dy * 32 / length));
 }
 
 namespace
@@ -647,7 +799,8 @@ bool MicroVultures::tryLayStrategicMine(BWAPI::Unit vulture)
     if (!vulture || !vulture->exists() || !vulture->isCompleted() ||
         vulture->isLoaded() || !vulture->getPosition().isValid() ||
         vulture->getType() != BWAPI::UnitTypes::Terran_Vulture ||
-        !order || !order->isCombatOrder() || order->getRaid() ||
+        !order || !order->isCombatOrder() || isWorkerHarassOrder(order) ||
+        isDroppedCombatRaid(order) ||
         WorkerManager::Instance().isMobileRepairTarget(vulture) ||
         !vulture->getPlayer()->hasResearched(BWAPI::TechTypes::Spider_Mines) ||
         vulture->getSpiderMineCount() <= 0 ||
@@ -673,6 +826,15 @@ bool MicroVultures::tryLayStrategicMine(BWAPI::Unit vulture)
         return false;
     }
     _nextStrategicMineCheckFrame[id] = now + 24 + id % 12;
+
+    if (isGroundArmyEscortVulture(vulture, order))
+        for (BWAPI::Unit friendly :
+            CombatCommander::Instance().groundSquadUnits())
+            if (friendly && friendly->exists() && friendly->isUnderAttack() &&
+                !friendly->getType().isWorker() &&
+                !friendly->getType().isBuilding() &&
+                friendly->getDistance(vulture) <= 10 * 32)
+                return false;
 
     // Strategic placement never wins over a nearby fight. An unused final
     // charge is worth more in a safe approach net than in the Vulture's hold.
@@ -812,7 +974,8 @@ BWAPI::Unit MicroVultures::getBestWorkerHarassTarget(BWAPI::Unit rangedUnit) con
         BWAPI::Filter::IsEnemy &&
         !BWAPI::Filter::IsFlyer))
     {
-        if (!enemy || !enemy->exists() || !enemy->getPosition().isValid())
+        if (!enemy || !enemy->exists() || !enemy->isVisible() ||
+            !enemy->isDetected() || !enemy->getPosition().isValid())
         {
             continue;
         }
@@ -823,6 +986,8 @@ BWAPI::Unit MicroVultures::getBestWorkerHarassTarget(BWAPI::Unit rangedUnit) con
         }
 
         int dist = rangedUnit->getDistance(enemy->getPosition());
+        if (dist > 9 * 32)
+            continue;
         if (dist < bestDist)
         {
             bestDist = dist;
@@ -836,6 +1001,7 @@ BWAPI::Unit MicroVultures::getBestWorkerHarassTarget(BWAPI::Unit rangedUnit) con
 void MicroVultures::cleanVultureState()
 {
     const int now = BWAPI::Broodwar->getFrameCount();
+    if (_lastStateFrame == now) return;
     if (_lastStateFrame > now)
     {
         _lastRetreatMineFrame.clear();
@@ -987,10 +1153,22 @@ bool MicroVultures::monitorVultureMineOrder(
 void MicroVultures::executeStrategicMines(const UnitCluster& cluster)
 {
     if (the.self()->getRace() != BWAPI::Races::Terran ||
-        !order || !order->isCombatOrder() || order->getRaid())
+        !order || !order->isCombatOrder() || isWorkerHarassOrder(order) ||
+        isDroppedCombatRaid(order))
     {
         return;
     }
+
+    bool hasVulture = false;
+    for (BWAPI::Unit unit : cluster.units)
+    {
+        if (unit && unit->getType() == BWAPI::UnitTypes::Terran_Vulture)
+        {
+            hasVulture = true;
+            break;
+        }
+    }
+    if (!hasVulture) return;
 
     cleanVultureState();
     const BWAPI::Unitset units = Intersection(getUnits(), cluster.units);
@@ -1135,12 +1313,14 @@ void MicroVultures::moveCluster(const UnitCluster & cluster,
         TerranFormation::isBaseDefenseOrder(*order) &&
         order->getBase() &&
         destination == order->getPosition();
-    const BWAPI::Position tankScreenAnchor =
-        !airOrder && !baseDefense &&
+    const bool escort = std::any_of(vultures.begin(), vultures.end(),
+        [this](BWAPI::Unit unit)
+        { return isGroundArmyEscortVulture(unit, order); });
+    const BWAPI::Position groundEscortAnchor =
+        escort && !airOrder && !baseDefense &&
         posture != TerranArmyPosture::PureAir &&
-        !isWorkerHarassOrder(order) &&
         destination == order->getPosition()
-        ? frontTankAnchor(cluster, destination)
+        ? frontGroundArmyAnchor(cluster, destination)
         : BWAPI::Positions::Invalid;
 
     BWAPI::Position goliathCenter = BWAPI::Positions::Invalid;
@@ -1228,20 +1408,20 @@ void MicroVultures::moveCluster(const UnitCluster & cluster,
                 int(defensiveVultures.size()), order->getBase(), destination);
             useFormationSlot = true;
         }
-        else if (tankScreenAnchor.isValid())
+        else if (groundEscortAnchor.isValid())
         {
             const auto it = std::lower_bound(vultures.begin(), vultures.end(),
                 vulture, [](BWAPI::Unit a, BWAPI::Unit b)
                 { return a->getID() < b->getID(); });
             slot = TerranFormation::vultureLineDestination(
                 vulture, int(std::distance(vultures.begin(), it)),
-                int(vultures.size()), tankScreenAnchor, destination,
+                int(vultures.size()), groundEscortAnchor, destination,
                 3 * 32, vulture->getPosition());
             useFormationSlot = true;
         }
         if (useFormationSlot && slot.isValid())
             TerranFormation::moveVultureToFormationSlot(
-                vulture, slot, tankScreenAnchor.isValid() ? 40 : 16);
+                vulture, slot, groundEscortAnchor.isValid() ? 40 : 16);
         else if (lazy)
             the.micro.MoveNear(vulture, destination, routeDistances);
         else
@@ -1281,8 +1461,7 @@ void MicroVultures::assignTargets(
         return
             u && u->exists() && u->isVisible() && u->isDetected() &&
             u->getPosition().isValid() &&
-            u->getType() != BWAPI::UnitTypes::Zerg_Larva &&
-            u->getType() != BWAPI::UnitTypes::Zerg_Egg;
+            u->getType() != BWAPI::UnitTypes::Zerg_Larva;
     });
 
     const std::vector<BWAPI::Unit> tankCoveredBuildings =
@@ -1396,12 +1575,66 @@ void MicroVultures::assignTargets(
             formationVultures.push_back(unit);
     std::sort(formationVultures.begin(), formationVultures.end(),
         [](BWAPI::Unit a, BWAPI::Unit b) { return a->getID() < b->getID(); });
-    const BWAPI::Position tankScreenAnchor =
-        !pureAirMode && order->getPosition().isValid() &&
-        !isWorkerHarassOrder(order) &&
-        !TerranFormation::isBaseDefenseOrder(*order)
-        ? frontTankAnchor(cluster, order->getPosition())
+    const bool escort = std::any_of(formationVultures.begin(),
+        formationVultures.end(), [this](BWAPI::Unit unit)
+        { return isGroundArmyEscortVulture(unit, order); });
+    const BWAPI::Position groundEscortAnchor =
+        escort && order->getPosition().isValid()
+        ? frontGroundArmyAnchor(cluster, order->getPosition())
         : BWAPI::Positions::Invalid;
+
+    // One threat scan per cluster, shared by every escort Vulture. A worker or
+    // building remains an opportunity only until a mobile enemy threatens the
+    // actual ground force nearby.
+    BWAPI::Unitset armyThreats;
+    std::vector<BWAPI::Unit> enemySiegeTanks;
+    BWAPI::Unitset siegeCoveredTargets;
+    if (groundEscortAnchor.isValid())
+    {
+        std::vector<BWAPI::Unit> nearbyCore;
+        for (BWAPI::Unit friendly :
+            CombatCommander::Instance().groundSquadUnits())
+            if (friendly && friendly->exists() && friendly->isCompleted() &&
+                !friendly->isFlying() && !friendly->isLoaded() &&
+                !friendly->getType().isWorker() &&
+                !friendly->getType().isBuilding() &&
+                friendly->getType() != BWAPI::UnitTypes::Terran_Vulture &&
+                friendly->getDistance(groundEscortAnchor) <= 6 * 32)
+                nearbyCore.push_back(friendly);
+
+        for (BWAPI::Unit enemy : vultureTargets)
+        {
+            if (!enemy || enemy->isFlying() ||
+                enemy->getDistance(groundEscortAnchor) > 10 * 32)
+                continue;
+            if (enemy->getType() ==
+                BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode)
+                enemySiegeTanks.push_back(enemy);
+            if (enemy->getType().isBuilding() ||
+                !UnitUtil::CanAttackGround(enemy))
+                continue;
+
+            BWAPI::Unit victim = enemy->getOrderTarget();
+            if (!victim) victim = enemy->getTarget();
+            for (BWAPI::Unit friendly : nearbyCore)
+            {
+                if (victim == friendly ||
+                    (friendly->isUnderAttack() &&
+                     enemy->getDistance(friendly) <=
+                         UnitUtil::GetAttackRange(enemy, friendly) + 64))
+                {
+                    armyThreats.insert(enemy);
+                    break;
+                }
+            }
+        }
+
+        for (BWAPI::Unit enemy : vultureTargets)
+            if (enemy && !enemy->isFlying())
+                for (BWAPI::Unit siege : enemySiegeTanks)
+                    if (siege->getDistance(enemy) <= 7 * 32)
+                    { siegeCoveredTargets.insert(enemy); break; }
+    }
 
     for (BWAPI::Unit rangedUnit : rangedUnits)
     {
@@ -1482,6 +1715,8 @@ void MicroVultures::assignTargets(
                 rangedUnit->getType() == BWAPI::UnitTypes::Terran_Vulture
                 ? &vultureTargets : &rangedUnitTargets;
             BWAPI::Unitset localPureAirGroundThreats;
+            BWAPI::Unitset localEscortTargets;
+            BWAPI::Unitset localEscortThreats;
 
             if (rangedUnit->getType() == BWAPI::UnitTypes::Terran_Vulture)
             {
@@ -1564,23 +1799,52 @@ void MicroVultures::assignTargets(
 
                     targetPool = &localPureAirGroundThreats;
                 }
+                else if (groundEscortAnchor.isValid() &&
+                    isGroundArmyEscortVulture(rangedUnit, order))
+                {
+                    const int fromArmy =
+                        rangedUnit->getDistance(groundEscortAnchor);
+                    for (BWAPI::Unit enemy : vultureTargets)
+                    {
+                        if (!enemy || enemy->isFlying() ||
+                            enemy->getDistance(rangedUnit) > 11 * 32 ||
+                            (enemy->getDistance(groundEscortAnchor) > 9 * 32 &&
+                             !((fromArmy <= 10 * 32 ||
+                                rangedUnit->isUnderAttack()) &&
+                               enemy->getDistance(rangedUnit) <= 3 * 32)) ||
+                            (fromArmy > 12 * 32 &&
+                             !rangedUnit->isUnderAttack()) ||
+                            (fromArmy > 12 * 32 &&
+                             enemy->getType().isBuilding()) ||
+                            (!rangedUnit->isInWeaponRange(enemy) &&
+                             !the.partitions.connected(
+                                 rangedUnit->getPosition(),
+                                 enemy->getPosition())))
+                            continue;
 
-                // Vultures keep combat, flanking, harass and mine decisions even
-                // while their idle formation is ahead of the Tank line.
+                        // Don't start a sortie into fixed defenses or an enemy
+                        // siege line. A Vulture already in weapon range can
+                        // still fire while it kites back toward the army.
+                        if (the.groundHitsFixed.inRange(enemy) &&
+                            (enemy->getType().isBuilding() ||
+                             !rangedUnit->isInWeaponRange(enemy)))
+                            continue;
+                        if (!rangedUnit->isInWeaponRange(enemy))
+                        {
+                            if (siegeCoveredTargets.count(enemy)) continue;
+                        }
+
+                        localEscortTargets.insert(enemy);
+                        if (armyThreats.count(enemy))
+                            localEscortThreats.insert(enemy);
+                    }
+                    targetPool = &localEscortTargets;
+                }
+
+                // Dedicated raids keep their own combat and mine decisions;
+                // the ground-army escort above never takes ownership of them.
                 if (order && isWorkerHarassOrder(order))
                 {
-                    const std::string& orderKey = order->getKey();
-                    BWAPI::Position orderPos = order->getPosition();
-
-                    if (orderKey == "vulture-harass-approach")
-                    {
-                        if (orderPos.isValid())
-                        {
-                            the.micro.Move(rangedUnit, orderPos);
-                            continue;
-                        }
-                    }
-
                     // Workers do not trigger Spider Mines. Keep harass on
                     // direct fire; tactical mines are for pursuing ground troops.
                     bool laidCoverMine = false;
@@ -1589,6 +1853,38 @@ void MicroVultures::assignTargets(
                             if (tryLaySpiderMineOnRetreat(rangedUnit, pursuer))
                             { laidCoverMine = true; break; }
                     if (laidCoverMine) continue;
+                    BWAPI::Unit immediateThreat = nullptr;
+                    int threatDistance = MAX_DISTANCE;
+                    for (BWAPI::Unit enemy : vultureTargets)
+                    {
+                        if (!enemy || !enemy->exists() ||
+                            !UnitUtil::CanAttack(enemy, rangedUnit) ||
+                            !UnitUtil::CanAttack(rangedUnit, enemy))
+                            continue;
+                        BWAPI::Unit victim = enemy->getOrderTarget();
+                        if (!victim) victim = enemy->getTarget();
+                        const bool attackingUs = victim && victim->exists() &&
+                            victim->getPlayer() == the.self();
+                        const int distance = rangedUnit->getDistance(enemy);
+                        if (distance > UnitUtil::GetAttackRange(
+                                enemy, rangedUnit) + 64 ||
+                            (!attackingUs && !enemy->isAttacking() &&
+                             !rangedUnit->isUnderAttack()))
+                            continue;
+                        if (distance < threatDistance)
+                        {
+                            immediateThreat = enemy;
+                            threatDistance = distance;
+                        }
+                    }
+                    if (immediateThreat)
+                    {
+                        if (Config::Micro::KiteWithRangedUnits)
+                            the.micro.KiteTarget(rangedUnit, immediateThreat);
+                        else
+                            the.micro.CatchAndAttackUnit(rangedUnit, immediateThreat);
+                        continue;
+                    }
                     BWAPI::Unit workerTarget = getBestWorkerHarassTarget(rangedUnit);
                     if (workerTarget)
                     {
@@ -1620,16 +1916,17 @@ void MicroVultures::assignTargets(
                         continue;
                     }
 
-                    if (orderPos.isValid())
-                    {
-                        the.micro.Move(rangedUnit, orderPos);
-                        continue;
-                    }
+                    // With no nearby worker, use ordinary local combat and
+                    // pathing below. A forced Move to the mineral line used
+                    // to overwrite a fight with its defenders every frame.
                 }
 
             }
 
-            BWAPI::Unit target = getTarget(rangedUnit, *targetPool, underThreat);
+            BWAPI::Unit target = localEscortThreats.empty()
+                ? nullptr : getTarget(rangedUnit, localEscortThreats, true);
+            if (!target)
+                target = getTarget(rangedUnit, *targetPool, underThreat);
             if (coveredBuilding && target &&
                 !rangedUnit->isInWeaponRange(target) &&
                 !target->isFlying() &&
@@ -1739,7 +2036,8 @@ void MicroVultures::assignTargets(
                 }
 
                 if (rangedUnit->getType() == BWAPI::UnitTypes::Terran_Vulture &&
-                    tankScreenAnchor.isValid())
+                    groundEscortAnchor.isValid() &&
+                    isGroundArmyEscortVulture(rangedUnit, order))
                 {
                     const auto it = std::lower_bound(
                         formationVultures.begin(), formationVultures.end(),
@@ -1749,7 +2047,7 @@ void MicroVultures::assignTargets(
                         TerranFormation::vultureLineDestination(
                             rangedUnit,
                             int(std::distance(formationVultures.begin(), it)),
-                            int(formationVultures.size()), tankScreenAnchor,
+                            int(formationVultures.size()), groundEscortAnchor,
                             order->getPosition(), 3 * 32,
                             rangedUnit->getPosition());
                     TerranFormation::moveVultureToFormationSlot(
@@ -1933,13 +2231,15 @@ BWAPI::Unit MicroVultures::getTarget(BWAPI::Unit rangedUnit, const BWAPI::Unitse
         }
     }
 
-    return bestScore > 0 ? bestTarget : nullptr;
+    return bestScore > 0 ? preferThreatToStructure(rangedUnit, bestTarget, targets) : nullptr;
 }
 
 int MicroVultures::getAttackPriority(BWAPI::Unit rangedUnit, BWAPI::Unit target) 
 {
     const BWAPI::UnitType rangedType = rangedUnit->getType();
     const BWAPI::UnitType targetType = target->getType();
+
+    if (isNeutralEgg(target)) return getBackstopAttackPriority(target);
 
     if (rangedType == BWAPI::UnitTypes::Zerg_Guardian && target->isFlying())
     {

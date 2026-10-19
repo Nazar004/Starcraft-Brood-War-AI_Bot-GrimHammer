@@ -9,7 +9,15 @@ class MicroManager;
 class MicroMedics : public MicroManager
 {
     BioInfantryFront _infantryFront;
-    std::map<int, std::pair<int, int>> _healAssignments;
+    struct HealAssignment
+    {
+        int patientId;
+        int frame;
+        bool approaching;
+    };
+    std::map<int, HealAssignment> _healAssignments;
+    bool safeHealApproach(BWAPI::Unit medic, BWAPI::Unit patient,
+        BWAPI::Position& waypoint) const;
     std::map<int, std::pair<int, int>> _claimedPatients;
     int _lastFrame = -1;
 

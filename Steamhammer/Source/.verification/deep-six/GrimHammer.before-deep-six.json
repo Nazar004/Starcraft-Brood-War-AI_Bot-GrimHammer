@@ -1,0 +1,381 @@
+{
+  "Bot Info": {
+    "BotName": "GrimHammer",
+    "Authors": "Nazar Biriukov / Steamhammer",
+    "PrintInfoOnStart": true
+  },
+  "BWAPI": {
+    "SetLocalSpeed": 1,
+    "SetFrameSkip": 0,
+    "UserInput": false,
+    "CompleteMapInformation": false
+  },
+  "Micro": {
+    "KiteWithRangedUnits": true,
+    "WorkersDefendRush": true,
+    "RetreatMeleeUnitShields": 6,
+    "RetreatMeleeUnitHP": { "Zerg": 8, "Protoss": 18 },
+    "CombatSimRadius": 256,
+    "ScoutDefenseRadius": { "Terran": 500 }
+  },
+  "Macro": {
+    "BOSSFrameLimit": 160,
+    "ProductionJamFrameLimit": 360,
+    "WorkersPerRefinery": 3,
+    "WorkersPerPatch": { "Zerg": 1.6, "Protoss": 2.0, "Terran": 2.0 },
+    "AbsoluteMaxWorkers": 70,
+    "BuildingSpacing": 1,
+    "PylonSpacing": 3
+  },
+  "Debug": {
+    "DrawGameInfo": true,
+    "DrawUnitHealthBars": false,
+    "DrawProductionInfo": true,
+    "DrawBuildOrderSearchInfo": false,
+    "DrawQueueFixInfo": false,
+    "DrawScoutInfo": false,
+    "DrawEnemyUnitInfo": false,
+    "DrawUnitCounts": false,
+    "DrawHiddenEnemies": false,
+    "DrawModuleTimers": false,
+    "DrawCombatSimInfo": false,
+    "DrawUnitTargets": false,
+    "DrawUnitOrders": false,
+    "DrawMicroState": false,
+    "DrawLurkerTactics": false,
+    "DrawMapInfo": false,
+    "DrawTankPositions": false,
+    "DrawMapGrid": false,
+    "DrawMapDistances": false,
+    "DrawTerrainHeights": false,
+    "DrawBaseInfo": false,
+    "DrawExpoScores": false,
+    "DrawStrategyBossInfo": false,
+    "DrawSquadInfo": false,
+    "DrawClusters": false,
+    "DrawDefenseClusters": false,
+    "DrawWorkerInfo": false,
+    "DrawBuildingInfo": false,
+    "DrawStaticDefensePlan": false,
+    "DrawReservedBuildingTiles": false,
+    "DrawResourceAmounts": false,
+    "DrawTasks": false
+  },
+  "Tools": { "MapGridSize": 320 },
+  "IO": {
+    "ErrorLogFilename": "bwapi-data/write/Steamhammer_ErrorLog.txt",
+    "LogAssertToErrorFile": true,
+    "EnableCrashLog": true,
+    "CrashLogFilename": "bwapi-data/write/GrimHammer_CrashLog.txt",
+    "StaticDirectory": "bwapi-data/AI/",
+    "PreparedDataDirectory": "bwapi-data/AI/om/",
+    "ReadDirectory": "bwapi-data/read/",
+    "WriteDirectory": "bwapi-data/write/",
+    "OpeningTimingFile": "timings.txt",
+    "MaxGameRecords": 200,
+    "ReadOpponentModel": true,
+    "WriteOpponentModel": true
+  },
+  "Skills": {
+    "SCHNAILMeansHuman": true,
+    "HumanOpponent": false,
+    "SurrenderWhenHopeIsLost": true,
+    "ScoutHarassEnemy": false,
+    "GasSteal": true,
+    "Burrow": true,
+    "UseSunkenRangeBug": true,
+    "StaticDefense": true,
+    "MaxQueens": 8,
+    "MaxInfestedTerrans": 1,
+    "MaxDefilers": 2
+  },
+  "Strategy": {
+    "Crazyhammer": false,
+    "UsePlanRecognizer": true,
+    "AdaptStrategyToEnemyPlan": true,
+    "UseEnemySpecificStrategy": false,
+    "EnemySpecificStrategy": {},
+    "StrategyCombos": {
+      "TvT_AntiInfantry": {
+        "Terran": [
+          { "Weight": 4, "Strategy": "Vultures" },
+          { "Weight": 1, "Strategy": "Tanks" }
+        ]
+      },
+      "TvP_RushDefense": {
+        "Terran": [
+          { "Weight": 4, "Strategy": "TvP_ZealotSafe" },
+          { "Weight": 1, "Strategy": "Tanks" }
+        ]
+      },
+      "TvP_DragoonDefense": {
+        "Terran": [
+          { "Weight": 4, "Strategy": "TvP_DragoonSiege" },
+          { "Weight": 1, "Strategy": "Tanks" }
+        ]
+      },
+      "TvP_GreedPunish": {
+        "Terran": [
+          { "Weight": 3, "Strategy": "TwoFactoryPressure" },
+          { "Weight": 1, "Strategy": "SiegeExpand" }
+        ]
+      },
+      "TvZ_RushDefense": {
+        "Terran": [
+          { "Weight": 4, "Strategy": "TvZ_BioTank_2RaxAcademy" },
+          { "Weight": 1, "Strategy": "TvZ_BioTank" }
+        ]
+      },
+      "TvZ_GroundDefense": {
+        "Terran": [
+          { "Weight": 4, "Strategy": "TvZ_BioTank_2RaxTech" },
+          { "Weight": 1, "Strategy": "TvZ_BioTank" }
+        ]
+      },
+      "TvZ_GreedPunish": {
+        "Terran": [
+          { "Weight": 3, "Strategy": "TvZ_BioTank_1RaxFE" },
+          { "Weight": 1, "Strategy": "TvZ_BioTank_2RaxAcademy" }
+        ]
+      },
+      "SafeMech": {
+        "Terran": [
+          { "Weight": 3, "Strategy": "Tanks" },
+          { "Weight": 1, "Strategy": "SiegeExpand" }
+        ]
+      },
+      "EconomicMech": {
+        "Terran": [
+          { "Weight": 3, "Strategy": "SiegeExpand" },
+          { "Weight": 1, "Strategy": "Tanks" }
+        ]
+      }
+    },
+    "CounterStrategies": {
+      "Counter Contain": "SafeMech",
+      "Counter Contain vP": "TvP_DragoonDefense",
+      "Counter Contain vZ": "TvZ_GroundDefense",
+      "Counter Proxy": "TvT_AntiInfantry",
+      "Counter Proxy vP": "TvP_RushDefense",
+      "Counter Proxy vZ": "TvZ_RushDefense",
+      "Counter Worker rush": "TvT_AntiInfantry",
+      "Counter Worker rush vP": "TvP_RushDefense",
+      "Counter Worker rush vZ": "TvZ_RushDefense",
+      "Counter Fast rush": "TvT_AntiInfantry",
+      "Counter Fast rush vP": "TvP_RushDefense",
+      "Counter Fast rush vZ": "TvZ_RushDefense",
+      "Counter Heavy rush": "TvT_AntiInfantry",
+      "Counter Heavy rush vP": "TvP_RushDefense",
+      "Counter Heavy rush vZ": "TvZ_RushDefense",
+      "Counter Factory vT": "SafeMech",
+      "Counter Wraith vT": "SafeMech",
+      "Counter Safe expand": "EconomicMech",
+      "Counter Safe expand vP": "TvP_GreedPunish",
+      "Counter Safe expand vZ": "TvZ_GreedPunish",
+      "Counter Naked expand": "EconomicMech",
+      "Counter Naked expand vP": "TvP_GreedPunish",
+      "Counter Naked expand vZ": "TvZ_GreedPunish",
+      "Counter Turtle": "EconomicMech",
+      "Counter Turtle vP": "TvP_GreedPunish",
+      "Counter Turtle vZ": "TvZ_GreedPunish"
+    },
+    "TvT": {
+      "Terran": [
+        { "Weight": 5, "Strategy": "Tanks" },
+        { "Weight": 3, "Strategy": "Vultures" },
+        { "Weight": 1, "Strategy": "SiegeExpand" },
+        { "Weight": 1, "Strategy": "TwoFactoryPressure" }
+      ]
+    },
+    "TvP": {
+      "Terran": [
+        { "Weight": 3, "Strategy": "Tanks" },
+        { "Weight": 2, "Strategy": "TvP_ZealotSafe" },
+        { "Weight": 3, "Strategy": "TvP_DragoonSiege" },
+        { "Weight": 1, "Strategy": "SiegeExpand" },
+        { "Weight": 1, "Strategy": "TwoFactoryPressure" },
+        { "Weight": 2, "Strategy": "TvZ_VulturePressure" }
+      ]
+    },
+    "TvZ": {
+      "Terran": [
+        { "Weight": 4, "Strategy": "TvZ_BioTank" },
+        { "Weight": 2, "Strategy": "TvZ_BioTank_1RaxFE" },
+        { "Weight": 2, "Strategy": "TvZ_BioTank_2RaxAcademy" },
+        { "Weight": 2, "Strategy": "TvZ_BioTank_2RaxTech" }
+      ]
+    },
+    "TvU": {
+      "Terran": [
+        { "Weight": 4, "Strategy": "Tanks" },
+        { "Weight": 3, "Strategy": "LingMutaSafe" },
+        { "Weight": 1, "Strategy": "Vultures" },
+        { "Weight": 1, "Strategy": "SiegeExpand" },
+        { "Weight": 1, "Strategy": "TwoFactoryPressure" }
+      ]
+    },
+    "Terran": "Tanks",
+    "Strategies": {
+      "TvZ_BioTank": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ" ],
+        "OpeningGroup": "bio",
+        "TerranPlan": "BioTank",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV", "barracks",
+          "refinery", "2 x marine", "SCV", "barracks", "supply depot", "2 x marine",
+          "academy", "factory", "2 x SCV", "2 x marine", "medic", "stim packs",
+          "supply depot", "2 x marine", "machine shop", "medic", "siege tank tank mode",
+          "tank siege mode", "go aggressive", "command center", "2 x SCV"
+        ]
+      },
+      "TvZ_BioTank_1RaxFE": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ" ],
+        "OpeningGroup": "bio",
+        "TerranPlan": "BioTank",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV", "barracks",
+          "2 x marine", "command center", "2 x SCV", "refinery", "barracks",
+          "supply depot", "2 x marine", "academy", "factory", "medic", "stim packs",
+          "machine shop", "siege tank tank mode", "tank siege mode", "go aggressive",
+          "2 x SCV"
+        ]
+      },
+      "TvZ_BioTank_2RaxAcademy": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ" ],
+        "OpeningGroup": "bio",
+        "TerranPlan": "BioTank",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV", "barracks",
+          "2 x marine", "barracks", "supply depot", "refinery", "academy", "4 x marine",
+          "medic", "factory", "stim packs", "command center", "2 x SCV", "machine shop",
+          "siege tank tank mode", "tank siege mode", "go aggressive"
+        ]
+      },
+      "TvZ_BioTank_2RaxTech": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ" ],
+        "OpeningGroup": "bio",
+        "TerranPlan": "BioTank",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV", "barracks",
+          "2 x marine", "command center", "refinery", "barracks", "supply depot",
+          "academy", "2 x marine", "factory", "medic", "stim packs", "engineering bay",
+          "machine shop", "siege tank tank mode", "tank siege mode", "go aggressive",
+          "2 x SCV"
+        ]
+      },
+      "Tanks": {
+        "Race": "Terran",
+        "OpeningGroup": "tanks",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "marine", "2 x SCV", "factory",
+          "marine", "2 x SCV", "machine shop", "factory", "supply depot",
+          "marine", "SCV", "tank siege mode", "siege tank tank mode", "command center",
+          "2 x SCV"
+        ]
+      },
+      "Vultures": {
+        "Race": "Terran",
+        "Matchups": [ "TvT", "TvU" ],
+        "OpeningGroup": "tanks",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "2 x marine", "2 x SCV", "factory",
+          "SCV", "supply depot", "vulture", "factory", "2 x marine",
+          "3 x vulture", "2 x machine shop", "supply depot", "2 x vulture", "spider mines",
+          "ion thrusters", "go aggressive", "command center", "2 x SCV"
+        ]
+      },
+      "LingMutaSafe": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ", "TvU" ],
+        "OpeningGroup": "tanks",
+        "TerranPlan": "TvZ_AntiMuta",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "2 x marine", "bunker @ front", "2 x SCV",
+          "factory", "supply depot", "2 x marine", "2 x vulture", "factory",
+          "2 x SCV", "supply depot", "2 x vulture", "armory", "engineering bay",
+          "command center", "2 x SCV"
+        ]
+      },
+      "SiegeExpand": {
+        "Race": "Terran",
+        "OpeningGroup": "tanks",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "marine", "2 x SCV", "factory","factory",
+          "2 x marine", "machine shop", "SCV", "supply depot", "siege tank tank mode",
+          "tank siege mode", "marine", "bunker @ front", "command center", "2 x SCV"
+        ]
+      },
+      "TwoFactoryPressure": {
+        "Race": "Terran",
+        "OpeningGroup": "tanks",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "SCV",
+          "barracks", "refinery", "marine", "2 x SCV", "factory",
+          "2 x marine", "machine shop", "factory", "supply depot", "marine",
+          "2 x SCV", "siege tank tank mode", "vulture", "siege tank tank mode", "tank siege mode",
+          "go aggressive", "command center", "2 x SCV"
+        ]
+      },
+      "TvP_ZealotSafe": {
+        "Race": "Terran",
+        "Matchups": [ "TvP" ],
+        "OpeningGroup": "tanks",
+        "TerranPlan": "TvP_AntiZealot",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "2 x marine", "bunker @ front", "SCV",
+          "factory", "supply depot", "2 x marine", "vulture", "SCV",
+          "factory", "2 x vulture", "machine shop", "supply depot", "2 x vulture",
+          "spider mines", "command center", "2 x SCV"
+        ]
+      },
+      "TvP_DragoonSiege": {
+        "Race": "Terran",
+        "Matchups": [ "TvP" ],
+        "OpeningGroup": "tanks",
+        "TerranPlan": "TvP_AntiDragoon",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "marine", "bunker @ front", "2 x SCV",
+          "factory", "2 x marine", "machine shop", "supply depot", "marine",
+          "siege tank tank mode", "factory", "tank siege mode", "siege tank tank mode", "machine shop",
+          "2 x siege tank tank mode", "command center", "2 x SCV"
+        ]
+      },
+      "TvZ_VulturePressure": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ" ],
+        "OpeningGroup": "tanks",
+        "TerranPlan": "TvZ_VulturePressure",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "2 x marine", "bunker @ front", "2 x SCV",
+          "factory", "supply depot", "2 x marine", "vulture", "factory",
+          "supply depot", "4 x vulture", "machine shop", "spider mines", "ion thrusters",
+          "armory", "engineering bay", "go aggressive", "command center", "2 x SCV"
+        ]
+      },
+      "TvZ_HydraSiege": {
+        "Race": "Terran",
+        "Matchups": [ "TvZ" ],
+        "OpeningGroup": "tanks",
+        "TerranPlan": "TvZ_AntiHydra",
+        "OpeningBuildOrder": [
+          "go defensive", "5 x SCV", "supply depot", "go scout", "2 x SCV",
+          "barracks", "refinery", "2 x marine", "bunker @ front", "2 x SCV",
+          "factory", "2 x marine", "machine shop", "supply depot", "siege tank tank mode",
+          "factory", "tank siege mode", "machine shop", "3 x siege tank tank mode", "command center",
+          "2 x SCV"
+        ]
+      }
+    }
+  }
+}

@@ -1,6 +1,11 @@
 #include <queue>
 
 #include "Combat/CombatCommander.h"
+#include "Strategy/Terran/BioTankAssessment.h"
+#include "Strategy/Terran/AirTanksPolicy.h"
+#include "Strategy/Terran/AirTanksFormation.h"
+#include "Strategy/Terran/AirTanksWraithEscort.h"
+#include "Strategy/Terran/AirTanks.h"
 
 #include "Map/Bases.h"
 #include "Construction/BuildingManager.h"
@@ -77,6 +82,8 @@ CombatCommander::CombatCommander()
     , _lastUndetectedEnemyFrame(-100000)
     , _expansionDetectionPosition(BWAPI::Positions::Invalid)
     , _expansionDetectionFrame(-100000)
+    , _expansionLandingTile(BWAPI::TilePositions::Invalid)
+    , _expansionLandingRequestFrame(-100000)
     , _lastComsatQueueFrame(-100000)
     , _lastAutomaticComsatFrame(-100000)
     , _lastComsatTarget(BWAPI::Positions::Invalid)
@@ -89,6 +96,10 @@ CombatCommander::CombatCommander()
     , _drop2EverAssigned(false)
     , _genericDropFillStartFrame(-1)
     , _genericDropLastCargoUsed(0)
+    , _opportunisticDropPhase(0)
+    , _opportunisticDropLoadFrame(-1)
+    , _opportunisticDropLaunchFrame(-1)
+    , _opportunisticDropTarget(BWAPI::Positions::Invalid)
 {
 
     _tankDropPhase["Drop1"] = 0;
@@ -107,6 +118,22 @@ CombatCommander::CombatCommander()
 namespace
 {
     Base* findDefensiveBaseUnderAttack();
+
+    BWAPI::Position airTanksWorkerRaidTarget()
+    {
+        Base* enemy = the.bases.enemyStart();
+        if (!enemy)
+            return BWAPI::Positions::Invalid;
+        int x = 0, y = 0, count = 0;
+        for (BWAPI::Unit mineral : enemy->getMinerals())
+            if (mineral && mineral->exists() && mineral->getPosition().isValid())
+            {
+                x += mineral->getPosition().x;
+                y += mineral->getPosition().y;
+                ++count;
+            }
+        return count ? BWAPI::Position(x / count, y / count) : enemy->getCenter();
+    }
 
     BWAPI::Position groundAntiAirApproach(
         BWAPI::Position airPosition,
@@ -263,6 +290,8 @@ void CombatCommander::update(const BWAPI::Unitset& combatUnits)
     }
 
     updateAttackSquads();
+    updateAirTanksVultureRaid();
+    updateExpansionLandingClearanceSquad();
 
     if (the.now() % 20 == 1)
     {
@@ -314,6 +343,11 @@ void CombatCommander::onEnd()
     _initialized = false;
     _combatUnits.clear();
     _goAggressive = true;
+    _airTanksWraithRaidFinished = false;
+    _airTanksVultureRaidFinished = false;
+    _airTanksWraithRaidActive = false;
+    _airTanksWraithRaidStart = -1;
+    _airTanksVultureRaidStart = -1;
     _isWatching = false;
     _reconSquadAlive = false;
     _reconTarget = nullptr;
@@ -322,6 +356,8 @@ void CombatCommander::onEnd()
     _lastUndetectedEnemyFrame = -100000;
     _expansionDetectionPosition = BWAPI::Positions::Invalid;
     _expansionDetectionFrame = -100000;
+    _expansionLandingTile = BWAPI::TilePositions::Invalid;
+    _expansionLandingRequestFrame = -100000;
     _comsatScanRequests.clear();
     _comsatsUsedForStrategicScouting.clear();
     _lastComsatQueueFrame = -100000;
@@ -333,6 +369,10 @@ void CombatCommander::onEnd()
     _lastIslandCleanupSupplyReleaseFrame = -100000;
     _genericDropFillStartFrame = -1;
     _genericDropLastCargoUsed = 0;
+    _opportunisticDropPhase = 0;
+    _opportunisticDropLoadFrame = -1;
+    _opportunisticDropLaunchFrame = -1;
+    _opportunisticDropTarget = BWAPI::Positions::Invalid;
 
     _tankDropPhase.clear();
     _tankDropEmergencyMode.clear();
@@ -895,7 +935,8 @@ void CombatCommander::updateProxyFactoryVultureSquad()
         if (unit &&
             unit->exists() &&
             unit->isCompleted() &&
-            unit->getType() == BWAPI::UnitTypes::Terran_Vulture)
+            unit->getType() == BWAPI::UnitTypes::Terran_Vulture &&
+            !isLockedHarassVulture(unit))
         {
             candidates.push_back(unit);
         }
@@ -1393,14 +1434,6 @@ void CombatCommander::updateAttackSquads()
         pureAirMode &&
         StrategyManager::Instance().getOpeningGroup() == "bio";
 
-    if (pureAirMode)
-    {
-        // PureAir has one mobile command owner. Clear earlier harass roles;
-        // the expansion-blocker lease remains owned by BuildingManager.
-        _lockedHarassVultures.clear();
-    }
-
-
     bool flyingSquadExists = false;
     for (BWAPI::Unit unit : flyingSquad.getUnits())
     {
@@ -1428,6 +1461,14 @@ void CombatCommander::updateAttackSquads()
             {
                 currentSquad->removeUnit(unit);
             }
+            continue;
+        }
+
+        // A landed raider has its own command owner even if the strategic
+        // composition changes while it is inside the enemy base.
+        if (unit->getType() == BWAPI::UnitTypes::Terran_Vulture &&
+            isLockedHarassVulture(unit))
+        {
             continue;
         }
 
@@ -1588,15 +1629,205 @@ void CombatCommander::updateAttackSquads()
         antiAirSquad.clear();
     }
 
-    // A BioTank book may issue "go aggressive" before the first Marines,
-    // Medic, Stim and Siege Tank all finish. Keep the entire Ground squad on
-    // the defensive front until that opening push can move as one force.
-    groundSquad.setOrder(getAttackOrder(
-        &groundSquad,
-        false,
-        !StrategyManager::Instance().bioTankPushReady()));
+    const bool airTanks = StrategyManager::Instance().airTanksPlanActive();
+    const bool tankWraithEscort = airTanks &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith;
+    const int completedTanks =
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode);
+    const bool groundReleased = StrategyManager::Instance().airTanksPushReady();
+    const bool baseUnderAttack = tankWraithEscort && AirTanks::homeDefenseRequired();
+    const BWAPI::Position raidTarget = tankWraithEscort
+        ? airTanksWorkerRaidTarget() : BWAPI::Positions::Invalid;
 
-    flyingSquad.setOrder(getAttackOrder(&flyingSquad));
+    // The normal defensive Attack order has a broad chase radius. During
+    // assembly it can send a lone Tank beyond the natural even though the
+    // six-Tank release check has not passed.
+    if (tankWraithEscort && !groundReleased && !baseUnderAttack)
+    {
+        Base* staging = getDefensiveBase();
+        if (staging)
+            groundSquad.setOrder(SquadOrder(SquadOrderTypes::Hold,
+                staging, 6 * 32, false, "Assemble AirTanks core"));
+        else
+            groundSquad.setOrder(getAttackOrder(&groundSquad, false, true));
+    }
+    else
+        groundSquad.setOrder(getAttackOrder(&groundSquad, false,
+            !StrategyManager::Instance().bioTankPushReady() || !groundReleased));
+
+    const bool airReleased = StrategyManager::Instance().airTanksAirPushReady();
+    if (tankWraithEscort && !_airTanksWraithRaidFinished &&
+        _airTanksWraithRaidStart >= 0 &&
+        (completedTanks >= AirTanks::TankWraithFirstPushTanks ||
+         the.my.completed.count(BWAPI::UnitTypes::Terran_Wraith) < 1 ||
+         the.now() - _airTanksWraithRaidStart >= 75 * 24 ||
+         (the.now() - _airTanksWraithRaidStart >= 24 &&
+          the.now() - flyingSquad.getLastRetreat() <= 8) ||
+         baseUnderAttack))
+        _airTanksWraithRaidFinished = true;
+    _airTanksWraithRaidActive = false;
+    if (tankWraithEscort && !_airTanksWraithRaidFinished &&
+        !groundReleased && completedTanks >= 1 &&
+        completedTanks < AirTanks::TankWraithFirstPushTanks &&
+        raidTarget.isValid() && !baseUnderAttack &&
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Wraith) >= 1)
+    {
+        if (_airTanksWraithRaidStart < 0)
+            _airTanksWraithRaidStart = the.now();
+        _airTanksWraithRaidActive = true;
+    }
+    const AirTanksWraithEscort::State* escort = tankWraithEscort
+        ? &AirTanksWraithEscort::update(groundSquad.getUnits()) : nullptr;
+    BWAPI::Unit groundAnchor = escort
+        ? escort->frontTank
+        : (groundSquad.getUnits().empty() ? nullptr : groundSquad.getVanguard());
+    const BWAPI::Position groundDestination = groundSquad.getOrder().getPosition();
+    if (_airTanksWraithRaidActive)
+    {
+        flyingSquad.setOrder(SquadOrder(SquadOrderTypes::Attack,
+            raidTarget, 8 * 32, false, "AirTanks worker raid"));
+    }
+    else if (airTanks && StrategyManager::Instance().airTanksAirEscortsGround() &&
+        groundAnchor && groundAnchor->exists() && groundAnchor->getPosition().isValid())
+    {
+        // Wraiths actively screen the route ahead, then rejoin the threatened
+        // Tank until its immediate opponents are gone. Other air escorts keep
+        // their existing ground-anchor behavior.
+        BWAPI::Position escortPosition = groundAnchor->getPosition();
+        if (escort && escort->defending && escort->guardedTank &&
+            escort->guardedTank->exists())
+        {
+            escortPosition = escort->guardedTank->getPosition();
+        }
+        else if (tankWraithEscort && groundDestination.isValid())
+        {
+            const int distance = std::max(1,
+                escortPosition.getApproxDistance(groundDestination));
+            const BWAPI::Position tankPosition = escortPosition;
+            bool hasBattlecruiser = false;
+            for (BWAPI::Unit flyer : flyingSquad.getUnits())
+                if (flyer && flyer->exists() &&
+                    flyer->getType() == BWAPI::UnitTypes::Terran_Battlecruiser)
+                {
+                    hasBattlecruiser = true;
+                    break;
+                }
+            // Stop short of known static anti-air rather than blindly moving
+            // the whole screen into a turret to reach its patrol point. BCs
+            // share this squad, so keep their existing attack line closer.
+            const int maximumLead = hasBattlecruiser ? 5 * 32 : 7 * 32;
+            for (int lead = std::min(maximumLead, distance); lead >= 2 * 32;
+                 lead -= 32)
+            {
+                BWAPI::Position candidate(
+                    tankPosition.x +
+                        (groundDestination.x - tankPosition.x) * lead / distance,
+                    tankPosition.y +
+                        (groundDestination.y - tankPosition.y) * lead / distance);
+                candidate.makeValid();
+                const BWAPI::TilePosition tile(candidate);
+                if (tile.isValid() && the.airHitsFixed.at(tile) == 0)
+                {
+                    escortPosition = candidate;
+                    break;
+                }
+            }
+        }
+        flyingSquad.setOrder(SquadOrder(SquadOrderTypes::Attack,
+            escortPosition, tankWraithEscort ? 6 * 32 : AttackRadius,
+            false, tankWraithEscort
+                ? escort->defending ? "Wraith Tank defense" : "Wraith forward escort"
+                : "AirTanks ground escort"));
+    }
+    else flyingSquad.setOrder(getAttackOrder(&flyingSquad,
+        airTanks && airReleased && !tankWraithEscort,
+        tankWraithEscort || !airReleased));
+}
+
+void CombatCommander::updateAirTanksVultureRaid()
+{
+    const char* squadName = "AirTanksVultureRaid";
+    const bool tankWraith = StrategyManager::Instance().airTanksPlanActive() &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith;
+    const int tanks =
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode);
+    const BWAPI::Position target = tankWraith &&
+        the.bases.enemyStartConfirmed() &&
+        airTanksWorkerRaidTarget().isValid()
+        ? getTankDropUnloadPoint(0) : BWAPI::Positions::Invalid;
+    const bool defendingHome = tankWraith && AirTanks::homeDefenseRequired();
+    if (_squadData.squadExists(squadName) &&
+        _airTanksVultureRaidStart >= 0 &&
+        (tanks >= AirTanks::TankWraithFirstPushTanks || defendingHome ||
+         _squadData.getSquad(squadName).getUnits().size() < 2 ||
+         the.now() - _airTanksVultureRaidStart >= 75 * 24 ||
+         (the.now() - _airTanksVultureRaidStart >= 24 &&
+          the.now() - _squadData.getSquad(squadName).getLastRetreat() <= 8)))
+        _airTanksVultureRaidFinished = true;
+
+    if (!tankWraith || !target.isValid() ||
+        tanks >= AirTanks::TankWraithFirstPushTanks ||
+        _airTanksVultureRaidFinished || defendingHome)
+    {
+        if (_squadData.squadExists(squadName))
+            _squadData.removeSquad(squadName);
+        return;
+    }
+    if (tanks < 1) return;
+
+    Squad* raiders = _squadData.squadExists(squadName)
+        ? &_squadData.getSquad(squadName) : nullptr;
+    if (!raiders)
+    {
+        int eligible = 0;
+        for (BWAPI::Unit unit : _combatUnits)
+        {
+            if (!unit || !unit->exists() || !unit->isCompleted() ||
+                unit->getType() != BWAPI::UnitTypes::Terran_Vulture ||
+                isLockedHarassVulture(unit) || isExpansionSupportVulture(unit) ||
+                isProxyFactoryVulture(unit) || isReservedTankDropVulture(unit))
+                continue;
+            const Squad* owner = _squadData.getUnitSquad(unit);
+            if (owner && owner->getName() == "Ground") ++eligible;
+        }
+        if (eligible < 2) return;
+    }
+    // Leave the rest of the Vultures with the Tank line. Do not steal local
+    // defenders, drops, expansion guards or proxy-factory units.
+    for (BWAPI::Unit unit : _combatUnits)
+    {
+        if (!unit || !unit->exists() || !unit->isCompleted() ||
+            unit->getType() != BWAPI::UnitTypes::Terran_Vulture ||
+            isLockedHarassVulture(unit) || isExpansionSupportVulture(unit) ||
+            isProxyFactoryVulture(unit) || isReservedTankDropVulture(unit))
+            continue;
+        Squad* owner = _squadData.getUnitSquad(unit);
+        if (!owner || (owner->getName() != "Ground" &&
+                       owner->getName() != squadName))
+            continue;
+        if (!raiders)
+            raiders = &_squadData.createSquad(squadName, VultureHarassPriority);
+        if (raiders->getUnits().size() >= 3) break;
+        if (_squadData.canAssignUnitToSquad(unit, *raiders))
+            _squadData.assignUnitToSquad(unit, *raiders);
+    }
+    if (!raiders) return;
+    if (raiders->getUnits().empty())
+    {
+        _airTanksVultureRaidFinished = true;
+        _squadData.removeSquad(squadName);
+        return;
+    }
+    if (_airTanksVultureRaidStart < 0)
+        _airTanksVultureRaidStart = the.now();
+    SquadOrder order(SquadOrderTypes::Attack, target, 8 * 32,
+        false, "AirTanks Vulture worker raid");
+    order.setKey("airtanks-vulture-focus");
+    raiders->setOrder(std::move(order));
 }
 
 // Unit definitely belongs in the Flying squad.
@@ -1850,7 +2081,11 @@ void CombatCommander::clearDeadLockedHarassVultures()
 {
     for (auto it = _lockedHarassVultures.begin(); it != _lockedHarassVultures.end();)
     {
-        if (!(*it) || !(*it)->exists())
+        const Squad* owner = *it ? _squadData.getUnitSquad(*it) : nullptr;
+        const std::string name = owner ? owner->getName() : std::string();
+        if (!(*it) || !(*it)->exists() ||
+            (name != "VultureHarass1" && name != "VultureHarass2" &&
+             name.compare(0, 18, "OpportunisticRaid_") != 0))
         {
             it = _lockedHarassVultures.erase(it);
         }
@@ -2376,7 +2611,9 @@ void CombatCommander::updateTankDropSquads()
 
             for (BWAPI::Unit enemy : BWAPI::Broodwar->enemy()->getUnits())
             {
-                if (!enemy || !enemy->exists() || !enemy->isCompleted())
+                if (!enemy || !enemy->exists() || !enemy->isCompleted() ||
+                    !enemy->isVisible() || !enemy->isDetected() ||
+                    !enemy->getPosition().isValid())
                 {
                     continue;
                 }
@@ -2387,7 +2624,7 @@ void CombatCommander::updateTankDropSquads()
                 }
 
                 int dist = from.getDistance(enemy->getPosition());
-                if (dist < bestDist)
+                if (dist <= 12 * 32 && dist < bestDist)
                 {
                     bestDist = dist;
                     best = enemy;
@@ -2433,8 +2670,30 @@ void CombatCommander::updateTankDropSquads()
 
             BWAPI::Position harassPos = getTankDropUnloadPoint(dropIndex);
             BWAPI::Position center = vultures.front()->getPosition();
+            int distanceToMinerals = MAX_DISTANCE;
+            BWAPI::Unit targetWorker = nullptr;
+            int workerDistance = MAX_DISTANCE;
+            for (BWAPI::Unit vulture : vultures)
+            {
+                distanceToMinerals = std::min(distanceToMinerals,
+                    vulture->getDistance(harassPos));
+                BWAPI::Unit worker = findClosestEnemyWorker(
+                    vulture->getPosition());
+                if (worker && vulture->getDistance(worker) < workerDistance)
+                {
+                    workerDistance = vulture->getDistance(worker);
+                    targetWorker = worker;
+                }
+            }
+            const std::string& previousKey = harassSquad.getOrder().getKey();
+            const bool arrived =
+                previousKey == "vulture-harass-focus" ||
+                previousKey == "vulture-harass-search" ||
+                distanceToMinerals <= 3 * 32;
 
-            if (center.getDistance(harassPos) > 3 * 32)
+            // Once the raid reaches workers, never reset it to the landing
+            // point just because a Vulture chases a worker a few tiles away.
+            if (!arrived && !targetWorker)
             {
                 setHarassOrder(
                     SquadOrder(
@@ -2464,8 +2723,6 @@ void CombatCommander::updateTankDropSquads()
             // Workers do not trigger Spider Mines. Do not gate the harass
             // state machine on a mine in their mineral line; combat micro can
             // still lay tactical mines against pursuing ground troops.
-            BWAPI::Unit targetWorker = findClosestEnemyWorker(center);
-
             if (targetWorker)
             {
                 setHarassOrder(
@@ -2495,7 +2752,7 @@ void CombatCommander::updateTankDropSquads()
             {
                 setHarassOrder(
                     SquadOrder(
-                        SquadOrderTypes::Hold,
+                        SquadOrderTypes::Attack,
                         harassPos,
                         8 * 32,
                         false,
@@ -2594,6 +2851,13 @@ void CombatCommander::updateTankDropSquads()
             for (BWAPI::Unit unit : squad->getUnits())
             {
                 if (unit && unit->exists() &&
+                    unit->getType() == BWAPI::UnitTypes::Terran_Dropship &&
+                    unit->getLoadedUnits().empty() &&
+                    !isExpansionFerryDropship(unit))
+                {
+                    release.push_back(unit);
+                }
+                if (unit && unit->exists() &&
                     unit->getType() == BWAPI::UnitTypes::Terran_Vulture &&
                     !unit->isLoaded())
                 {
@@ -2658,7 +2922,7 @@ void CombatCommander::updateTankDropSquads()
         assignFreeDropshipToSquad(drop2, _drop2EverAssigned, "Drop2");
     }
 
-    if (_drop1EverAssigned && _drop2EverAssigned)
+    if (_drop1EverAssigned && _drop2EverAssigned && _tankDropTotalLaunches < 2)
     {
         if (!getTransport(drop1))
         {
@@ -2697,6 +2961,13 @@ void CombatCommander::updateTankDropSquads()
             }
 
             if (isExpansionSupportVulture(unit))
+            {
+                continue;
+            }
+
+            if (isLockedHarassVulture(unit) ||
+                (!_squadData.canAssignUnitToSquad(unit, drop1) &&
+                 !_squadData.canAssignUnitToSquad(unit, drop2)))
             {
                 continue;
             }
@@ -3313,6 +3584,419 @@ BWAPI::Position CombatCommander::getIslandCleanupDropTarget() const
     return findIslandCleanupTarget();
 }
 
+BWAPI::Position CombatCommander::chooseOpportunisticDropTarget(BWAPI::Unit transport) const
+{
+    if (!transport || !transport->exists())
+        return BWAPI::Positions::Invalid;
+
+    BWAPI::Position best = BWAPI::Positions::Invalid;
+    int bestScore = INT_MIN;
+    static const BWAPI::Position directions[] =
+    {
+        BWAPI::Position(1, 0), BWAPI::Position(-1, 0),
+        BWAPI::Position(0, 1), BWAPI::Position(0, -1),
+        BWAPI::Position(1, 1), BWAPI::Position(1, -1),
+        BWAPI::Position(-1, 1), BWAPI::Position(-1, -1)
+    };
+
+    for (Base* base : the.bases.getAll())
+    {
+        if (!base || base->getOwner() != the.enemy())
+            continue;
+
+        const BWAPI::Position center = base->getPosition();
+        if (!center.isValid())
+            continue;
+
+        BWAPI::Position minerals = center;
+        int mineralX = 0, mineralY = 0, mineralCount = 0;
+        for (BWAPI::Unit patch : base->getMinerals())
+            if (patch && patch->exists() && patch->getPosition().isValid())
+            {
+                mineralX += patch->getPosition().x;
+                mineralY += patch->getPosition().y;
+                ++mineralCount;
+            }
+        if (mineralCount)
+            minerals = BWAPI::Position(mineralX / mineralCount,
+                mineralY / mineralCount);
+
+        for (const BWAPI::Position& direction : directions)
+        {
+            // Five tiles from the depot gives the passengers room to deploy
+            // without sending the transport straight across the base.
+            const BWAPI::Position pos = center + BWAPI::Position(
+                direction.x * 5 * 32, direction.y * 5 * 32);
+            if (!pos.isValid() ||
+                !the.map.isRuntimeWalkable(BWAPI::TilePosition(pos)) ||
+                the.partitions.id(BWAPI::TilePosition(pos)) !=
+                    the.partitions.id(BWAPI::TilePosition(center)))
+                continue;
+
+            int score = 600 - pos.getDistance(minerals) / 2;
+            if (the.airHitsFixed.inRange(BWAPI::TilePosition(pos)))
+                score -= 1000;
+            for (BWAPI::Unit enemy : the.enemy()->getUnits())
+            {
+                if (!enemy || !enemy->exists() || !enemy->isVisible() ||
+                    !enemy->getPosition().isValid())
+                    continue;
+                if (enemy->getDistance(pos) <= 7 * 32 &&
+                    UnitUtil::CanAttackAir(enemy))
+                    score -= 300;
+                if (enemy->getDistance(pos) <= 4 * 32 &&
+                    UnitUtil::CanAttackGround(enemy))
+                    score -= 70;
+            }
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = pos;
+            }
+        }
+    }
+
+    return bestScore > 0 ? best : BWAPI::Positions::Invalid;
+}
+
+void CombatCommander::updateOpportunisticDropSquad()
+{
+    // A completed raid keeps its own order; remove only empty squads left
+    // after all their passengers have died.
+    std::vector<std::string> emptyRaids;
+    for (const auto& entry : _squadData.getSquads())
+        if (entry.first.compare(0, 18, "OpportunisticRaid_") == 0 &&
+            entry.second.getUnits().empty())
+            emptyRaids.push_back(entry.first);
+    for (const std::string& name : emptyRaids)
+        _squadData.removeSquad(name);
+
+    const std::string& opening = StrategyManager::Instance().getOpeningGroup();
+    const bool canStartRaid =
+        (opening == "bio" || opening == "tanks") &&
+        !StrategyManager::Instance().pureAirPlanActive() &&
+        the.bases.enemyStart();
+    if (!_squadData.squadExists("Ground") ||
+        (!canStartRaid && !_squadData.squadExists("OpportunisticDrop")))
+        return;
+
+    const BWAPI::Position home = the.bases.myMain()
+        ? the.bases.myMain()->getPosition()
+        : BWAPI::Position(the.self()->getStartLocation());
+    if (!_squadData.squadExists("OpportunisticDrop"))
+        _squadData.createSquad("OpportunisticDrop", DropPriority).
+            setOrder(SquadOrder(SquadOrderTypes::Hold, home,
+                AttackRadius, false, "Wait for spare Dropship"));
+    Squad& squad = _squadData.getSquad("OpportunisticDrop");
+    Squad& ground = _squadData.getSquad("Ground");
+
+    BWAPI::Unit transport = nullptr;
+    for (BWAPI::Unit unit : squad.getUnits())
+        if (unit && unit->exists() &&
+            unit->getType() == BWAPI::UnitTypes::Terran_Dropship)
+        {
+            transport = unit;
+            break;
+        }
+
+    auto releasePassengers = [&]()
+    {
+        std::vector<BWAPI::Unit> release;
+        for (BWAPI::Unit unit : squad.getUnits())
+            if (unit && unit->exists() && unit != transport && !unit->isLoaded())
+                release.push_back(unit);
+        for (BWAPI::Unit unit : release)
+        {
+            squad.removeUnit(unit);
+            if (_squadData.canAssignUnitToSquad(unit, ground))
+                _squadData.assignUnitToSquad(unit, ground);
+        }
+    };
+
+    auto dispatchRaidPassengers = [&]()
+    {
+        std::vector<BWAPI::Unit> unloaded;
+        for (BWAPI::Unit unit : squad.getUnits())
+            if (unit && unit->exists() && unit != transport && !unit->isLoaded())
+                unloaded.push_back(unit);
+        if (unloaded.empty())
+            return;
+
+        BWAPI::Position raidGoal = _opportunisticDropTarget;
+        int nearestBaseDistance = MAX_DISTANCE;
+        for (Base* base : the.bases.getAll())
+            if (base && base->getOwner() == the.enemy() &&
+                base->getPosition().isValid())
+            {
+                const int distance = base->getPosition().getApproxDistance(
+                    _opportunisticDropTarget);
+                if (distance < nearestBaseDistance)
+                {
+                    nearestBaseDistance = distance;
+                    raidGoal = base->getPosition();
+                }
+            }
+
+        const std::string raidName = "OpportunisticRaid_" +
+            std::to_string(_opportunisticDropLaunchFrame);
+        Squad* raid = nullptr;
+        for (BWAPI::Unit unit : unloaded)
+        {
+            squad.removeUnit(unit);
+            // Emergency unloading far from the target saves the survivors;
+            // they should rejoin Ground instead of marching alone across the map.
+            if (!raidGoal.isValid() ||
+                unit->getDistance(raidGoal) > 20 * 32)
+            {
+                if (_squadData.canAssignUnitToSquad(unit, ground))
+                    _squadData.assignUnitToSquad(unit, ground);
+                continue;
+            }
+            if (!raid)
+            {
+                raid = _squadData.squadExists(raidName)
+                    ? &_squadData.getSquad(raidName)
+                    : &_squadData.createSquad(raidName, VultureHarassPriority);
+                SquadOrder raidOrder(SquadOrderTypes::Attack, raidGoal,
+                    10 * 32, false, "Dropped raid");
+                raidOrder.setKey("opportunistic-drop-raid");
+                raid->setOrder(std::move(raidOrder));
+            }
+            if (unit->getType() == BWAPI::UnitTypes::Terran_Vulture)
+                lockVultureToHarass(unit);
+            _squadData.assignUnitToSquad(unit, *raid);
+        }
+    };
+
+    if (!transport)
+    {
+        if (_opportunisticDropPhase == 1)
+            dispatchRaidPassengers();
+        else
+            releasePassengers();
+        _opportunisticDropPhase = 0;
+        _opportunisticDropLoadFrame = -1;
+        _opportunisticDropTarget = BWAPI::Positions::Invalid;
+        squad.setOrder(SquadOrder(SquadOrderTypes::Hold, home,
+            AttackRadius, false, "Wait for spare Dropship"));
+        if (!canStartRaid)
+            return;
+        if (_opportunisticDropLaunchFrame >= 0 &&
+            the.now() - _opportunisticDropLaunchFrame < 30 * 24)
+            return;
+        for (BWAPI::Unit unit : _combatUnits)
+            if (unit && unit->exists() && unit->isCompleted() &&
+                unit->getType() == BWAPI::UnitTypes::Terran_Dropship &&
+                unit->getLoadedUnits().empty() &&
+                !isExpansionFerryDropship(unit) &&
+                _squadData.canAssignUnitToSquad(unit, squad))
+            {
+                _squadData.assignUnitToSquad(unit, squad);
+                transport = unit;
+                break;
+            }
+        if (!transport)
+            return;
+    }
+
+    if (_opportunisticDropPhase == 1)
+    {
+        dispatchRaidPassengers();
+        if (transport->getLoadedUnits().empty())
+        {
+            _opportunisticDropPhase = 2;
+        }
+        else if (the.now() - _opportunisticDropLaunchFrame > 90 * 24)
+            _opportunisticDropPhase = 2;
+        else
+        {
+            squad.setOrder(SquadOrder(SquadOrderTypes::Drop,
+                _opportunisticDropTarget, 3 * 32, false,
+                "Opportunistic drop"));
+            return;
+        }
+    }
+
+    if (_opportunisticDropPhase == 2)
+    {
+        if (!transport->getLoadedUnits().empty())
+            squad.setOrder(SquadOrder(SquadOrderTypes::Drop, home,
+                3 * 32, false, "Opportunistic drop"));
+        else
+        {
+            releasePassengers();
+            squad.setOrder(SquadOrder(SquadOrderTypes::Drop, home,
+                3 * 32, false, "Opportunistic return"));
+            if (transport->getDistance(home) <= 5 * 32)
+            {
+                squad.removeUnit(transport);
+                _opportunisticDropPhase = 0;
+                _opportunisticDropLoadFrame = -1;
+                _opportunisticDropTarget = BWAPI::Positions::Invalid;
+            }
+        }
+        return;
+    }
+
+    if (!canStartRaid)
+    {
+        releasePassengers();
+        if (transport->getLoadedUnits().empty())
+            squad.removeUnit(transport);
+        else
+            _opportunisticDropPhase = 2;
+        return;
+    }
+
+    if (findDefensiveBaseUnderAttack())
+    {
+        releasePassengers();
+        if (transport->getLoadedUnits().empty())
+        {
+            squad.removeUnit(transport);
+            _opportunisticDropLoadFrame = -1;
+        }
+        else
+            _opportunisticDropPhase = 2;
+        return;
+    }
+
+    if (!_opportunisticDropTarget.isValid())
+        _opportunisticDropTarget = chooseOpportunisticDropTarget(transport);
+    if (!_opportunisticDropTarget.isValid())
+    {
+        releasePassengers();
+        if (transport->getLoadedUnits().empty())
+        {
+            squad.removeUnit(transport);
+            _opportunisticDropLaunchFrame = the.now();
+        }
+        else
+            _opportunisticDropPhase = 2;
+        return;
+    }
+
+    // Never empty the frontline to make a speculative raid. Defenders and
+    // special-purpose squads are ineligible because we borrow Ground only.
+    int marines = 0, medics = 0, tanks = 0, vultures = 0;
+    for (BWAPI::Unit unit : ground.getUnits())
+    {
+        if (!unit || !unit->exists() || !unit->isCompleted())
+            continue;
+        const BWAPI::UnitType type = unit->getType();
+        marines += type == BWAPI::UnitTypes::Terran_Marine;
+        medics += type == BWAPI::UnitTypes::Terran_Medic;
+        tanks += type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode;
+        vultures += type == BWAPI::UnitTypes::Terran_Vulture;
+    }
+    int assignedMarines = 0, assignedMedics = 0;
+    int assignedTanks = 0, assignedVultures = 0;
+    bool anyUnloaded = false;
+    for (BWAPI::Unit unit : squad.getUnits())
+    {
+        if (!unit || !unit->exists() || unit == transport)
+            continue;
+        const BWAPI::UnitType type = unit->getType();
+        assignedMarines += type == BWAPI::UnitTypes::Terran_Marine;
+        assignedMedics += type == BWAPI::UnitTypes::Terran_Medic;
+        assignedTanks += type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode;
+        assignedVultures += type == BWAPI::UnitTypes::Terran_Vulture;
+        anyUnloaded = anyUnloaded || !unit->isLoaded();
+    }
+
+    if ((opening == "tanks" &&
+            (tanks + assignedTanks < 6 || vultures + assignedVultures < 5)) ||
+        (opening == "bio" && marines + assignedMarines < 24))
+    {
+        releasePassengers();
+        if (transport->getLoadedUnits().empty())
+        {
+            squad.removeUnit(transport);
+            _opportunisticDropLoadFrame = -1;
+        }
+        else
+            _opportunisticDropPhase = 2;
+        return;
+    }
+
+    const int wantedMedics = opening == "bio" &&
+        medics + assignedMedics >= 4 ? 2 : 0;
+    const int wantedMarines = 8 - wantedMedics;
+    auto assignNearest = [&](BWAPI::UnitType type) -> bool
+    {
+        BWAPI::Unit nearest = nullptr;
+        for (BWAPI::Unit unit : ground.getUnits())
+            if (unit && unit->exists() && unit->isCompleted() &&
+                !unit->isLoaded() && unit->getType() == type &&
+                _squadData.canAssignUnitToSquad(unit, squad) &&
+                (!nearest || unit->getDistance(transport) <
+                    nearest->getDistance(transport)))
+                nearest = unit;
+        if (!nearest)
+            return false;
+        _squadData.assignUnitToSquad(nearest, squad);
+        anyUnloaded = true;
+        return true;
+    };
+
+    if (opening == "tanks")
+    {
+        if (assignedTanks < 1 && assignNearest(
+                BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode))
+            ++assignedTanks;
+        while (assignedVultures < 2 &&
+            assignNearest(BWAPI::UnitTypes::Terran_Vulture))
+            ++assignedVultures;
+    }
+    else
+    {
+        while (assignedMedics < wantedMedics &&
+            assignNearest(BWAPI::UnitTypes::Terran_Medic))
+            ++assignedMedics;
+        while (assignedMarines < wantedMarines &&
+            assignNearest(BWAPI::UnitTypes::Terran_Marine))
+            ++assignedMarines;
+    }
+
+    const bool ready = opening == "tanks"
+        ? assignedTanks == 1 && assignedVultures == 2
+        : assignedMarines == wantedMarines && assignedMedics == wantedMedics;
+    if (_opportunisticDropLoadFrame < 0)
+        _opportunisticDropLoadFrame = the.now();
+    if (!ready && the.now() - _opportunisticDropLoadFrame > 20 * 24)
+    {
+        releasePassengers();
+        _opportunisticDropLoadFrame = -1;
+        if (transport->getLoadedUnits().empty())
+        {
+            squad.removeUnit(transport);
+            _opportunisticDropLaunchFrame = the.now();
+        }
+        else
+            _opportunisticDropPhase = 2;
+        return;
+    }
+    if (anyUnloaded || !ready)
+    {
+        squad.setOrder(SquadOrder(SquadOrderTypes::Load,
+            transport->getPosition(), AttackRadius, false,
+            "Load opportunistic drop"));
+        return;
+    }
+
+    _opportunisticDropTarget = chooseOpportunisticDropTarget(transport);
+    if (!_opportunisticDropTarget.isValid())
+    {
+        releasePassengers();
+        _opportunisticDropPhase = 2;
+        return;
+    }
+    _opportunisticDropPhase = 1;
+    _opportunisticDropLaunchFrame = the.now();
+    squad.setOrder(SquadOrder(SquadOrderTypes::Drop,
+        _opportunisticDropTarget, 3 * 32, false, "Opportunistic drop"));
+}
+
 void CombatCommander::updateDropSquads()
 {
     const BWAPI::Position islandCleanupTarget =
@@ -3353,7 +4037,8 @@ void CombatCommander::updateDropSquads()
         if (!transport)
         {
             for (const std::string& squadName :
-                { std::string("Drop1"), std::string("Drop2") })
+                { std::string("Drop1"), std::string("Drop2"),
+                  std::string("OpportunisticDrop") })
             {
                 if (!_squadData.squadExists(squadName))
                 {
@@ -3526,8 +4211,11 @@ void CombatCommander::updateDropSquads()
     if (tankDropEnabled())
     {
         updateTankDropSquads();
+        updateOpportunisticDropSquad();
         return;
     }
+
+    updateOpportunisticDropSquad();
 
 
     if (!_squadData.squadExists("Drop"))
@@ -4085,6 +4773,8 @@ void CombatCommander::updateBaseDefenseSquads()
         int nEnemyZealots = 0;
         int nEnemyZerglings = 0;
         int nEnemyCarriers = 0;
+        const bool bioTankDefense =
+            StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank;
         bool enemyTransportAtBase = false;
         bool sawEnemyInterceptor = false;
         bool enemyHitsGround = false;
@@ -4101,7 +4791,8 @@ void CombatCommander::updateBaseDefenseSquads()
             if (dist < defenseRadius ||
                 dist < defenseRadius + 384 && zone == the.zone.areaAt(unit->getTilePosition()))
             {
-                
+                if (bioTankDefense && !unit->isFlying() &&
+                    !BioTankPolicy::canThreatenBase(unit, base, defenseRadius + 192)) continue;
                 if (dist < closestEnemyDistance)
                 {
                     closestEnemyDistance = dist;
@@ -4387,7 +5078,8 @@ void CombatCommander::updateBaseDefenseSquads()
             BWAPI::Unitset drop;
             for (BWAPI::Unit unit : defenseSquad.getUnits())
             {
-                if (!unit->getType().isDetector() && !UnitUtil::CanAttackAir(unit))
+                if (!unit->getType().isDetector() &&
+                    unit->getType() != BWAPI::UnitTypes::Terran_Medic && !UnitUtil::CanAttackAir(unit))
                 {
                     drop.insert(unit);
                 }
@@ -4404,7 +5096,8 @@ void CombatCommander::updateBaseDefenseSquads()
             BWAPI::Unitset drop;
             for (BWAPI::Unit unit : defenseSquad.getUnits())
             {
-                if (!unit->getType().isDetector() && !UnitUtil::CanAttackGround(unit))
+                if (!unit->getType().isDetector() &&
+                    unit->getType() != BWAPI::UnitTypes::Terran_Medic && !UnitUtil::CanAttackGround(unit))
                 {
                     drop.insert(unit);
                 }
@@ -4551,6 +5244,55 @@ void CombatCommander::updateDefenseSquadUnits(Squad & defenseSquad, const size_t
         }
         _squadData.assignUnitToSquad(defenderToAdd, defenseSquad);
         ++groundDefendersAdded;
+    }
+
+    int infantryCount = 0;
+    BWAPI::Position escortPosition = BWAPI::Positions::Invalid;
+    int frontDistance = MAX_DISTANCE;
+    BWAPI::Unitset medics;
+    for (BWAPI::Unit unit : defenseSquad.getUnits())
+    {
+        if (!unit || !unit->exists() || unit->isLoaded()) continue;
+        const BWAPI::UnitType type = unit->getType();
+        if (type == BWAPI::UnitTypes::Terran_Marine || type == BWAPI::UnitTypes::Terran_Firebat)
+        {
+            ++infantryCount;
+            const int distance = unit->getDistance(defenseSquad.getOrder().getPosition());
+            if (unit->getPosition().isValid() && distance < frontDistance)
+            {
+                frontDistance = distance;
+                escortPosition = unit->getPosition();
+            }
+        }
+        else if (type == BWAPI::UnitTypes::Terran_Medic) medics.insert(unit);
+    }
+    const int wantedMedics = (infantryCount + 4) / 5;
+    // Release support when the infantry is released or replaced by vehicles.
+    while (int(medics.size()) > wantedMedics)
+    {
+        BWAPI::Unit medic = *medics.begin();
+        defenseSquad.removeUnit(medic);
+        medics.erase(medic);
+    }
+    while (int(medics.size()) < wantedMedics)
+    {
+        BWAPI::Unit closest = nullptr;
+        int nearest = MAX_DISTANCE;
+        for (BWAPI::Unit unit : _combatUnits)
+        {
+            if (!unit || !unit->exists() || !unit->isCompleted() || unit->isLoaded() ||
+                !unit->getPosition().isValid() || unit->getType() != BWAPI::UnitTypes::Terran_Medic ||
+                unit->isLockedDown() || unit->isStasised() || unit->isMaelstrommed() ||
+                !_squadData.canAssignUnitToSquad(unit, defenseSquad) ||
+                !escortPosition.isValid() ||
+                !the.partitions.connected(unit->getPosition(), escortPosition))
+                continue;
+            const int distance = unit->getDistance(escortPosition);
+            if (distance < nearest) { closest = unit; nearest = distance; }
+        }
+        if (!closest) break;
+        _squadData.assignUnitToSquad(closest, defenseSquad);
+        medics.insert(closest);
     }
 }
 
@@ -4933,6 +5675,103 @@ void CombatCommander::requestExpansionVesselDetection(
         _expansionDetectionPosition = position;
         _expansionDetectionFrame = the.now();
     }
+}
+
+void CombatCommander::requestExpansionLandingClearance(BWAPI::TilePosition tile)
+{
+    if (!tile.isValid()) return;
+    _expansionLandingTile = tile;
+    _expansionLandingRequestFrame = the.now();
+
+    const BWAPI::UnitType cc = BWAPI::UnitTypes::Terran_Command_Center;
+    const BWAPI::Position center(tile.x * 32 + cc.tileWidth() * 16,
+        tile.y * 32 + cc.tileHeight() * 16);
+    bool detectedBlocker = false;
+    for (BWAPI::Unit enemy : the.enemy()->getUnits())
+    {
+        if (!enemy || !enemy->exists() || !enemy->isVisible() ||
+            !enemy->isDetected() || enemy->isFlying() ||
+            !enemy->getPosition().isValid()) continue;
+        if (enemy->getRight() >= tile.x * 32 &&
+            enemy->getLeft() < (tile.x + cc.tileWidth()) * 32 &&
+            enemy->getBottom() >= tile.y * 32 &&
+            enemy->getTop() < (tile.y + cc.tileHeight()) * 32)
+        {
+            detectedBlocker = true;
+            break;
+        }
+    }
+    if (!detectedBlocker && !MapGrid::Instance().scanIsActiveAt(center))
+        requestComsatScan(center, ComsatScanPriority::ExpansionClear,
+            50, 0, 3 * 24, "blocked CC landing", true);
+    requestExpansionVesselDetection(center);
+}
+
+void CombatCommander::updateExpansionLandingClearanceSquad()
+{
+    const std::string squadName = "ExpansionLandingClearance";
+    if (!_expansionLandingTile.isValid() ||
+        the.now() < _expansionLandingRequestFrame ||
+        the.now() - _expansionLandingRequestFrame > 24)
+    {
+        if (_squadData.squadExists(squadName)) _squadData.removeSquad(squadName);
+        return;
+    }
+
+    const BWAPI::UnitType cc = BWAPI::UnitTypes::Terran_Command_Center;
+    const BWAPI::Position center(
+        _expansionLandingTile.x * 32 + cc.tileWidth() * 16,
+        _expansionLandingTile.y * 32 + cc.tileHeight() * 16);
+    bool detectedBlocker = false;
+    for (BWAPI::Unit enemy : the.enemy()->getUnits())
+    {
+        if (!enemy || !enemy->exists() || !enemy->isVisible() ||
+            !enemy->isDetected() || enemy->isFlying() ||
+            !enemy->getPosition().isValid()) continue;
+        if (enemy->getRight() >= _expansionLandingTile.x * 32 &&
+            enemy->getLeft() < (_expansionLandingTile.x + cc.tileWidth()) * 32 &&
+            enemy->getBottom() >= _expansionLandingTile.y * 32 &&
+            enemy->getTop() < (_expansionLandingTile.y + cc.tileHeight()) * 32)
+        {
+            detectedBlocker = true;
+            break;
+        }
+    }
+    if (!detectedBlocker)
+    {
+        if (_squadData.squadExists(squadName)) _squadData.removeSquad(squadName);
+        return;
+    }
+    Squad& squad = _squadData.squadExists(squadName)
+        ? _squadData.getSquad(squadName)
+        : _squadData.createSquad(squadName, ClearancePriority);
+
+    if (squad.getUnits().empty())
+    {
+        BWAPI::Unit closest = nullptr;
+        int bestScore = MAX_DISTANCE;
+        for (BWAPI::Unit unit : _combatUnits)
+        {
+            if (!unit || !unit->exists() || !unit->isCompleted() ||
+                unit->isLoaded() || !unit->getPosition().isValid() ||
+                !_squadData.canAssignUnitToSquad(unit, squad)) continue;
+            const BWAPI::UnitType type = unit->getType();
+            if (type != BWAPI::UnitTypes::Terran_Marine &&
+                type != BWAPI::UnitTypes::Terran_Firebat &&
+                type != BWAPI::UnitTypes::Terran_Vulture &&
+                type != BWAPI::UnitTypes::Terran_Goliath) continue;
+            const int score = unit->getDistance(center) +
+                (type == BWAPI::UnitTypes::Terran_Marine ? 0 : 3 * 32);
+            if (score < bestScore)
+            {
+                bestScore = score;
+                closest = unit;
+            }
+        }
+        if (closest) _squadData.assignUnitToSquad(closest, squad);
+    }
+    squad.setOrder(SquadOrder(SquadOrderTypes::Attack, center,
+        6 * 32, false, "Clear blocked CC landing"));
 }
 
 // Should squads have detectors assigned? Does not apply to all squads.

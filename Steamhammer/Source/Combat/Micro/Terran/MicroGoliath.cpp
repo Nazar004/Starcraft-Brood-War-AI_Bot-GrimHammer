@@ -174,7 +174,6 @@ static bool goliathCanAttackTarget(BWAPI::Unit goliath, BWAPI::Unit target)
     const BWAPI::UnitType targetType = target->getType();
 
     if (targetType == BWAPI::UnitTypes::Zerg_Larva ||
-        targetType == BWAPI::UnitTypes::Zerg_Egg ||
         targetType == BWAPI::UnitTypes::Protoss_Scarab)
     {
         return false;
@@ -1602,8 +1601,7 @@ void MicroGoliath::assignTargets(
                 u->isDetected() &&
                 !u->isInvincible() &&
                 u->getPosition().isValid() &&
-                u->getType() != BWAPI::UnitTypes::Zerg_Larva &&
-                u->getType() != BWAPI::UnitTypes::Zerg_Egg;
+                u->getType() != BWAPI::UnitTypes::Zerg_Larva;
         });
 
     bool enemyHasAntiGround = false;
@@ -2475,7 +2473,7 @@ BWAPI::Unit MicroGoliath::getTarget(BWAPI::Unit goliath, const BWAPI::Unitset& t
         );
     }
 
-    return bestScore > 0 ? bestTarget : nullptr;
+    return bestScore > 0 ? preferThreatToStructure(goliath, bestTarget, targets) : nullptr;
 }
 
 int MicroGoliath::getAttackPriority(BWAPI::Unit goliath, BWAPI::Unit target) const
@@ -2484,6 +2482,8 @@ int MicroGoliath::getAttackPriority(BWAPI::Unit goliath, BWAPI::Unit target) con
     {
         return 0;
     }
+
+    if (isNeutralEgg(target)) return getBackstopAttackPriority(target);
 
     if (target->getType() == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine)
     {

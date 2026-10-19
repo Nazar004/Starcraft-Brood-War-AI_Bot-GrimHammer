@@ -1,5 +1,8 @@
 #include "Combat/Micro/MicroRanged.h"
 #include "Combat/Micro/Terran/MicroMarines.h"
+#include "Combat/Micro/Terran/BioInfantrySafety.h"
+#include "Combat/Micro/Terran/AirTanksMicro.h"
+#include "Strategy/Terran/AirTanksWraithEscort.h"
 #include "Strategy/StrategyManager.h"
 #include "Map/Bases.h"
 #include "Intelligence/InformationManager.h"
@@ -79,6 +82,7 @@ void MicroRanged::defendTerranWall(const BWAPI::Unitset& availableUnits)
             continue;
         }
 
+        if (BioInfantrySafety::evade(marine)) continue;
         BWAPI::Unit target = nullptr;
         int targetScore = INT_MAX;
         for (BWAPI::Unit enemy : threats)
@@ -202,8 +206,7 @@ void MicroRanged::assignTargets(const BWAPI::Unitset& rangedUnits,
     for (BWAPI::Unit target : targets)
     {
         if (target && target->exists() &&
-            target->getType() != BWAPI::UnitTypes::Zerg_Larva &&
-            target->getType() != BWAPI::UnitTypes::Zerg_Egg)
+            target->getType() != BWAPI::UnitTypes::Zerg_Larva)
         {
             validTargets.insert(target);
         }
@@ -263,6 +266,7 @@ void MicroRanged::assignTargets(const BWAPI::Unitset& rangedUnits,
         {
             continue;
         }
+        if (AirTanksMicro::act(unit, validTargets)) continue;
         BWAPI::Unit coveredBuilding = nullptr;
         if (unit->getType() == BWAPI::UnitTypes::Terran_Marine)
         {
@@ -322,7 +326,19 @@ void MicroRanged::assignTargets(const BWAPI::Unitset& rangedUnits,
                 !MicroMarines::shouldKite(unit, target);
             if (Config::Micro::KiteWithRangedUnits && kite &&
                 !marineCommits)
-                the.micro.KiteTarget(unit, target);
+            {
+                if (unit->getType() == BWAPI::UnitTypes::Terran_Marine &&
+                    StrategyManager::Instance().bioTankPlanActive())
+                {
+                    if (unit->isAttackFrame() || unit->isStartingAttack()) continue;
+                    const int latency = BWAPI::Broodwar->getRemainingLatencyFrames();
+                    if (unit->getGroundWeaponCooldown() <= latency + 2)
+                        the.micro.CatchAndAttackUnit(unit, target);
+                    else
+                        the.micro.KiteTarget(unit, target);
+                }
+                else the.micro.KiteTarget(unit, target);
+            }
             else
                 the.micro.CatchAndAttackUnit(unit, target);
         }
@@ -337,6 +353,39 @@ BWAPI::Unit MicroRanged::getTarget(BWAPI::Unit rangedUnit, const BWAPI::Unitset&
 {
     int bestScore = INT_MIN;
     BWAPI::Unit bestTarget = nullptr;
+    BWAPI::Unit escortTank = nullptr;
+    const AirTanksWraithEscort::State* escort = nullptr;
+    const bool airTanksWorkerRaid =
+        rangedUnit->getType() == BWAPI::UnitTypes::Terran_Wraith &&
+        CombatCommander::Instance().airTanksWraithRaidActive();
+    bool raidAntiAirNearby = false;
+    if (airTanksWorkerRaid)
+        for (BWAPI::Unit enemy : targets)
+            if (enemy && enemy->exists() && enemy->isVisible() &&
+                UnitUtil::CanAttackAir(enemy) &&
+                enemy->getDistance(rangedUnit) <= 8 * 32)
+            {
+                raidAntiAirNearby = true;
+                break;
+            }
+    if (rangedUnit->getType() == BWAPI::UnitTypes::Terran_Wraith &&
+        !airTanksWorkerRaid &&
+        StrategyManager::Instance().airTanksPlanActive() &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith)
+    {
+        const SquadData& squads = CombatCommander::Instance().squadDiagnostics();
+        const Squad* owner = squads.getUnitSquad(rangedUnit);
+        const auto ground = squads.getSquads().find("Ground");
+        if (owner && owner->getName() == "Flying" &&
+            ground != squads.getSquads().end())
+        {
+            escort = &AirTanksWraithEscort::update(ground->second.getUnits());
+            escortTank = escort->defending && escort->guardedTank &&
+                escort->guardedTank->exists()
+                ? escort->guardedTank : escort->frontTank;
+        }
+    }
 
     // Special target selection for Goliaths:
     // 1) keep tactical priority: Carrier / dangerous air / dangerous ground
@@ -352,7 +401,30 @@ BWAPI::Unit MicroRanged::getTarget(BWAPI::Unit rangedUnit, const BWAPI::Unitset&
         {
             continue;
         }
-// Skip targets under dark swarm that we can't hit.
+        if (escortTank)
+        {
+            // Patrol farther ahead of the Tank than before, but never turn an
+            // escort into an unbounded raid. During defense the protected
+            // Tank's attackers, including those behind the line, take over.
+            const int tankRadius = escort && escort->defending
+                ? 11 * 32 : 15 * 32;
+            if (target->getDistance(escortTank) > tankRadius &&
+                target->getDistance(rangedUnit) > 4 * 32)
+                continue;
+            const Base* home = the.bases.myMain();
+            if ((!escort || !escort->defending) && home &&
+                target->getDistance(escortTank) > 4 * 32 &&
+                target->getDistance(home->getPosition()) + 3 * 32 <
+                    escortTank->getDistance(home->getPosition()) &&
+                !UnitUtil::CanAttack(target, rangedUnit))
+                continue;
+            if (escort && !escort->defending &&
+                !target->isFlying() &&
+                target->getPosition().isValid() &&
+                the.airHitsFixed.at(target->getTilePosition()) > 0)
+                continue;
+        }
+        // Skip targets under dark swarm that we can't hit.
         if (target->isUnderDarkSwarm() && !target->getType().isBuilding())
         {
             continue;
@@ -379,6 +451,25 @@ BWAPI::Unit MicroRanged::getTarget(BWAPI::Unit rangedUnit, const BWAPI::Unitset&
         // Let's say that 1 priority step is worth 160 pixels (5 tiles).
         // We care about unit-target range and target-order position distance.
         int score = 5 * 32 * priority - range;
+        if (escort && escort->defending)
+        {
+            if (target == escort->threat)
+                score += 16 * 32;
+            else if (escortTank &&
+                target->getDistance(escortTank) <= 9 * 32 &&
+                (UnitUtil::CanAttackGround(target) ||
+                 UnitUtil::CanAttack(target, rangedUnit)))
+                score += 9 * 32;
+            else
+                score -= 8 * 32;
+        }
+        if (escort && rangedUnit->isCloaked() &&
+            target->getType().isDetector() &&
+            !UnitUtil::CanAttackAir(target))
+            score += 6 * 32;
+        if (airTanksWorkerRaid && !raidAntiAirNearby &&
+            target->getType().isWorker())
+            score += 8 * 32;
 
         // Adjust for special features.
         // A bonus for attacking enemies that are "in front".
@@ -485,13 +576,15 @@ BWAPI::Unit MicroRanged::getTarget(BWAPI::Unit rangedUnit, const BWAPI::Unitset&
         }
     }
 
-    return bestScore > 0 ? bestTarget : nullptr;
+    return bestScore > 0 ? preferThreatToStructure(rangedUnit, bestTarget, targets) : nullptr;
 }
 
 int MicroRanged::getAttackPriority(BWAPI::Unit rangedUnit, BWAPI::Unit target) 
 {
     const BWAPI::UnitType rangedType = rangedUnit->getType();
     const BWAPI::UnitType targetType = target->getType();
+
+    if (isNeutralEgg(target)) return getBackstopAttackPriority(target);
 
     
 

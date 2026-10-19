@@ -46,6 +46,12 @@ class CombatCommander
     bool			_goAggressive;                  // set by opening book and/or code
 
 
+    bool            _airTanksWraithRaidFinished = false;
+    bool            _airTanksVultureRaidFinished = false;
+    bool            _airTanksWraithRaidActive = false;
+    int             _airTanksWraithRaidStart = -1;
+    int             _airTanksVultureRaidStart = -1;
+
     std::map<std::string, int> _tankDropPhase;
 
     std::map<std::string, bool> _tankDropEmergencyMode;
@@ -71,6 +77,8 @@ class CombatCommander
     int             _lastUndetectedEnemyFrame;
     BWAPI::Position _expansionDetectionPosition;
     int             _expansionDetectionFrame;
+    BWAPI::TilePosition _expansionLandingTile;
+    int             _expansionLandingRequestFrame;
     std::vector<ComsatScanRequest> _comsatScanRequests;
     std::set<int>   _comsatsUsedForStrategicScouting;
     int             _lastComsatQueueFrame;
@@ -99,6 +107,10 @@ class CombatCommander
     bool _drop2EverAssigned;
     int _genericDropFillStartFrame;
     int _genericDropLastCargoUsed;
+    int _opportunisticDropPhase;
+    int _opportunisticDropLoadFrame;
+    int _opportunisticDropLaunchFrame;
+    BWAPI::Position _opportunisticDropTarget;
 
     bool isReservedTankDropVulture(BWAPI::Unit unit) ;
     std::set<int>   _tankDropInitialVultureIDs;
@@ -109,13 +121,17 @@ class CombatCommander
 
 
     void            updateAttackSquads();
+    void            updateAirTanksVultureRaid();
     void			updateReconSquad();
     void            updateBenzeneClearanceSquad();
+    void            updateExpansionLandingClearanceSquad();
     void            updateProxyFactoryVultureSquad();
     void            updateWorkerCounterAttackSquads();
     void            updateBaseDefenseSquads();
     void            updateScoutDefenseSquad();
     void            updateDropSquads();
+    void            updateOpportunisticDropSquad();
+    BWAPI::Position chooseOpportunisticDropTarget(BWAPI::Unit transport) const;
     void            updateIslandCleanupSupplyRelease();
 
     bool            wantSquadDetectors() const;
@@ -162,6 +178,7 @@ class CombatCommander
 
 public:
     double lastSquadUpdateMilliseconds() const { return _lastSquadUpdateMilliseconds; }
+    const SquadData& squadDiagnostics() const { return _squadData; }
     double lastCombatPreparationMilliseconds() const { return _lastCombatPreparationMilliseconds; }
 
     CombatCommander();
@@ -176,6 +193,7 @@ public:
     void setAggression(bool aggressive) { _goAggressive = aggressive; }
     bool getAggression() const { return _goAggressive; };
     bool groundSquadAttackOrderActive();
+    bool airTanksWraithRaidActive() const { return _airTanksWraithRaidActive; }
     const BWAPI::Unitset& groundSquadUnits();
 
     void goDefensive() { setAggression(false); }
@@ -197,6 +215,7 @@ public:
         const BWAPI::Position& position,
         int radius = 5 * 32) const;
     void requestExpansionVesselDetection(const BWAPI::Position& position);
+    void requestExpansionLandingClearance(BWAPI::TilePosition tile);
 
     
     void pullWorkers(int n);

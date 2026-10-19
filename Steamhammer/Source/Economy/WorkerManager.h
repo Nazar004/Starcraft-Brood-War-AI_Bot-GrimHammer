@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include "Economy/WorkerData.h"
 
 namespace UAlbertaBot
@@ -12,6 +13,14 @@ class WorkerManager
     WorkerData  workerData;
     BWAPI::Unit previousClosestWorker;
     bool		_collectGas;
+    const char* _slowestUpdatePhase = "";
+    double _slowestUpdatePhaseMs = 0.0;
+    mutable double _defenseQueryMs = 0.0;
+    mutable int _defenseQueries = 0;
+    std::vector<BWAPI::Unit> _workerDefenseTargets;
+    std::vector<BWAPI::Unit> _workerGroundThreats;
+    double _dangerCheckMs = 0.0;
+    int _dangerChecks = 0;
     BWAPI::Unitset busy;    // units with special orders this frame
     std::map<int, BWAPI::Position> _mobileRepairPositions;
     int         _nextMobileRepairFrame;
@@ -76,6 +85,12 @@ class WorkerManager
 public:
 
     void        update();
+    const char* slowestUpdatePhase() const { return _slowestUpdatePhase; }
+    double slowestUpdatePhaseMilliseconds() const { return _slowestUpdatePhaseMs; }
+    double defenseQueryMilliseconds() const { return _defenseQueryMs; }
+    int defenseQueryCount() const { return _defenseQueries; }
+    double dangerCheckMilliseconds() const { return _dangerCheckMs; }
+    int dangerCheckCount() const { return _dangerChecks; }
     void        onUnitMorph(BWAPI::Unit unit);
     void        onUnitShow(BWAPI::Unit unit);
 	void        onUnitDestroy(BWAPI::Unit unit);

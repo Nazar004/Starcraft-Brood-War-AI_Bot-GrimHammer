@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Core/Common.h"
+#include <array>
+#include <chrono>
 #include "Combat/OpsBoss.h"
 
 #include "Combat/Micro/MicroAirToAir.h"
@@ -17,6 +19,61 @@
 
 namespace UAlbertaBot
 {
+// Measurements are reset each frame and never change combat decisions.
+struct SquadUpdateProfile
+{
+    enum Stage { Units, Vanguard, Stim, Detectors, Clustering, Status,
+        Special, Tanks, Regroup, Medics, Combat, Simulation, StageCount };
+    enum MicroStage { Air, Melee, Ghost, Ranged, Vultures, Goliaths, MicroCount };
+    std::array<double, StageCount> milliseconds{};
+    std::array<double, MicroCount> microMilliseconds{};
+    int simulations = 0;
+    int units = 0;
+    int clusters = 0;
+    std::string squad;
+
+    template<typename Work>
+    void measure(Stage stage, Work work)
+    {
+        const auto started = std::chrono::steady_clock::now();
+        work();
+        milliseconds[stage] += std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - started).count();
+    }
+    template<typename Work>
+    void measureMicro(MicroStage stage, Work work)
+    {
+        const auto started = std::chrono::steady_clock::now();
+        work();
+        microMilliseconds[stage] += std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - started).count();
+    }
+    int slowestStage() const
+    {
+        // Simulation is nested within Status; report it separately.
+        return int(std::max_element(milliseconds.begin(),
+            milliseconds.begin() + Simulation) - milliseconds.begin());
+    }
+    int slowestMicro() const
+    {
+        return int(std::max_element(microMilliseconds.begin(),
+            microMilliseconds.end()) - microMilliseconds.begin());
+    }
+    static const char* stageName(int stage)
+    {
+        static const char* const names[] = { "units", "vanguard", "stim",
+            "detectors", "clustering", "status", "special", "tanks",
+            "regroup", "medics", "combat", "FAP" };
+        return stage >= 0 && stage < StageCount ? names[stage] : "none";
+    }
+    static const char* microName(int stage)
+    {
+        static const char* const names[] = { "air", "melee", "ghost",
+            "ranged", "vultures", "goliaths" };
+        return stage >= 0 && stage < MicroCount ? names[stage] : "none";
+    }
+};
+
 class Squad
 {
     std::string         _name;
@@ -41,8 +98,22 @@ class Squad
 
     SquadOrder          _order;
     int                 _orderFrame;        // when the order was last changed
-    BWAPI::Unit			_vanguard;			// the unit closest to the order location, if any
+    BWAPI::Unit			_vanguard = nullptr;	// the unit closest to the order location, if any
     BWAPI::Position     _regroupPosition;   // cached because it is used in different code locations
+    // Medic ID -> reserved healing energy and expiry frame, including latency.
+    std::map<int, std::pair<int, int>> _stimHealingReservations;
+    int _lastStimReservationFrame = -1;
+
+    struct BioCombatResult
+    {
+        int frame = -100000;
+        BWAPI::Position center = BWAPI::Positions::Invalid;
+        BWAPI::Position enemyCenter = BWAPI::Positions::Invalid;
+        size_t units = 0, enemyUnits = 0;
+        int hp = 0, enemyHP = 0;
+        double score = 0.0;
+    };
+    std::map<int, BioCombatResult> _bioCombatResults;
 
     MicroAirToAir		_microAirToAir;
     MicroMelee			_microMelee;
@@ -58,6 +129,7 @@ class Squad
     std::map<BWAPI::Unit, bool> _nearEnemy;
 
     std::vector<UnitCluster> _clusters;
+    SquadUpdateProfile _lastUpdateProfile;
 
     static const int ImmobileDefenseRadius = 800;
 
@@ -75,7 +147,8 @@ class Squad
     bool            resetClusterStatus(UnitCluster & cluster);
     bool            shouldWaitForSiegeAgainstStaticDefense(const UnitCluster & cluster) const;
     void            microSpecialUnits(const UnitCluster & cluster);
-    void            clusterCombat(const UnitCluster & cluster);
+    void            clusterCombat(const UnitCluster & cluster,
+        const BWAPI::Position& regroupPosition);
     bool			noCombatUnits(const UnitCluster & cluster) const;
     bool			notNearEnemy(const UnitCluster & cluster);
     bool			joinUp(const UnitCluster & cluster);
@@ -105,6 +178,7 @@ public:
     ~Squad();
 
     void                update();
+    const SquadUpdateProfile& lastUpdateProfile() const { return _lastUpdateProfile; }
     void                addUnit(BWAPI::Unit u);
     void                removeUnit(BWAPI::Unit u);
     void				releaseWorkers();
@@ -123,6 +197,7 @@ public:
     BWAPI::Unit			getVanguard() const { return _vanguard; };		// may be null
     void                setOrder(SquadOrder so);
     SquadOrder &        getOrder();
+    const SquadOrder &  getOrder() const;
     int                 getOrderFrame() const { return _orderFrame; };
     const std::string   getRegroupStatus() const;
 

@@ -59,6 +59,7 @@ namespace Config
     {
         extern bool Crazyhammer;
         extern std::string StrategyName;
+        extern std::string ForcedStrategy; // optional deterministic test opening
         extern bool UsePlanRecognizer;
         extern bool AdaptStrategyToEnemyPlan;
         extern bool UseEnemySpecificStrategy;

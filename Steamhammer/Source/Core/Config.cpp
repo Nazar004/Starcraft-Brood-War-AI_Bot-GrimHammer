@@ -55,6 +55,7 @@ namespace Config
         bool Crazyhammer                    = false;
         std::string TerranStrategyName      = "11Rax";					// default
         std::string StrategyName            = "9PoolSpeed";
+        std::string ForcedStrategy          = "";
         bool UsePlanRecognizer				= true;
         bool AdaptStrategyToEnemyPlan       = true;
         bool UseEnemySpecificStrategy       = true;

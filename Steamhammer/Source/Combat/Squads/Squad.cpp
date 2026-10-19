@@ -4,11 +4,15 @@
 #include "Combat/Simulation/CombatSimulation.h"
 #include "Map/MapTools.h"
 #include "Combat/Squads/SquadOrder.h"
+#include "Combat/CombatCommander.h"
 #include "Strategy/StrategyManager.h"
+#include "Strategy/Terran/AirTanksPolicy.h"
+#include "Strategy/Terran/AirTanksFormation.h"
 #include "Core/The.h"
 #include "Utilities/UnitUtil.h"
 #include "Combat/Micro/Terran/MicroTanks.h"
 #include "Combat/Micro/Terran/MicroMarines.h"
+#include "Combat/Micro/Terran/BioInfantrySafety.h"
 #include "Combat/Micro/Terran/TerranFormation.h"
 #include <climits>
 #include <cmath>
@@ -123,7 +127,10 @@ Squad::~Squad()
 
 void Squad::update()
 {
-    updateUnits();
+    _lastUpdateProfile = SquadUpdateProfile();
+    _lastUpdateProfile.squad = _name;
+    _lastUpdateProfile.measure(SquadUpdateProfile::Units, [&] { updateUnits(); });
+    _lastUpdateProfile.units = int(_units.size());
 
     // The Irradiated squad.
     
@@ -149,67 +156,75 @@ void Squad::update()
     }
 
     // This is a non-empty combat squad, so it may have a meaningful vanguard unit.
-    _vanguard = unitClosestToTarget(_units);
+    _lastUpdateProfile.measure(SquadUpdateProfile::Vanguard,
+        [&] { _vanguard = unitClosestToTarget(_units); });
 
     if (_order.getType() == SquadOrderTypes::Load)
     {
-        loadTransport();
+        _lastUpdateProfile.measure(SquadUpdateProfile::Combat,
+            [&] { loadTransport(); });
         return;
     }
 
     if (_order.getType() == SquadOrderTypes::Drop)
     {
-        _microTransports.update();
+        _lastUpdateProfile.measure(SquadUpdateProfile::Combat,
+            [&] { _microTransports.update(); });
         // And fall through to let the rest of the drop squad fight.
     }
 
     // Maybe stim marines and firebats.
-    stimIfNeeded();
+    _lastUpdateProfile.measure(SquadUpdateProfile::Stim,
+        [&] { stimIfNeeded(); });
 
     // Detectors.
     // Build a cleaner escort set for detectors:
     // no detectors themselves, no transports, no unready units.
-    BWAPI::Unitset detectorEscortUnits;
-
-    for (BWAPI::Unit unit : _units)
+    _lastUpdateProfile.measure(SquadUpdateProfile::Detectors, [&]
     {
-        if (!unit || !unit->exists() || !unit->getPosition().isValid())
+        BWAPI::Unitset detectorEscortUnits;
+
+        for (BWAPI::Unit unit : _units)
         {
-            continue;
+            if (!unit || !unit->exists() || !unit->getPosition().isValid())
+            {
+                continue;
+            }
+
+            if (unit->getType().isDetector())
+            {
+                continue;
+            }
+
+            if (unit->getType().spaceProvided() > 0)
+            {
+                continue;
+            }
+
+
+
+
+
+            detectorEscortUnits.insert(unit);
         }
 
-        if (unit->getType().isDetector())
+        BWAPI::Unit detectorVanguard = nullptr;
+        if (!detectorEscortUnits.empty())
         {
-            continue;
+            detectorVanguard = unitClosestToTarget(detectorEscortUnits);
         }
 
-        if (unit->getType().spaceProvided() > 0)
-        {
-            continue;
-        }
-
-        
-
-        
-
-        detectorEscortUnits.insert(unit);
-    }
-
-    BWAPI::Unit detectorVanguard = nullptr;
-    if (!detectorEscortUnits.empty())
-    {
-        detectorVanguard = unitClosestToTarget(detectorEscortUnits);
-    }
-
-    // Detectors.
-    _microDetectors.setUnitClosestToTarget(detectorVanguard);
-    _microDetectors.setSquadSize(_units.size());
-    _microDetectors.go(detectorEscortUnits);
+        // Detectors.
+        _microDetectors.setUnitClosestToTarget(detectorVanguard);
+        _microDetectors.setSquadSize(_units.size());
+        _microDetectors.go(detectorEscortUnits);
+    });
 
     // Finish choosing the units.
     BWAPI::Unitset unitsToCluster;
     for (BWAPI::Unit unit : _units)
     {
+        if (BioInfantrySafety::evade(unit)) continue;
         if (unit->getType().isDetector() ||
             unit->getType().spaceProvided() > 0)
         {
@@ -222,37 +237,43 @@ void Squad::update()
 
     // First pass to set cluster status.
     // It also takes non-combat actions.
-    the.ops.cluster(the.self(), unitsToCluster, _clusters);
+    _lastUpdateProfile.measure(SquadUpdateProfile::Clustering,
+        [&] { the.ops.cluster(the.self(), unitsToCluster, _clusters); });
+    _lastUpdateProfile.clusters = int(_clusters.size());
     for (UnitCluster & cluster : _clusters)
     {
         // MicroVultures is the only Vulture command owner. It gets the first
         // chance to maintain/issue a strategic mine order; moveCluster() below
         // recognizes that lease and will not overwrite it.
-        _microVultures.executeStrategicMines(cluster);
-        setClusterStatus(cluster);
-        microSpecialUnits(cluster);
+        _lastUpdateProfile.measure(SquadUpdateProfile::Special,
+            [&] { _microVultures.executeStrategicMines(cluster); });
+        _lastUpdateProfile.measure(SquadUpdateProfile::Status,
+            [&] { setClusterStatus(cluster); });
+        _lastUpdateProfile.measure(SquadUpdateProfile::Special,
+            [&] { microSpecialUnits(cluster); });
     }
 
     // Second pass to reconsider cluster status in light of the status of nearby clusters.
-    bool statusReset;
-    do
+    _lastUpdateProfile.measure(SquadUpdateProfile::Status, [&]
     {
-        statusReset = false;
-        for (UnitCluster & cluster : _clusters)
+        bool statusReset;
+        do
         {
-            statusReset = statusReset || resetClusterStatus(cluster);
-        }
-    } while (statusReset);
+            statusReset = false;
+            for (UnitCluster & cluster : _clusters)
+            {
+                statusReset = statusReset || resetClusterStatus(cluster);
+            }
+        } while (statusReset);
 
-    // Update _lastAttack and _lastRetreat based on the cluster status.
-    setLastAttackRetreat();
+        // Update _lastAttack and _lastRetreat based on the cluster status.
+        setLastAttackRetreat();
+    });
 
     for (const UnitCluster& cluster : _clusters)
     {
-        // Healers need the final retreat decision, not the first-pass status.
-        if (the.now() % 6 == 0)
-            _microMedics.update(cluster, _units, finalRegroupPosition());
-        _microTanks.execute(cluster);
+        _lastUpdateProfile.measure(SquadUpdateProfile::Tanks,
+            [&] { _microTanks.execute(cluster); });
     }
 
     // Third pass to carry out combat or retreat actions for clusters that have them.
@@ -261,9 +282,17 @@ void Squad::update()
     int phase = BWAPI::Broodwar->getFrameCount() % nPhases;
     for (const UnitCluster & cluster : _clusters)
     {
+        BWAPI::Position regroupPosition = BWAPI::Positions::Invalid;
+        if (cluster.status == ClusterStatus::Regroup && (phase == 0 || the.now() % 6 == 0))
+            _lastUpdateProfile.measure(SquadUpdateProfile::Regroup,
+                [&] { regroupPosition = calcRegroupPosition(cluster); });
+        if (the.now() % 6 == 0)
+            _lastUpdateProfile.measure(SquadUpdateProfile::Medics,
+                [&] { _microMedics.update(cluster, _units, regroupPosition); });
         if (phase == 0)
         {
-            clusterCombat(cluster);
+            _lastUpdateProfile.measure(SquadUpdateProfile::Combat,
+                [&] { clusterCombat(cluster, regroupPosition); });
         }
         phase = (phase + 1) % nPhases;
     }
@@ -277,6 +306,18 @@ void Squad::setClusterStatus(UnitCluster & cluster)
     // keep the squad in Advance forever and MicroManager would never issue the
     // attack. DestroyNeutral must execute its dedicated target logic.
     if (_order.getType() == SquadOrderTypes::DestroyNeutral)
+    {
+        cluster.status = ClusterStatus::Attack;
+        return;
+    }
+
+    // Dropped troops already reached the enemy base. The ordinary army
+    // join-up/regroup logic sends a small raid all the way back to Ground,
+    // overwriting worker fire and turning a successful drop into a retreat.
+    // Their micro still handles local targets, kiting and mine safety.
+    if ((_name == "VultureHarass1" || _name == "VultureHarass2" ||
+         _name.compare(0, 18, "OpportunisticRaid_") == 0) &&
+        !noCombatUnits(cluster))
     {
         cluster.status = ClusterStatus::Attack;
         return;
@@ -324,6 +365,19 @@ void Squad::setClusterStatus(UnitCluster & cluster)
     }
     else if (notNearEnemy(cluster))
     {
+        // Neutral Eggs are absent from the enemy grid. Without this transition
+        // Advance only issues movement and never calls the firing micro.
+        BWAPI::Unitset eggs;
+        if (_order.isCombatOrder()) MicroManager::addNearbyNeutralEggTargets(cluster, eggs);
+        if (!eggs.empty())
+        {
+            // Cleanup is movement work, not a battle that should pull nearby
+            // retreating clusters back into combat through resetClusterStatus().
+            cluster.status = ClusterStatus::Advance;
+            _regroupStatus = yellow + std::string("Clear nearby Eggs");
+            drawCluster(cluster);
+            return;
+        }
         cluster.status = ClusterStatus::Advance;
         if (joinUp(cluster))
         {
@@ -472,10 +526,15 @@ bool Squad::resetClusterStatus(UnitCluster & cluster)
         {
             return false;
         }
+        const bool bio = StrategyManager::Instance().bioTankPlanActive();
         for (const UnitCluster & cluster2 : _clusters)
         {
+            // A fight twenty tiles away is not immediate support for a weak
+            // bio reinforcement. Join only a substantial nearby fighting group.
+            if (bio && (cluster2.units.size() < std::max(size_t(8), cluster.units.size()) ||
+                !the.partitions.connected(cluster.center, cluster2.center))) continue;
             if (cluster2.status == ClusterStatus::Attack &&
-                cluster.center.getApproxDistance(cluster2.center) < 20 * 32)
+                cluster.center.getApproxDistance(cluster2.center) < (bio ? 6 : 20) * 32)
             {
                 cluster.status = ClusterStatus::Attack;
                 return true;
@@ -596,6 +655,19 @@ void Squad::microSpecialUnits(const UnitCluster & cluster)
     // Ghost movement shares the fixed six-frame spell schedule with the squad.
     if (the.now() % 6 == 0)
     {
+        // Most clusters have no Ghosts. Finding their vanguard can build a
+        // ground-distance field for each ordinary unit, even though the Ghost
+        // manager has no movement to update in those clusters.
+        bool hasGhost = false;
+        for (BWAPI::Unit unit : cluster.units)
+        {
+            if (unit && unit->getType() == BWAPI::UnitTypes::Terran_Ghost)
+            {
+                hasGhost = true;
+                break;
+            }
+        }
+        if (!hasGhost) return;
         BWAPI::Unit vanguard = unitClosestToTarget(cluster.units);
         if (!vanguard) vanguard = _vanguard;
         _microGhost.updateMovement(cluster, vanguard);
@@ -605,16 +677,26 @@ void Squad::microSpecialUnits(const UnitCluster & cluster)
 // Take cluster combat actions.
 // This handles cluster status of Attack and Regroup, plus Ghost spell
 // opportunities while the rest of the cluster is advancing.
-void Squad::clusterCombat(const UnitCluster & cluster)
+void Squad::clusterCombat(const UnitCluster & cluster,
+    const BWAPI::Position& regroupPosition)
 {
-    if (cluster.status == ClusterStatus::Attack)
+    BWAPI::Unitset eggs;
+    if (cluster.status == ClusterStatus::Advance && _order.isCombatOrder())
+        MicroManager::addNearbyNeutralEggTargets(cluster, eggs);
+    if (cluster.status == ClusterStatus::Attack || !eggs.empty())
     {
-        _microAirToAir.execute(cluster);
-        _microMelee.execute(cluster);
-        _microGhost.execute(cluster);
-        _microRanged.execute(cluster);
-        _microVultures.execute(cluster);
-        _microGoliath.execute(cluster);
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Air,
+            [&] { _microAirToAir.execute(cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Melee,
+            [&] { _microMelee.execute(cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Ghost,
+            [&] { _microGhost.execute(cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Ranged,
+            [&] { _microRanged.execute(cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Vultures,
+            [&] { _microVultures.execute(cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Goliaths,
+            [&] { _microGoliath.execute(cluster); });
         //_microTanks.execute(cluster);
 
     }
@@ -622,28 +704,31 @@ void Squad::clusterCombat(const UnitCluster & cluster)
     {
         // A Ghost can see a Carrier through forward Goliaths before its own
         // cluster enters Attack status. Give Lockdown a chance on approach.
-        _microGhost.execute(cluster);
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Ghost,
+            [&] { _microGhost.execute(cluster); });
     }
     else if (cluster.status == ClusterStatus::Regroup)
     {
         // Regroup, aka retreat. Only fighting units care about regrouping.
-        if (!_regroupPosition.isValid())
-        {
-            _regroupPosition = calcRegroupPosition(cluster);
-        }
+        _regroupPosition = regroupPosition.isValid()
+            ? regroupPosition : calcRegroupPosition(cluster);
 
         if (Config::Debug::DrawClusters)
         {
             BWAPI::Broodwar->drawLineMap(cluster.center, _regroupPosition, BWAPI::Colors::Purple);
         }
 
-        _microAirToAir.regroup(_regroupPosition, cluster);
-        _microMelee.regroup(_regroupPosition, cluster);
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Air,
+            [&] { _microAirToAir.regroup(_regroupPosition, cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Melee,
+            [&] { _microMelee.regroup(_regroupPosition, cluster); });
         // Ghost movement is owned by MicroGhost even during a squad retreat.
         // Issuing generic regroup here could overwrite the cloak command sent
         // immediately after Lockdown on the same frame.
-        _microRanged.regroup(_regroupPosition, cluster);
-        _microVultures.regroup(_regroupPosition, cluster);
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Ranged,
+            [&] { _microRanged.regroup(_regroupPosition, cluster); });
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Vultures,
+            [&] { _microVultures.regroup(_regroupPosition, cluster); });
 
         // Large Goliath groups retreat along the same real shortest-ground
         // route used for forward movement. Do not route through Area/Choke
@@ -663,7 +748,8 @@ void Squad::clusterCombat(const UnitCluster & cluster)
                 goliathRegroupPosition = waypoint;
             }
         }
-        _microGoliath.regroup(goliathRegroupPosition, cluster);
+        _lastUpdateProfile.measureMicro(SquadUpdateProfile::Goliaths,
+            [&] { _microGoliath.regroup(goliathRegroupPosition, cluster); });
         //_microTanks.execute(cluster);
 
         // Aggressive lurkers do not regroup, but always execute their order.
@@ -940,6 +1026,16 @@ void Squad::moveCluster(const UnitCluster & cluster, const BWAPI::Position & des
     // target and undo the join-up command.
     const GridDistances* routeDistances = destination == _order.getPosition()
         ? _order.distances() : nullptr;
+    // A detached Goliath joining a cluster farther along the attack route
+    // still has to pass through the same ground exit. The direct join-up
+    // position can be across a wall even though both clusters are reachable.
+    const int joinGoalDistance =
+        destination != _order.getPosition() && _order.isCombatOrder() &&
+        _order.distances() && cluster.center.isValid()
+        ? getDistance(destination) : -1;
+    const bool joinAheadOnRoute =
+        joinGoalDistance >= 0 &&
+        getDistance(cluster.center) >= joinGoalDistance + 2 * 32;
     _microVultures.moveCluster(cluster, _units, destination, lazy,
         _name == "Ground");
 
@@ -1108,6 +1204,21 @@ void Squad::moveCluster(const UnitCluster & cluster, const BWAPI::Position & des
             {
                 BWAPI::Position unitDestination = destination;
                 bool hasAssignedGoliathSlot = false;
+
+                // Route through the real ground exit while the join-up point
+                // is still far ahead. Near the destination, use the ordinary
+                // join-up/formation position so we do not overshoot it toward
+                // the squad's final attack objective.
+                if (joinAheadOnRoute &&
+                    unit->getType() == BWAPI::UnitTypes::Terran_Goliath &&
+                    unit->getPosition().isValid() &&
+                    unit->getDistance(destination) > 8 * 32 &&
+                    getDistance(unit->getPosition()) >= joinGoalDistance + 3 * 32)
+                {
+                    if (lazy) the.micro.MoveNear(unit, destination, _order.distances());
+                    else the.micro.Move(unit, destination, _order.distances());
+                    continue;
+                }
 
                 if (posture != TerranArmyPosture::PureAir &&
                     unit->getType() == BWAPI::UnitTypes::Terran_Goliath &&
@@ -1365,6 +1476,7 @@ void Squad::addUnitsToMicroManagers()
     }
     _microAirToAir.setUnits(airToAirUnits);
     _microMelee.setUnits(meleeUnits);
+    _microMelee.setFormationUnits(_units);
     _microRanged.setUnits(rangedUnits);
     _microVultures.setUnits(vultureUnits);
     _microGoliath.setUnits(goliathUnits);
@@ -1391,8 +1503,8 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
 
     // Carrier combat needs its own readiness check. The old unconditional
     // "four Goliaths never retreat" rule fed small groups into large fleets.
-    // Bio remains aggressive by design; mech advances only with completed
-    // range and enough local Goliaths for the visible Carrier count.
+    // Bio always reaches the ordinary combat evaluation below. Only mech
+    // receives this shortcut with completed range and enough local Goliaths.
     if ((_name == "AntiAir" || _name == "Ground") &&
         (StrategyManager::Instance().getTerranArmyPosture() ==
             TerranArmyPosture::PureAir ||
@@ -1401,8 +1513,7 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
         cluster.center.isValid())
     {
         const int clusterGoliaths = countGoliathsInUnits(cluster.units);
-        const bool bioPureAir =
-            StrategyManager::Instance().getOpeningGroup() == "bio";
+        const bool bioArmy = StrategyManager::Instance().bioTankPlanActive();
         int visibleGroundThreats = 0;
         int visibleCarriers = 0;
         int visibleSmallAirThreats = 0;
@@ -1446,7 +1557,7 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
             ? 4
             : std::max(8, std::min(30, 3 * visibleCarriers + 4));
 
-        if (visibleCarriers == 0 && visibleNonCarrierAir > 0 &&
+        if (!bioArmy && visibleCarriers == 0 && visibleNonCarrierAir > 0 &&
             clusterGoliaths >= std::max(3, 2 * visibleSmallAirThreats + 1) &&
             visibleGroundThreats <= std::max(1, clusterGoliaths / 3))
         {
@@ -1454,8 +1565,7 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
             return false;
         }
 
-        if ((bioPureAir ||
-             (charonCompleted && clusterGoliaths >= requiredGoliaths)) &&
+        if (!bioArmy && charonCompleted && clusterGoliaths >= requiredGoliaths &&
             visibleGroundThreats <= std::max(2, clusterGoliaths / 2))
         {
             _regroupStatus = green + std::string("AntiAir advance");
@@ -1472,6 +1582,8 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
         _attackAtMax = true;
     }
 
+    // Global supply does not make a small detached bio cluster win a fight.
+    if (StrategyManager::Instance().bioTankPlanActive()) _attackAtMax = false;
     if (_attackAtMax)
     {
         if (the.self()->supplyUsed() < 320)
@@ -1538,8 +1650,50 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
 
     CombatSimulation & sim = the.combatSim;
 
-    sim.setCombatUnits(cluster.units, vanguard->getPosition(), _combatSimRadius, _fightVisibleOnly);
-    double score = sim.simulateCombat(_meatgrinder);
+    double score = 0.0;
+    BioCombatResult* cached = nullptr;
+    bool reuse = false;
+    const UnitCluster* enemy = nullptr;
+    if (StrategyManager::Instance().bioTankPlanActive())
+    {
+        for (auto it = _bioCombatResults.begin(); it != _bioCombatResults.end(); )
+            if (the.now() < it->second.frame || the.now() - it->second.frame > 24)
+                it = _bioCombatResults.erase(it);
+            else ++it;
+        cached = &_bioCombatResults[vanguard->getID()];
+        enemy = the.ops.getNearestEnemyClusterVs(cluster.center, !cluster.air, cluster.air);
+        // Re-enabling retreat at high supply must not run a full FAP battle
+        // every frame. Reuse for at most 1/4 second unless the local armies change.
+        reuse = the.now() >= cached->frame && the.now() - cached->frame < 6 &&
+            cached->units == cluster.units.size() &&
+            std::abs(cached->hp - cluster.hp) <= std::max(40, cached->hp / 10) &&
+            cached->center.isValid() && cached->center.getApproxDistance(cluster.center) <= 64 &&
+            cached->enemyUnits == (enemy ? enemy->units.size() : 0) &&
+            std::abs(cached->enemyHP - (enemy ? enemy->hp : 0)) <= std::max(40, cached->enemyHP / 10) &&
+            (!enemy || (cached->enemyCenter.isValid() &&
+                cached->enemyCenter.getApproxDistance(enemy->center) <= 64));
+        if (reuse) score = cached->score;
+    }
+    if (!reuse)
+    {
+        ++_lastUpdateProfile.simulations;
+        _lastUpdateProfile.measure(SquadUpdateProfile::Simulation, [&]
+        {
+            sim.setCombatUnits(cluster.units, vanguard->getPosition(), _combatSimRadius, _fightVisibleOnly);
+            score = sim.simulateCombat(_meatgrinder);
+        });
+        if (cached)
+        {
+            cached->frame = the.now();
+            cached->center = cluster.center;
+            cached->units = cluster.units.size();
+            cached->hp = cluster.hp;
+            cached->enemyUnits = enemy ? enemy->units.size() : 0;
+            cached->enemyHP = enemy ? enemy->hp : 0;
+            cached->enemyCenter = enemy ? enemy->center : BWAPI::Positions::Invalid;
+            cached->score = score;
+        }
+    }
 
     // Use the smoothing mechanism to average out recent results.
 	the.micro.setAttack(cluster.units, score >= 0.0);
@@ -1587,6 +1741,37 @@ bool Squad::needsToRegroup(UnitCluster & cluster)
 
 BWAPI::Position Squad::calcRegroupPosition(const UnitCluster & cluster) const
 {
+    if (_name == "Flying" && cluster.air &&
+        StrategyManager::Instance().airTanksPlanActive() &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith)
+    {
+        const auto& squads = CombatCommander::Instance().squadDiagnostics().getSquads();
+        const auto ground = squads.find("Ground");
+        if (ground != squads.end())
+        {
+            BWAPI::Unit tank = AirTanksFormation::frontTank(ground->second.getUnits());
+            if (tank)
+            {
+                // FAP may order a retreat from strong anti-air. Pull back
+                // behind the Tank line rather than all the way to the main.
+                BWAPI::Position safe = tank->getPosition();
+                const Base* home = the.bases.myMain();
+                if (home)
+                {
+                    const BWAPI::Position rear = home->getPosition();
+                    const int distance = std::max(1, safe.getApproxDistance(rear));
+                    const int step = std::min(4 * 32, distance);
+                    safe = BWAPI::Position(
+                        safe.x + (rear.x - safe.x) * step / distance,
+                        safe.y + (rear.y - safe.y) * step / distance);
+                    safe.makeValid();
+                }
+                return safe;
+            }
+        }
+    }
+
     // 1. Retreat toward immobile defense, if any is near.
     BWAPI::Unit vanguard = unitClosestToTarget(cluster.units);  // cluster vanguard (not squad vanguard)
 
@@ -1910,6 +2095,11 @@ SquadOrder & Squad::getOrder()
     return _order; 
 }
 
+const SquadOrder & Squad::getOrder() const
+{
+    return _order;
+}
+
 
 
 const std::string Squad::getRegroupStatus() const
@@ -1996,6 +2186,31 @@ void Squad::loadTransport()
     }
 }
 
+// Reserve a conservative healing budget only from a nearby available Medic.
+static BWAPI::Unit localStimMedic(BWAPI::Unit infantry,
+    const BWAPI::Unitset& medics, const std::map<int, int>& committedEnergy)
+{
+    BWAPI::Unit closest = nullptr;
+    int distance = 7 * 32 + 1;
+    for (BWAPI::Unit medic : medics)
+    {
+        if (!medic || !medic->exists() || !medic->isCompleted() || medic->isLoaded() ||
+            !medic->getPosition().isValid() || medic->isStasised() ||
+            medic->isMaelstrommed() || medic->isLockedDown()) continue;
+        const auto committed = committedEnergy.find(medic->getID());
+        const int reserved = committed == committedEnergy.end() ? 0 : committed->second;
+        if (medic->getEnergy() - reserved < 10 ||
+            !the.partitions.connected(infantry->getPosition(), medic->getPosition())) continue;
+        const int d = medic->getDistance(infantry);
+        if (d < distance)
+        {
+            distance = d;
+            closest = medic;
+        }
+    }
+    return closest;
+}
+
 // Stim marines and firebats if possible and appropriate.
 // This stims for combat. It doesn't consider stim to travel faster.
 // We bypass the micro managers because it simplifies the bookkeeping, but a disadvantage
@@ -2018,8 +2233,21 @@ void Squad::stimIfNeeded()
 
     // So far so good. Time to get into details.
 
-    // Stim can be used more freely if we have medics with lots of energy.
-    int totalMedicEnergy = _microMedics.getTotalEnergy();
+    const int now = the.now();
+    if (now < _lastStimReservationFrame) _stimHealingReservations.clear();
+    _lastStimReservationFrame = now;
+    std::map<int, int> committedMedicEnergy;
+    for (auto it = _stimHealingReservations.begin(); it != _stimHealingReservations.end(); )
+    {
+        BWAPI::Unit medic = BWAPI::Broodwar->getUnit(it->first);
+        if (!medic || !medic->exists() || now >= it->second.second)
+            it = _stimHealingReservations.erase(it);
+        else
+        {
+            committedMedicEnergy[it->first] = it->second.first;
+            ++it;
+        }
+    }
 
     // Stim costs 10 HP, which requires 5 energy for a medic to heal.
     // To reduce overstim, pretend it costs more than that.
@@ -2034,7 +2262,9 @@ void Squad::stimIfNeeded()
             continue;
         }
         // Don't overstim and lose too many HP.
-        if (firebat->isStimmed() || firebat->getHitPoints() < 35 || totalMedicEnergy <= 0 && firebat->getHitPoints() < 45)
+        BWAPI::Unit medic = localStimMedic(firebat, _microMedics.getUnits(), committedMedicEnergy);
+        if (firebat->isStimmed() || firebat->getHitPoints() < 35 ||
+            (!medic && firebat->getHitPoints() < 45))
         {
             continue;
         }
@@ -2058,7 +2288,12 @@ void Squad::stimIfNeeded()
         {
             if (the.micro.Stim(firebat))
             {
-                totalMedicEnergy -= stimEnergyCost;
+                if (medic)
+                {
+                    const int reserved = committedMedicEnergy[medic->getID()] += stimEnergyCost;
+                    _stimHealingReservations[medic->getID()] =
+                        { reserved, now + 3 * 24 + BWAPI::Broodwar->getLatencyFrames() };
+                }
             }
         }
     }
@@ -2072,7 +2307,9 @@ void Squad::stimIfNeeded()
             continue;
         }
         // Don't overstim and lose too many HP.
-        if (marine->isStimmed() || marine->getHitPoints() <= 30 || totalMedicEnergy <= 0 && marine->getHitPoints() < 40)
+        BWAPI::Unit medic = localStimMedic(marine, _microMedics.getUnits(), committedMedicEnergy);
+        if (marine->isStimmed() || marine->getHitPoints() <= 30 ||
+            (!medic && marine->getHitPoints() < 40))
         {
             continue;
         }
@@ -2080,12 +2317,19 @@ void Squad::stimIfNeeded()
         BWAPI::Unitset nearbyEnemies;
         MapGrid::Instance().getUnits(nearbyEnemies, marine->getPosition(), 5 * 32, false, true);
 
+        BWAPI::Unitset supportingMedics;
+        if (medic) supportingMedics.insert(medic);
         if (MicroMarines::shouldStim(
-                marine, _microMedics.getUnits(), nearbyEnemies))
+                marine, supportingMedics, nearbyEnemies))
         {
             if (the.micro.Stim(marine))
             {
-                totalMedicEnergy -= stimEnergyCost;
+                if (medic)
+                {
+                    const int reserved = committedMedicEnergy[medic->getID()] += stimEnergyCost;
+                    _stimHealingReservations[medic->getID()] =
+                        { reserved, now + 3 * 24 + BWAPI::Broodwar->getLatencyFrames() };
+                }
             }
         }
     }

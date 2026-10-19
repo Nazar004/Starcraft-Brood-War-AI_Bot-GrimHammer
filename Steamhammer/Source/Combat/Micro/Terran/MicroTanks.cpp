@@ -4,9 +4,11 @@
 #include <cmath>
 #include <vector>
 #include <climits>
+#include <chrono>
 #include <utility>
 
 #include "Strategy/StrategyManager.h"
+#include "Strategy/Terran/AirTanksPolicy.h"
 
 #include "Core/The.h"
 #include "Utilities/UnitUtil.h"
@@ -21,6 +23,48 @@
 
 
 using namespace UAlbertaBot;
+
+namespace
+{
+    struct TankPlanWork
+    {
+        int frame = -1;
+        double defenseMs = 0.0;
+        double gatherMs = 0.0;
+        int defenseBuilds = 0;
+        int gatherBuilds = 0;
+    };
+
+    TankPlanWork& tankPlanWork()
+    {
+        static TankPlanWork work;
+        const int frame = BWAPI::Broodwar->getFrameCount();
+        if (work.frame != frame)
+        {
+            work = TankPlanWork();
+            work.frame = frame;
+        }
+        return work;
+    }
+
+    struct ScopedTankPlanWork
+    {
+        double& total;
+        int& builds;
+        std::chrono::steady_clock::time_point start;
+
+        ScopedTankPlanWork(double& ms, int& count)
+            : total(ms), builds(count), start(std::chrono::steady_clock::now())
+        {
+            ++builds;
+        }
+        ~ScopedTankPlanWork()
+        {
+            total += std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - start).count();
+        }
+    };
+}
 
 
 
@@ -187,11 +231,9 @@ static bool isRealBaseAttackEnemy(BWAPI::Unit enemy)
     return UnitUtil::CanAttackGround(enemy) || !type.isBuilding();
 }
 
-// CombatCommander regards a visible threat within 24 tiles as a base attack.
-// Tank micro used only 13 tiles, so the Ground squad could receive
-// "Defend attacked base" while its Tanks classified the same order as an
-// air-only defense and stayed beside the Factory. Keep both systems aligned.
-static const int TANK_BASE_DEFENSE_THREAT_RADIUS = 24 * 32;
+// A passing enemy two screens away is not a reason to recall the artillery.
+// Actual fire at an owned base is recognized separately, at any distance.
+static const int TANK_BASE_DEFENSE_THREAT_RADIUS = 12 * 32;
 
 static bool enemyActivelyAttacksAssetAtBase(BWAPI::Unit enemy, Base* base)
 {
@@ -256,6 +298,13 @@ static int enemyBaseAttackScore(BWAPI::Unit enemy)
 
 static BWAPI::Position getCurrentlyAttackedOwnedBasePosition()
 {
+    static int cachedFrame = -1;
+    static BWAPI::Position cachedPosition = BWAPI::Positions::Invalid;
+    const int now = BWAPI::Broodwar->getFrameCount();
+    if (cachedFrame == now) return cachedPosition;
+    cachedFrame = now;
+    cachedPosition = BWAPI::Positions::Invalid;
+
     Base* bestBase = nullptr;
     int bestScore = 0;
 
@@ -271,7 +320,7 @@ static BWAPI::Position getCurrentlyAttackedOwnedBasePosition()
             continue;
         }
 
-        if (!base->getDepot())
+        if (!base->getDepot() || !base->getDepot()->exists())
         {
             continue;
         }
@@ -292,9 +341,11 @@ static BWAPI::Position getCurrentlyAttackedOwnedBasePosition()
             const bool activeAttack =
                 enemyActivelyAttacksAssetAtBase(enemy, base);
 
-            if (enemy->getDistance(basePos) >
-                    TANK_BASE_DEFENSE_THREAT_RADIUS &&
-                !activeAttack)
+            const int groundDistance = base->getTileDistance(enemy->getPosition());
+            const bool nearbyGroundThreat =
+                enemy->getDistance(basePos) <= TANK_BASE_DEFENSE_THREAT_RADIUS &&
+                groundDistance >= 0 && groundDistance <= 16;
+            if (!nearbyGroundThreat && !activeAttack)
             {
                 continue;
             }
@@ -318,12 +369,12 @@ static BWAPI::Position getCurrentlyAttackedOwnedBasePosition()
 
     if (bestBase && bestScore >= 5)
     {
-        return bestBase->getCenter().isValid()
+        cachedPosition = bestBase->getCenter().isValid()
             ? bestBase->getCenter()
             : bestBase->getPosition();
     }
 
-    return BWAPI::Positions::Invalid;
+    return cachedPosition;
 }
 
 static std::set<int> getTankBaseResponderIDs(
@@ -336,19 +387,55 @@ static std::set<int> getTankBaseResponderIDs(
         return result;
     }
 
+    static int cachedFrame = -1;
+    static BWAPI::Position cachedBase = BWAPI::Positions::Invalid;
+    static unsigned long long cachedSignature = 0;
+    static std::set<int> cachedResponders;
+    unsigned long long signature = 1469598103934665603ULL;
+    for (BWAPI::Unit tank : attackTanks)
+    {
+        if (!tank || !tank->exists()) continue;
+        signature ^= static_cast<unsigned long long>(tank->getID() + 1);
+        signature *= 1099511628211ULL;
+    }
+    const int now = BWAPI::Broodwar->getFrameCount();
+    if (cachedFrame == now && cachedBase == attackedBasePosition &&
+        cachedSignature == signature)
+    {
+        return cachedResponders;
+    }
+
+    Base* attackedBase = nullptr;
+    for (Base* base : the.bases.getAll())
+    {
+        if (base && base->getOwner() == the.self() &&
+            base->getCenter() == attackedBasePosition)
+        {
+            attackedBase = base;
+            break;
+        }
+    }
     int attackScore = 0;
+    bool directAttack = false;
     for (BWAPI::Unit enemy : BWAPI::Broodwar->enemy()->getUnits())
     {
-        if (isRealBaseAttackEnemy(enemy) &&
-            enemy->getDistance(attackedBasePosition) <=
-                TANK_BASE_DEFENSE_THREAT_RADIUS)
+        if (!isRealBaseAttackEnemy(enemy)) continue;
+        const bool activeAttack =
+            attackedBase && enemyActivelyAttacksAssetAtBase(enemy, attackedBase);
+        const int groundDistance = attackedBase
+            ? attackedBase->getTileDistance(enemy->getPosition()) : -1;
+        if (activeAttack ||
+            (enemy->getDistance(attackedBasePosition) <=
+                TANK_BASE_DEFENSE_THREAT_RADIUS &&
+             groundDistance >= 0 && groundDistance <= 16))
         {
             attackScore += enemyBaseAttackScore(enemy);
+            directAttack = directAttack || activeAttack;
         }
     }
 
     int responders = std::max(2, (attackScore + 2) / 3);
-    if (attackScore < 18)
+    if (!directAttack || attackScore < 18)
     {
         responders = std::min(responders, std::max(2, (int(attackTanks.size()) + 1) / 2));
     }
@@ -379,6 +466,10 @@ static std::set<int> getTankBaseResponderIDs(
         result.insert(ordered[i]->getID());
     }
 
+    cachedFrame = now;
+    cachedBase = attackedBasePosition;
+    cachedSignature = signature;
+    cachedResponders = result;
     return result;
 }
 
@@ -884,6 +975,11 @@ namespace
 MicroTanks::MicroTanks()
 {
 }
+
+double MicroTanks::defensivePlanMilliseconds() { return tankPlanWork().defenseMs; }
+double MicroTanks::gatherPlanMilliseconds() { return tankPlanWork().gatherMs; }
+int MicroTanks::defensivePlanBuilds() { return tankPlanWork().defenseBuilds; }
+int MicroTanks::gatherPlanBuilds() { return tankPlanWork().gatherBuilds; }
 
 void MicroTanks::ResetForNewGame()
 {
@@ -2377,10 +2473,8 @@ static bool isWalkableTankGatherPosition(const BWAPI::Position& pos)
         return false;
     }
 
-    const int walkX = pos.x / 8;
-    const int walkY = pos.y / 8;
-
-    return BWAPI::Broodwar->isWalkable(walkX, walkY);
+    return the.map.isGroundPositionWalkable(
+        pos, BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode);
 }
 
 static BWAPI::Position findNearbyWalkableTankGatherPosition(const BWAPI::Position& desired)
@@ -2527,10 +2621,7 @@ static bool tankParkingStaticTerrainIsClear(const BWAPI::Position& position)
 
     // Check every walk cell touched by the actual deployed body, including
     // interior cells. Corner sampling misses thin obstacles on stepped ramps.
-    for (int x = left / 8; x <= right / 8; ++x)
-        for (int y = top / 8; y <= bottom / 8; ++y)
-            if (!BWAPI::Broodwar->isWalkable(x, y)) return false;
-    return true;
+    return the.map.isGroundPositionWalkable(position, body);
 }
 
 static bool tankParkingTerrainIsClear(const BWAPI::Position& position)
@@ -2570,23 +2661,44 @@ static bool tankParkingOccupiedByAnotherTank(
         return true;
     }
 
-    // Buildings are handled by tankParkingTerrainIsClear(). Mobile workers and
-    // infantry may pass through the footprint, but another Tank owns enough
-    // space to make both movement and the Siege transform unreliable.
-    for (BWAPI::Unit unit : BWAPI::Broodwar->getUnitsInRadius(position, 52))
+    // Formation planning probes many candidate points. Querying BWAPI's unit
+    // index for every point multiplied the cost of a large Tank line. Unit
+    // positions cannot change during this bot's single frame of decisions.
+    static int cachedFrame = -1;
+    static std::vector<std::pair<int, BWAPI::Position>> cachedTanks;
+    const int now = BWAPI::Broodwar->getFrameCount();
+    if (cachedFrame != now)
     {
-        if (!unit || !unit->exists() || unit == ignoredTank || unit->isFlying())
+        cachedFrame = now;
+        cachedTanks.clear();
+        for (int side = 0; side < 2; ++side)
         {
-            continue;
+            BWAPI::Player player = side == 0
+                ? BWAPI::Broodwar->self() : BWAPI::Broodwar->enemy();
+            if (!player) continue;
+            for (BWAPI::Unit unit : player->getUnits())
+            {
+                if (!unit || !unit->exists() || !unit->getPosition().isValid() ||
+                    (player != BWAPI::Broodwar->self() && !unit->isVisible()))
+                {
+                    continue;
+                }
+                const BWAPI::UnitType type = unit->getType();
+                if (type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode ||
+                    type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode)
+                {
+                    cachedTanks.emplace_back(unit->getID(), unit->getPosition());
+                }
+            }
         }
-
-        const BWAPI::UnitType type = unit->getType();
-        if (type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode ||
-            type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode)
+    }
+    const int ignoredID = ignoredTank ? ignoredTank->getID() : -1;
+    for (const auto& other : cachedTanks)
+    {
+        if (other.first != ignoredID &&
+            other.second.getApproxDistance(position) < 56)
         {
-            // getUnitsInRadius uses distance to the body, not center distance.
-            // Do not invalidate two already separate 64px formation slots.
-            if (unit->getPosition().getApproxDistance(position) < 56) return true;
+            return true;
         }
     }
     return false;
@@ -4546,9 +4658,13 @@ static BWAPI::Position getTerrainTankRouteWaypoint(
 
             if (current.isValid() && current != BWAPI::TilePosition(from))
             {
-                return currentDistance == 0
-                    ? finalGoal
-                    : TileCenter(current);
+                if (currentDistance == 0) return finalGoal;
+                const BWAPI::Position waypoint = the.map.getGroundTileWaypoint(
+                    current, BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode, true);
+                if (waypoint.isValid()) return waypoint;
+                // The coarse field can use a narrow corner beside a closed
+                // door. Native pathing must receive the real goal in this case.
+                return finalGoal;
             }
         }
     }
@@ -6874,15 +6990,17 @@ void MicroTanks::doDefensiveFrontForAttackTanks(
 
     const unsigned int defensePartitionRevision = the.partitions.getRevision();
     const unsigned int defenseRuntimeRevision = the.map.runtimeRevision();
-    const bool defenseStaticCacheValid =
+    const bool defenseGeometryStable =
         tankDefensePlanCache.center.isValid() &&
         tankDefensePlanCache.bunkerID == (wallBunker ? wallBunker->getID() : -1) &&
         tankDefensePlanCache.partitionRevision == defensePartitionRevision &&
-        tankDefensePlanCache.tankCount == int(orderedTanks.size()) &&
-        tankDefensePlanCache.tankSignature == defenseTankSignature &&
         tankDefensePlanCache.center.getApproxDistance(center) <= 16 &&
         std::abs(tankDefensePlanCache.frontDirection.x - frontDirection.x) <= 32 &&
-        std::abs(tankDefensePlanCache.frontDirection.y - frontDirection.y) <= 32 &&
+        std::abs(tankDefensePlanCache.frontDirection.y - frontDirection.y) <= 32;
+    const bool defenseStaticCacheValid =
+        defenseGeometryStable &&
+        tankDefensePlanCache.tankCount == int(orderedTanks.size()) &&
+        tankDefensePlanCache.tankSignature == defenseTankSignature &&
         tankDefensePlanCache.byTankID.size() == orderedTanks.size();
 
     bool defenseRuntimeCacheValid = defenseStaticCacheValid;
@@ -6912,6 +7030,26 @@ void MicroTanks::doDefensiveFrontForAttackTanks(
 
     if (!defensePlanCacheValid)
     {
+        TankPlanWork& work = tankPlanWork();
+        ScopedTankPlanWork planTime(work.defenseMs, work.defenseBuilds);
+        // A new Tank (or a casualty) does not invalidate the surviving Tanks'
+        // positions. Rechecking all terrain candidates here made one frame
+        // proportional to the entire army instead of the changed members.
+        std::map<int, TankDefensePlanEntry> retained;
+        if (defenseGeometryStable)
+        {
+            for (BWAPI::Unit tank : orderedTanks)
+            {
+                const auto old = tankDefensePlanCache.byTankID.find(tank->getID());
+                if (old != tankDefensePlanCache.byTankID.end() &&
+                    old->second.slot.isValid() &&
+                    (tankDefensePlanCache.runtimeRevision == defenseRuntimeRevision ||
+                     tankParkingTerrainIsClear(old->second.slot)))
+                {
+                    retained[tank->getID()] = old->second;
+                }
+            }
+        }
         tankDefensePlanCache = TankDefensePlanCache();
         tankDefensePlanCache.center = center;
         tankDefensePlanCache.bunkerID = wallBunker ? wallBunker->getID() : -1;
@@ -6931,10 +7069,16 @@ void MicroTanks::doDefensiveFrontForAttackTanks(
             : center;
 
         std::vector<BWAPI::Position> reservedFrontSlots;
+        tankDefensePlanCache.byTankID = retained;
+        for (const auto& old : retained)
+        {
+            reservedFrontSlots.push_back(old.second.slot);
+        }
         for (int i = 0; i < int(orderedTanks.size()); ++i)
         {
             BWAPI::Unit tank = orderedTanks[i];
-            if (!tank || !tank->exists())
+            if (!tank || !tank->exists() ||
+                retained.find(tank->getID()) != retained.end())
             {
                 continue;
             }
@@ -7747,7 +7891,10 @@ void MicroTanks::executeMicro(const BWAPI::Unitset& targets, const UnitCluster& 
         std::inserter(tankTargets, tankTargets.end()),
         [](BWAPI::Unit u)
         {
-            return meaningfulGroundCombatTargetForTanks(u);
+            return meaningfulGroundCombatTargetForTanks(u) ||
+                (visibleTankGroundTarget(u) &&
+                 (u->getType() == BWAPI::UnitTypes::Zerg_Egg ||
+                  u->getType() == BWAPI::UnitTypes::Zerg_Lurker_Egg));
         }
     );
 
@@ -8065,6 +8212,19 @@ void MicroTanks::executeMicro(const BWAPI::Unitset& targets, const UnitCluster& 
     // Selected base responders above still handle an actual attack first.
     if (!bioTankArmy && posture == TerranArmyPosture::PureAir &&
         !pureAirEscortActive && !defendingAttackedBase)
+    {
+        doDefensiveFrontForAttackTanks(tanks, tankTargets);
+        return;
+    }
+
+    // AirTanks has its own six-Tank/Wraith release gate. The generic Tank
+    // gather system is disabled for this opening and otherwise falls through
+    // to an enemy-base goal even while the Ground squad is ordered to hold.
+    if (StrategyManager::Instance().airTanksPlanActive() &&
+        AirTanks::variantFromName(StrategyManager::Instance().airTanksVariant()) ==
+            AirTanks::Variant::TankWraith &&
+        !StrategyManager::Instance().airTanksPushReady() &&
+        !defendingAttackedBase)
     {
         doDefensiveFrontForAttackTanks(tanks, tankTargets);
         return;
@@ -8657,6 +8817,24 @@ void MicroTanks::executeMicro(const BWAPI::Unitset& targets, const UnitCluster& 
         }
     }
 
+    // A wall bunker is an opening hold, not a permanent veto on the release
+    // threshold. With a mature mobile force, let the ordinary attack path run.
+    if (!defendingAttackedBase && !tankMassAttackReleased &&
+        StrategyManager::Instance().defaultTankGatherEnabled() &&
+        CombatCommander::Instance().getAggression())
+    {
+        const int threshold = StrategyManager::Instance().tankMassReleaseTankCount();
+        const int goliathThreshold =
+            StrategyManager::Instance().tankMassReleaseGoliathCount();
+        if (threshold > 0 && int(allAttackTanks.size()) >= std::max(8, 2 * threshold) &&
+            (goliathThreshold <= 0 ||
+             countCompletedFriendlyGoliaths() >= 2 * goliathThreshold))
+        {
+            tankMassAttackReleased = true;
+            tankMassAttackReleaseFrame = now;
+        }
+    }
+
     if (!defendingAttackedBase && !tankMassAttackReleased && getActiveWallBunker())
     {
         doDefensiveFrontForAttackTanks(tanks, tankTargets);
@@ -8831,15 +9009,16 @@ void MicroTanks::executeMicro(const BWAPI::Unitset& targets, const UnitCluster& 
             }
 
             const unsigned int gatherPartitionRevision = the.partitions.getRevision();
-            const bool gatherPlanCacheValid =
+            const bool gatherGeometryStable =
                 tankGatherPlanCache.anchor.isValid() &&
                 tankGatherPlanCache.partitionRevision == gatherPartitionRevision &&
-                tankGatherPlanCache.tankCount == int(orderedGatherTanks.size()) &&
-                tankGatherPlanCache.tankSignature == gatherTankSignature &&
                 tankGatherPlanCache.anchor.getApproxDistance(gatherPosition) <= 16 &&
                 std::abs(tankGatherPlanCache.forward.x - gatherForward.x) <= 32 &&
-                std::abs(tankGatherPlanCache.forward.y - gatherForward.y) <= 32 &&
-                tankGatherPlanCache.slots.size() == orderedGatherTanks.size() &&
+                std::abs(tankGatherPlanCache.forward.y - gatherForward.y) <= 32;
+            const bool gatherPlanCacheValid =
+                gatherGeometryStable &&
+                tankGatherPlanCache.tankCount == int(orderedGatherTanks.size()) &&
+                tankGatherPlanCache.tankSignature == gatherTankSignature &&
                 tankGatherPlanCache.slotIndexByTankID.size() == orderedGatherTanks.size();
 
             std::vector<BWAPI::Position> gatherSlots;
@@ -8852,18 +9031,48 @@ void MicroTanks::executeMicro(const BWAPI::Unitset& targets, const UnitCluster& 
             }
             else
             {
-                // Tank IDs are production-stable: old tanks keep the front rows
-                // and each newly produced tank naturally gets the next deeper
-                // slot. The previous greedy nearest-slot assignment was O(n^3)
-                // and woke up every time a tank/building changed state.
-                gatherSlots.reserve(orderedGatherTanks.size());
-                for (int i = 0; i < int(orderedGatherTanks.size()); ++i)
+                TankPlanWork& work = tankPlanWork();
+                ScopedTankPlanWork planTime(work.gatherMs, work.gatherBuilds);
+                // Keep the old slots when the army changes by one Tank. Vacated
+                // indices can be reused without searching the map again.
+                std::vector<int> freeSlots;
+                if (gatherGeometryStable)
                 {
-                    const BWAPI::Position slot =
-                        getMobileTankFormationSlotPosition(
-                            i, gatherPosition, gatherForward, &gatherSlots);
-                    gatherSlots.push_back(slot);
-                    gatherSlotByTankID[orderedGatherTanks[i]->getID()] = i;
+                    gatherSlots = tankGatherPlanCache.slots;
+                    std::set<int> occupiedIndices;
+                    for (BWAPI::Unit gatherTank : orderedGatherTanks)
+                    {
+                        const auto old = tankGatherPlanCache.slotIndexByTankID.find(
+                            gatherTank->getID());
+                        if (old != tankGatherPlanCache.slotIndexByTankID.end() &&
+                            old->second >= 0 && old->second < int(gatherSlots.size()))
+                        {
+                            gatherSlotByTankID[gatherTank->getID()] = old->second;
+                            occupiedIndices.insert(old->second);
+                        }
+                    }
+                    for (int i = int(gatherSlots.size()) - 1; i >= 0; --i)
+                    {
+                        if (occupiedIndices.count(i) == 0) freeSlots.push_back(i);
+                    }
+                }
+                gatherSlots.reserve(orderedGatherTanks.size());
+                for (BWAPI::Unit gatherTank : orderedGatherTanks)
+                {
+                    if (gatherSlotByTankID.count(gatherTank->getID()) != 0) continue;
+                    if (!freeSlots.empty())
+                    {
+                        gatherSlotByTankID[gatherTank->getID()] = freeSlots.back();
+                        freeSlots.pop_back();
+                    }
+                    else
+                    {
+                        const int slotIndex = int(gatherSlots.size());
+                        const BWAPI::Position slot = getMobileTankFormationSlotPosition(
+                            slotIndex, gatherPosition, gatherForward, &gatherSlots);
+                        gatherSlots.push_back(slot);
+                        gatherSlotByTankID[gatherTank->getID()] = slotIndex;
+                    }
                 }
 
                 tankGatherPlanCache.anchor = gatherPosition;
@@ -10511,7 +10720,7 @@ BWAPI::Unit MicroTanks::getTarget(BWAPI::Unit tank, const BWAPI::Unitset& target
     bool hasEnemyCombatUnit = false;
     for (BWAPI::Unit target : newTargets)
     {
-        if (!target || !target->exists() || target->getType().isBuilding())
+        if (!target || !target->exists() || isNeutralEgg(target) || target->getType().isBuilding())
         {
             continue;
         }
@@ -10659,6 +10868,8 @@ BWAPI::Unit MicroTanks::getTarget(BWAPI::Unit tank, const BWAPI::Unitset& target
         return nullptr;
     }
 
+    bestTarget = preferThreatToStructure(tank, bestTarget, newTargets);
+
     const int shotDamage = estimatedTankShotDamage(tank);
     coordinatedTargetByTankID[tankID] = bestTarget;
     coordinatedDamageByTankID[tankID] = shotDamage;
@@ -10687,7 +10898,7 @@ int MicroTanks::getAttackPriority(BWAPI::Unit tank, BWAPI::Unit target)
         return 16;
     }
 
-    if (target->getType() == BWAPI::UnitTypes::Zerg_Larva || target->getType() == BWAPI::UnitTypes::Zerg_Egg)
+    if (target->getType() == BWAPI::UnitTypes::Zerg_Larva)
     {
         return 0;
     }
@@ -10697,6 +10908,8 @@ int MicroTanks::getAttackPriority(BWAPI::Unit tank, BWAPI::Unit target)
     {
         return 0;
     }
+
+    if (isNeutralEgg(target)) return getBackstopAttackPriority(target);
 
     // A ghost which is nuking is the highest priority by a mile.
     if (targetType == BWAPI::UnitTypes::Terran_Ghost &&

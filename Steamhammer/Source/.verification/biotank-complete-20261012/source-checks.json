@@ -1,0 +1,554 @@
+{
+  "kind": "Source/API inspection only; no compile or game execution",
+  "files": [
+    "Combat/CombatCommander.cpp",
+    "Production/ProductionManager.cpp",
+    "Strategy/StrategyManager.cpp",
+    "Strategy/StrategyManager.h",
+    "Combat/Micro/MicroRanged.cpp",
+    "Combat/Squads/Squad.cpp",
+    "Combat/Squads/Squad.h",
+    "Combat/Micro/Terran/MicroMarines.h",
+    "Strategy/Terran/BioTankPolicy.h",
+    "Strategy/Terran/BioTankAssessment.h",
+    "Combat/Micro/Terran/BioInfantrySafety.h"
+  ],
+  "checks": [
+    {
+      "check": "Combat/CombatCommander.cpp balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Strategy/Terran/BioTankAssessment.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Construction/BuildingManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Construction/BuildingPlacer.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Combat/Micro/Terran/ExpansionVultureReservation.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Map/MapGrid.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Combat/Micro/Micro.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Intelligence/Learning/OpponentModel.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Production/ProductionManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Utilities/Random.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Intelligence/ScoutManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Combat/Micro/Terran/MicroTanks.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/CombatCommander.cpp include Combat/Micro/MicroRanged.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Production/ProductionManager.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Strategy/BioProductionPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Strategy/Terran/BioTankAssessment.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Construction/BuildingPlacer.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Utilities/Random.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Intelligence/ScoutManager.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Production/ProductionManager.cpp include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/BioProductionPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/Terran/BioTankAssessment.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/Terran/TvZSparks.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/Terran/TvZPreHive.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/Terran/TvZSK.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Strategy/Terran/TvZBioSupport.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Construction/BunkerPlacementPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Map/MapTools.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Map/Grids/GridZone.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Intelligence/Learning/OpponentModel.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Production/ProductionManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Construction/BuildingManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.cpp include Economy/WorkerManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h include Core/Common.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h include Economy/WorkerManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h include Production/BuildOrder.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/StrategyManager.h include Production/BuildOrderQueue.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Combat/Micro/MicroRanged.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Combat/Micro/Terran/MicroMarines.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Combat/Micro/Terran/BioInfantrySafety.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/MicroRanged.cpp include Economy/WorkerManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Squads/Squad.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Simulation/CombatSimulation.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Map/MapTools.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Squads/SquadOrder.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Micro/Terran/MicroTanks.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Micro/Terran/MicroMarines.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Micro/Terran/BioInfantrySafety.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.cpp include Combat/Micro/Terran/TerranFormation.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Core/Common.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/OpsBoss.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/MicroAirToAir.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/MicroMelee.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/MicroRanged.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/Terran/MicroVultures.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/Terran/MicroGoliath.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/Terran/MicroGhost.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/MicroDetectors.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/Terran/MicroMedics.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/Terran/MicroTanks.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Squads/Squad.h include Combat/Micro/MicroTransports.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/MicroMarines.h balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/MicroMarines.h include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/MicroMarines.h include Combat/Micro/Terran/TerranSiegeSafety.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/MicroMarines.h include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankPolicy.h balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankPolicy.h no trailing whitespace",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Strategy/Terran/BioTankPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Strategy/BioProductionPolicy.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Combat/CombatCommander.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Intelligence/InformationManager.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Map/Bases.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h include Utilities/UnitUtil.h",
+      "passed": true
+    },
+    {
+      "check": "Strategy/Terran/BioTankAssessment.h no trailing whitespace",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/BioInfantrySafety.h balanced delimiters",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/BioInfantrySafety.h include Core/The.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/BioInfantrySafety.h include Strategy/StrategyManager.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/BioInfantrySafety.h include Map/MapTools.h",
+      "passed": true
+    },
+    {
+      "check": "Combat/Micro/Terran/BioInfantrySafety.h no trailing whitespace",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API getType",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API getPosition",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API getTargetPosition",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API Psionic_Storm",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isUnderStorm",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API getEnergy",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isAttackFrame",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isStartingAttack",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API getLoadedUnits",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isMaelstrommed",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isStasised",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isLockedDown",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API getBullets",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API isFlyer",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API supplyRequired",
+      "passed": true
+    },
+    {
+      "check": "BWAPI API dimensionLeft",
+      "passed": true
+    },
+    {
+      "check": "No automatic capital-air Valkyrie block",
+      "passed": true
+    },
+    {
+      "check": "Readiness uses mobile formation",
+      "passed": true
+    },
+    {
+      "check": "Supply guard covers persistent and queued Marines",
+      "passed": true
+    },
+    {
+      "check": "Supply guard covers macro and filler",
+      "passed": true
+    },
+    {
+      "check": "Hazard escape precedes clustering",
+      "passed": true
+    },
+    {
+      "check": "Bio air bypass removed",
+      "passed": true
+    },
+    {
+      "check": "Bio combat reuse bounded to six frames",
+      "passed": true
+    },
+    {
+      "check": "TvZSparks.h original push contract",
+      "passed": true
+    },
+    {
+      "check": "TvZPreHive.h original push contract",
+      "passed": true
+    },
+    {
+      "check": "TvZSK.h original push contract",
+      "passed": true
+    }
+  ]
+}

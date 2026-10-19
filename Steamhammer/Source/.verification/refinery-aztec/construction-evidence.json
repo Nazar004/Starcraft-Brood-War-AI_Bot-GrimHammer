@@ -1,0 +1,395 @@
+{
+  "replay": "D:\\DU\\BP\\Starcraft\\Starcraft_1161\\bwapi-data\\GrimHammerTestRunner\\replays\\20261008_154328_708__GrimHammer__Aztec1.1__loss.rep",
+  "start_time": "2026-10-08T15:43:49+02:00",
+  "frames": 24817,
+  "players": [
+    {
+      "SlotID": 0,
+      "ID": 1,
+      "Type": {
+        "Name": "Human",
+        "ID": 2
+      },
+      "Race": {
+        "Name": "Zerg",
+        "ID": 0,
+        "ShortName": "zerg",
+        "Letter": 90
+      },
+      "Team": 1,
+      "Name": "SteamHammer",
+      "Color": {
+        "Name": "Brown",
+        "ID": 5,
+        "RGB": 7352340
+      },
+      "Observer": false
+    },
+    {
+      "SlotID": 2,
+      "ID": 0,
+      "Type": {
+        "Name": "Human",
+        "ID": 2
+      },
+      "Race": {
+        "Name": "Terran",
+        "ID": 1,
+        "ShortName": "ran",
+        "Letter": 84
+      },
+      "Team": 2,
+      "Name": "GrimHammer",
+      "Color": {
+        "Name": "Teal",
+        "ID": 2,
+        "RGB": 2929812
+      },
+      "Observer": false
+    }
+  ],
+  "construction_commands": [
+    {
+      "Frame": 3652,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 117,
+        "Y": 95
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      }
+    },
+    {
+      "Frame": 7624,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 98,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 14534,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 98,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18100,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18162,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18224,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18286,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18348,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18410,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18472,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 18534,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 20338,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 20920,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    },
+    {
+      "Frame": 21128,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      }
+    }
+  ],
+  "geysers": [
+    {
+      "X": 256,
+      "Y": 1664,
+      "Amount": 5000
+    },
+    {
+      "X": 2976,
+      "Y": 3872,
+      "Amount": 5000
+    },
+    {
+      "X": 1120,
+      "Y": 3776,
+      "Amount": 5000
+    },
+    {
+      "X": 864,
+      "Y": 320,
+      "Amount": 5000
+    },
+    {
+      "X": 4032,
+      "Y": 2048,
+      "Amount": 5000
+    },
+    {
+      "X": 1280,
+      "Y": 2336,
+      "Amount": 2000
+    },
+    {
+      "X": 2304,
+      "Y": 1056,
+      "Amount": 2000
+    },
+    {
+      "X": 2784,
+      "Y": 2592,
+      "Amount": 2000
+    },
+    {
+      "X": 2240,
+      "Y": 64,
+      "Amount": 5000
+    },
+    {
+      "X": 3808,
+      "Y": 3072,
+      "Amount": 5000
+    },
+    {
+      "X": 288,
+      "Y": 2528,
+      "Amount": 5000
+    },
+    {
+      "X": 3456,
+      "Y": 224,
+      "Amount": 5000
+    }
+  ]
+}

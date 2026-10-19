@@ -1,0 +1,1149 @@
+--- before/Combat/CombatCommander.cpp
++++ after/Combat/CombatCommander.cpp
+@@ -1,6 +1,7 @@
+ #include <queue>
+ 
+ #include "Combat/CombatCommander.h"
++#include "Strategy/Terran/BioTankAssessment.h"
+ 
+ #include "Map/Bases.h"
+ #include "Construction/BuildingManager.h"
+@@ -4085,6 +4086,8 @@
+         int nEnemyZealots = 0;
+         int nEnemyZerglings = 0;
+         int nEnemyCarriers = 0;
++        const bool bioTankDefense =
++            StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank;
+         bool enemyTransportAtBase = false;
+         bool sawEnemyInterceptor = false;
+         bool enemyHitsGround = false;
+@@ -4101,7 +4104,8 @@
+             if (dist < defenseRadius ||
+                 dist < defenseRadius + 384 && zone == the.zone.areaAt(unit->getTilePosition()))
+             {
+-                
++                if (bioTankDefense && !unit->isFlying() &&
++                    !BioTankPolicy::canThreatenBase(unit, base, defenseRadius + 192)) continue;
+                 if (dist < closestEnemyDistance)
+                 {
+                     closestEnemyDistance = dist;
+--- before/Production/ProductionManager.cpp
++++ after/Production/ProductionManager.cpp
+@@ -1,5 +1,6 @@
+ #include "Production/ProductionManager.h"
+ #include "Strategy/BioProductionPolicy.h"
++#include "Strategy/Terran/BioTankAssessment.h"
+ 
+ #include "Map/Bases.h"
+ #include "Construction/BuildingPlacer.h"
+@@ -1176,6 +1177,13 @@
+         // global production queue indefinitely.
+         if (key < 0 || target == 0)
+         {
++            continue;
++        }
++
++        if (act.isUnit() && act.getUnitType() == BWAPI::UnitTypes::Terran_Marine &&
++            BioTankPolicy::reserveGoliathSupply())
++        {
++            rememberWaitingDecision("WAIT supply for BioTank anti-air counter");
+             continue;
+         }
+ 
+@@ -3040,6 +3048,13 @@
+     // We do nothing if the queue is empty (obviously).
+     while (!_queue.isEmpty()) 
+     {
++        if (_outOfBook && _queue.getHighestPriorityItem().macroAct.isUnit() &&
++            _queue.getHighestPriorityItem().macroAct.getUnitType() == BWAPI::UnitTypes::Terran_Marine &&
++            BioTankPolicy::reserveGoliathSupply())
++        {
++            setTerranRuleDecision("WAIT supply for BioTank anti-air counter");
++            break;
++        }
+         // A bank-filler or urgent Marine can occupy the next free Barracks
+         // ahead of the persistent Medic rule. Repair that queue ordering when
+         // BioTank is short of its one-Medic-per-five-Marines screen.
+@@ -4824,10 +4839,7 @@
+             "%cBio capacity ready/plan: %cRax %d/%d  Fac %d/%d  Tanks %d%%",
+             cyan, white, barracksCompleted, barracksGoal,
+             factoriesCompleted, factoryGoal,
+-            StrategyManager::Instance().bioTankUsesTanks() ?
+-            BioProductionPolicy::tankPercent(the.self()->minerals(), the.self()->gas(),
+-                2 * (marines + medics + the.my.all.count(BWAPI::UnitTypes::Terran_Firebat)),
+-                _outOfBook) : 0);
++            StrategyManager::Instance().bioTankDesiredTankPercent());
+         y += 10;
+         BWAPI::Broodwar->drawTextScreen(x, y,
+             "%cBio push: %c%s | Stim %s Siege %s Range %d Armor %d",
+--- before/Strategy/StrategyManager.cpp
++++ after/Strategy/StrategyManager.cpp
+@@ -1,5 +1,6 @@
+ #include "Strategy/StrategyManager.h"
+ #include "Strategy/BioProductionPolicy.h"
++#include "Strategy/Terran/BioTankAssessment.h"
+ #include "Strategy/Terran/TvZSparks.h"
+ #include "Strategy/Terran/TvZPreHive.h"
+ #include "Strategy/Terran/TvZSK.h"
+@@ -160,11 +161,21 @@
+         !visibleEnemyGroundNearMainOrClosestExpansion() &&
+         !visibleEnemyAirNearOwnedBase();
+ 
++    // Release a contained BioTank opening by current safety and economy,
++    // rather than remembering its rush label until minute twelve.
++    const bool bioExpansionReady = _terranPlan == TerranPlanId::BioTank &&
++        the.my.completed.count(BWAPI::UnitTypes::Terran_Command_Center) >= 2 &&
++        the.my.all.count(BWAPI::UnitTypes::Terran_SCV) >= 28 &&
++        (the.self()->minerals() >= 500 ||
++         the.my.all.count(BWAPI::UnitTypes::Terran_SCV) >=
++            int(std::ceil(0.82 * WorkerManager::Instance().getMaxWorkers()))) &&
++        !BioTankPolicy::homeDefenseRequired();
++
+     // Keep the natural, but delay a greedy third during opening pressure.
+     if (the.selfRace() == BWAPI::Races::Terran &&
+         numDepots >= 2 &&
+         minute <= 11 &&
+-        !tankExpansionSurplus &&
++        !tankExpansionSurplus && !bioExpansionReady &&
+         (the.oppModel().hasEnemyOpeningThreat(OpeningThreat::GatewayPressure) ||
+          the.oppModel().hasEnemyOpeningThreat(OpeningThreat::FactoryPressure) ||
+          the.oppModel().hasEnemyOpeningThreat(OpeningThreat::MassBarracks) ||
+@@ -335,6 +346,23 @@
+         _terranPlan == TerranPlanId::TvP_DeepSix;
+ }
+ 
++int StrategyManager::bioTankDesiredTankPercent() const
++{
++    if (!bioTankUsesTanks()) return 0;
++    if (_terranPlan == TerranPlanId::BioTank &&
++        ProductionManager::Instance().isOutOfBook())
++    {
++        const auto& mix = BioTankPolicy::enemyMix();
++        return BioTankPolicy::tankPercent(mix.heavyGround, mix.lightGround, mix.air);
++    }
++    const int infantrySupply = 2 * (
++        the.my.all.count(BWAPI::UnitTypes::Terran_Marine) +
++        the.my.all.count(BWAPI::UnitTypes::Terran_Medic) +
++        the.my.all.count(BWAPI::UnitTypes::Terran_Firebat));
++    return BioProductionPolicy::tankPercent(the.self()->minerals(), the.self()->gas(),
++        infantrySupply, ProductionManager::Instance().isOutOfBook());
++}
++
+ bool StrategyManager::bioTankUsesTanks() const
+ {
+     const auto* policy = tvzBioPolicy(_terranPlan);
+@@ -383,7 +411,8 @@
+         the.self()->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode) &&
+         (!deepSix ||
+             (the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::U_238_Shells) >= 1 &&
+-             the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::Terran_Infantry_Armor) >= 1));
++             the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::Terran_Infantry_Armor) >= 1)) &&
++        BioTankPolicy::coreTogether(marineTarget, tankTarget);
+     return _bioTankFirstPushReleased;
+ }
+ 
+@@ -3948,13 +3977,12 @@
+                 BWAPI::UnitTypes::Terran_Firebat.supplyRequired();
+         const int tankSupply =
+             BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode.supplyRequired();
+-        const int percent = BioProductionPolicy::tankPercent(
+-            the.self()->minerals(), the.self()->gas(), infantrySupply,
+-            ProductionManager::Instance().isOutOfBook());
++        const int percent = StrategyManager::Instance().bioTankDesiredTankPercent();
+         const int openingTankFloor =
+             StrategyManager::Instance().deepSixPlanActive() ? 4 :
+             tvzBioPolicy(StrategyManager::Instance().getTerranPlan())
+-                ? tvzBioPolicy(StrategyManager::Instance().getTerranPlan())->tankFloor : 0;
++                ? tvzBioPolicy(StrategyManager::Instance().getTerranPlan())->tankFloor :
++                  StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank ? 2 : 0;
+         return std::max({
+             BioProductionPolicy::tankCeiling(infantrySupply, tankSupply, percent),
+             bioTankLurkerTankTarget(), openingTankFloor });
+@@ -3985,6 +4013,7 @@
+ 
+         const std::string openingGroup =
+             StrategyManager::Instance().getOpeningGroup();
++        if (BioTankPolicy::reserveGoliathSupply()) return false;
+ 
+         const bool nearbyAirOnlyAttack =
+             visibleEnemyAirOnlyNearOwnedBase();
+@@ -4051,6 +4080,12 @@
+                 return true;
+             }
+         }
++
++        // A real capital fleet gets the Factory gas before optional Tanks.
++        if (openingGroup == "bio" &&
++            StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank &&
++            the.my.all.count(BWAPI::UnitTypes::Terran_Goliath) < BioTankPolicy::goliathTarget())
++            return false;
+ 
+         const int idleFactories =
+             idleCompletedLandedTerranProductionBuildings(
+@@ -11531,6 +11566,8 @@
+             (int)queue.numInQueue(BWAPI::UnitTypes::Terran_Barracks);
+ 
+         const bool deepSix = deepSixPlanActive();
++        const bool ordinaryBioTank = _terranPlan == TerranPlanId::BioTank;
++        const auto& bioEnemy = BioTankPolicy::enemyMix();
+         int desiredBarracks = deepSix && completedBases < 2
+             ? 2 : std::max(2, terranPlan.minBarracks);
+         if (completedBases >= 2)
+@@ -11565,13 +11602,21 @@
+                 completedBases, numVessels, scienceVesselsCurrentlyTraining());
+         }
+ 
++        const bool urgentBioAirCounter = ordinaryBioTank && numTanks >= 2 &&
++            numMarines >= 16 && numGoliaths < BioTankPolicy::goliathTarget();
++        const bool earlyGoliathGoal = urgentBioAirCounter &&
++            the.my.completed.count(BWAPI::UnitTypes::Terran_Armory) > 0;
++        if (earlyGoliathGoal)
++            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Goliath,
++                std::min(BioTankPolicy::goliathTarget(), numGoliaths + 2)));
+         const int marinesAddedPerGoal =
+             std::max(6, std::min(12, 3 * std::max(1, desiredBarracks)));
+-
+-        goal.push_back(MetaPair(
+-            BWAPI::UnitTypes::Terran_Marine,
+-            numMarines + marinesAddedPerGoal
+-        ));
++        // Do not refill every free slot with a Marine while two needed
++        // anti-air units wait for enough supply to train.
++        const bool reserveCounterSupply = BioTankPolicy::reserveGoliathSupply();
++        if (!reserveCounterSupply)
++            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Marine,
++                numMarines + marinesAddedPerGoal));
+ 
+         const int academiesPlanned =
+             the.my.all.count(BWAPI::UnitTypes::Terran_Academy) +
+@@ -11605,8 +11650,9 @@
+                 const int numFirebats =
+                     the.my.all.count(BWAPI::UnitTypes::Terran_Firebat);
+ 
+-                const int firebatGoal =
+-                    std::max(numFirebats, std::min(4, numMarines / 8));
++                const int firebatGoal = ordinaryBioTank
++                    ? BioTankPolicy::firebats(numMarines, bioEnemy.zerglings)
++                    : std::max(numFirebats, std::min(4, numMarines / 8));
+ 
+                 if (firebatGoal > numFirebats)
+                 {
+@@ -11637,6 +11683,15 @@
+             completedFactories > 0 &&
+                 countIdleTerranProducers(BWAPI::UnitTypes::Terran_Factory) == 0);
+ 
++        if (ordinaryBioTank)
++        {
++            const int factoryArmyTarget = bioTankTankCeiling() +
++                BioTankPolicy::goliathTarget(carrierTechThreat);
++            desiredFactories = BioTankPolicy::factories(factoryArmyTarget,
++                completedFactories, numSCVs, self->minerals(), self->gas(),
++                completedFactories > 0 &&
++                countIdleTerranProducers(BWAPI::UnitTypes::Terran_Factory) == 0);
++        }
+         if (bioPolicy) desiredFactories = bioPolicy->factories;
+ 
+         if (currentFactories < desiredFactories)
+@@ -11654,7 +11709,9 @@
+ 
+         const int desiredMachineShops = bioPolicy
+             ? bioPolicy->machineShops
+-            : std::max(desiredFactories, std::min(4, currentFactories));
++            : ordinaryBioTank
++                ? std::min(desiredFactories, std::max(1, (bioTankTankCeiling() + 3) / 4))
++                : std::max(desiredFactories, std::min(4, currentFactories));
+ 
+         if (currentMachineShops < desiredMachineShops)
+         {
+@@ -11664,7 +11721,9 @@
+             ));
+         }
+ 
+-        if (numTanks +
++        const bool fundCapitalAirCounter = ordinaryBioTank && numTanks >= 2 &&
++            numGoliaths < BioTankPolicy::goliathTarget();
++        if (!fundCapitalAirCounter && numTanks +
+             (int)queue.numInQueue(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) <
+             bioTankTankCeiling())
+         {
+@@ -11826,47 +11885,55 @@
+             }
+         }
+ 
+-        // Tanks still receive their vehicle upgrades through the shared Terran
+-        // upgrade block below. The Armory also unlocks Valkyries against
+-        // capital air without adding Goliaths to BioTank.
+-        const bool needsArmory =
+-            numTanks >= 3 || enemyAirThreatDetected || enemyFlyerSeen ||
+-            airIntrusionSeen;
+-
++        // Keep each counter tied to the fleet it can efficiently fight.
++        // Do not buy capital-air counters for an Overlord or a dead fleet.
++        const int guardianWraiths = BioTankPolicy::guardianWraiths(
++            bioEnemy.guardians, bioEnemy.antiAir);
++        const int counterGoliaths = !bioPolicy
++            ? BioTankPolicy::goliathTarget(carrierTechThreat) : 0;
++        const int counterValkyries = !bioPolicy && completedBases >= 2 &&
++            bioEnemy.mutalisks >= 8 && numMarines >= 24 && numVessels >= 1 &&
++            self->gas() >= 400 ? std::min(4, (bioEnemy.mutalisks + 5) / 6) : 0;
++        const bool needsArmory = numTanks >= 3 || numGoliaths > 0 ||
++            counterGoliaths > 0 || counterValkyries > 0;
+         const bool armoryExistsOrPlanned =
+             the.my.all.count(BWAPI::UnitTypes::Terran_Armory) > 0 ||
+             BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Armory) > 0 ||
+             queue.anyInQueue(BWAPI::UnitTypes::Terran_Armory);
+-
+         if (needsArmory && !armoryExistsOrPlanned)
+-        {
+             goal.push_back(MetaPair(
+-                MacroAct(BWAPI::UnitTypes::Terran_Armory, MacroLocation::Main),
+-                1
+-            ));
+-        }
+-
+-        // BioTank uses Marines/Medics and Turrets against ordinary air.
+-        // Capital air receives a separate Valkyrie response below; the mech
+-        // Goliath ratio must not leak into this composition.
+-        const bool bioCapitalAir =
+-            carrierTechThreat || currentCapitalAirThreat ||
+-            the.your.seen.count(BWAPI::UnitTypes::Zerg_Guardian) > 0 ||
+-            the.your.seen.count(BWAPI::UnitTypes::Terran_Battlecruiser) > 0;
+-        if (bioCapitalAir)
+-        {
+-            // Four or more Valkyries need two independent production lanes;
+-            // one Starport was serializing the entire capital-air response.
+-            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Armory, 1));
+-            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 2));
+-            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 2));
+-            const int knownCapitalAir =
+-                the.your.seen.count(BWAPI::UnitTypes::Protoss_Carrier) +
+-                the.your.seen.count(BWAPI::UnitTypes::Zerg_Guardian) +
+-                the.your.seen.count(BWAPI::UnitTypes::Terran_Battlecruiser);
+-            goal.push_back(MetaPair(
+-                BWAPI::UnitTypes::Terran_Valkyrie,
+-                std::min(8, std::max(4, 2 * knownCapitalAir))));
++                MacroAct(BWAPI::UnitTypes::Terran_Armory, MacroLocation::Main), 1));
++
++        if (!earlyGoliathGoal && counterGoliaths > numGoliaths &&
++            the.my.completed.count(BWAPI::UnitTypes::Terran_Armory) > 0)
++            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Goliath,
++                std::min(counterGoliaths, numGoliaths + 2)));
++        if (counterGoliaths > 0 &&
++            the.my.completed.count(BWAPI::UnitTypes::Terran_Machine_Shop) > 0 &&
++            self->getUpgradeLevel(BWAPI::UpgradeTypes::Charon_Boosters) == 0 &&
++            !self->isUpgrading(BWAPI::UpgradeTypes::Charon_Boosters) &&
++            !queue.anyInQueue(BWAPI::UpgradeTypes::Charon_Boosters))
++            goal.push_back(MetaPair(BWAPI::UpgradeTypes::Charon_Boosters, 1));
++
++        if (!bioPolicy && (guardianWraiths > 0 || counterValkyries > 0))
++        {
++            const bool portPlanned = the.my.all.count(BWAPI::UnitTypes::Terran_Starport) > 0 ||
++                BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Starport) > 0 ||
++                queue.anyInQueue(BWAPI::UnitTypes::Terran_Starport);
++            if (!portPlanned) goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 1));
++            const bool towerPlanned = the.my.all.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0 ||
++                BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Control_Tower) > 0 ||
++                queue.anyInQueue(BWAPI::UnitTypes::Terran_Control_Tower);
++            if (the.my.completed.count(BWAPI::UnitTypes::Terran_Starport) > 0 && !towerPlanned)
++                goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 1));
++            if (the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0)
++            {
++                if (guardianWraiths > 0)
++                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Wraith, guardianWraiths));
++                if (counterValkyries > 0 &&
++                    the.my.completed.count(BWAPI::UnitTypes::Terran_Armory) > 0)
++                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Valkyrie, counterValkyries));
++            }
+         }
+     }
+     else if (_openingGroup == "vultures")
+@@ -13554,8 +13621,13 @@
+         the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= 16 &&
+         the.my.completed.count(BWAPI::UnitTypes::Terran_Medic) >=
+             BioProductionPolicy::medicTarget(16);
++    const bool ordinaryBioTankSupport = _terranPlan == TerranPlanId::BioTank &&
++        bioTankPlanActive();
++    const bool bioVesselCoreReady = ordinaryBioTankSupport && numCCCompleted >= 2 &&
++        numMarines >= 16 && numMedics >= BioProductionPolicy::medicTarget(16) && numTanks >= 2;
+     const bool bioLurkerIrradiateThreat = bioTankLurkerTankTarget() >= 3;
+     const bool urgentZergIrradiatePlan =
++        (bioVesselCoreReady && enemyRace == BWAPI::Races::Zerg) ||
+         (bioIrradiateCoreReady &&
+             (zergMutaliskIrradiateThreat || bioLurkerIrradiateThreat)) ||
+         (zergMutaliskIrradiateThreat && completedGoliathCount() >= 4) ||
+@@ -13582,6 +13654,13 @@
+         desiredScienceVessels = std::max(desiredScienceVessels, 2);
+     }
+ 
++    if (ordinaryBioTankSupport)
++    {
++        desiredScienceVessels = BioTankPolicy::vessels(numMarines, numCCCompleted,
++            enemyRace == BWAPI::Races::Zerg, bioTankLurkerTankTarget() > 0,
++            zergDefilerIrradiateThreat, urgentEmpPlan);
++    }
++
+     if (_pureAirPlan)
+     {
+         // One Vessel is enough for ordinary Mutalisk vision. Capital ships or
+@@ -13602,7 +13681,7 @@
+         (
+             urgentDetectorNeeded ||
+             urgentZergIrradiatePlan ||
+-            urgentEmpPlan ||
++            urgentEmpPlan || bioVesselCoreReady ||
+             (_pureAirPlan && completedGoliathCount() >= 8) ||
+             (
+                 numCC >= 2 &&
+@@ -13619,6 +13698,11 @@
+         const bool carrierGhostPipelineOwnsVesselTech =
+             _pureAirPlan && activeProtossCarrierCounter;
+ 
++        const int desiredBioPorts = ordinaryBioTankSupport &&
++            enemyRace == BWAPI::Races::Zerg &&
++            (the.my.completed.count(BWAPI::UnitTypes::Terran_Starport) >= 2 ||
++             (desiredScienceVessels >= 3 && numVessels >= 2 &&
++              numSCVs >= 40 && self->gas() >= 300)) ? 2 : 1;
+         if (!carrierGhostPipelineOwnsVesselTech)
+         {
+             BuildOrderQueue& vesselQueue =
+@@ -13629,10 +13713,12 @@
+                 BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Starport) > 0 ||
+                 vesselQueue.anyInQueue(BWAPI::UnitTypes::Terran_Starport);
+ 
+-            if (!starportExistsOrPlanned)
+-            {
+-                goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 1));
+-            }
++            if (!starportExistsOrPlanned ||
++                (desiredBioPorts > 1 &&
++                 the.my.all.count(BWAPI::UnitTypes::Terran_Starport) +
++                 BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Starport) +
++                 vesselQueue.numInQueue(BWAPI::UnitTypes::Terran_Starport) < desiredBioPorts))
++                goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, desiredBioPorts));
+ 
+             // Do not hand BOSS a complete multi-building dependency tree in
+             // one search. Expose the Tower/Facility only after the Starport is
+@@ -13644,10 +13730,14 @@
+                     BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Control_Tower) > 0 ||
+                     vesselQueue.anyInQueue(BWAPI::UnitTypes::Terran_Control_Tower);
+ 
+-                if (!controlTowerExistsOrPlanned)
+-                {
+-                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 1));
+-                }
++                const int towerTarget = std::min(desiredBioPorts,
++                    the.my.completed.count(BWAPI::UnitTypes::Terran_Starport));
++                if (!controlTowerExistsOrPlanned ||
++                    (towerTarget > 1 &&
++                     the.my.all.count(BWAPI::UnitTypes::Terran_Control_Tower) +
++                     BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Control_Tower) +
++                     vesselQueue.numInQueue(BWAPI::UnitTypes::Terran_Control_Tower) < towerTarget))
++                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, towerTarget));
+ 
+                 const bool scienceFacilityExistsOrPlanned =
+                     the.my.all.count(BWAPI::UnitTypes::Terran_Science_Facility) > 0 ||
+@@ -13665,13 +13755,20 @@
+             the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0 &&
+             the.my.completed.count(BWAPI::UnitTypes::Terran_Science_Facility) > 0;
+ 
+-        if (vesselPrerequisitesCompleted &&
++        const int vesselLanes = std::min(desiredBioPorts,
++            the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower));
++        const bool fundFirstIrradiate = ordinaryBioTankSupport &&
++            enemyRace == BWAPI::Races::Zerg && numVessels > 0 &&
++            !self->hasResearched(BWAPI::TechTypes::Irradiate) &&
++            !self->isResearching(BWAPI::TechTypes::Irradiate);
++        if (vesselPrerequisitesCompleted && !fundFirstIrradiate &&
+             numVessels < desiredScienceVessels &&
+-            scienceVesselsCurrentlyTraining() == 0)
++            scienceVesselsCurrentlyTraining() < vesselLanes)
+         {
+             goal.push_back(std::pair<MacroAct, int>(
+                 BWAPI::UnitTypes::Terran_Science_Vessel,
+-                numVessels + 1
++                std::min(desiredScienceVessels,
++                    numVessels + vesselLanes - scienceVesselsCurrentlyTraining())
+             ));
+         }
+ 
+@@ -14738,14 +14835,16 @@
+         const auto* policy = tvzBioPolicy(_terranPlan);
+         _bioTankAttackStatus = policy ? policy->waiting : deepSixPlanActive()
+             ? "WAIT 24M/5Med/4T + Stim/Siege/Range/Armor1"
+-            : "WAIT opening army/Stim/Siege";
++            : "WAIT mobile core together + Stim/Siege";
+     }
+     else
+     {
+         const NearbyEnemyThreats& nearby = visibleEnemyThreatsNearOwnedBases();
+-        if (nearby.hasGround())
+-        {
+-            _bioTankAttackStatus = "DEFEND ground threat at base";
++        if (_terranPlan == TerranPlanId::BioTank
++            ? BioTankPolicy::homeDefenseRequired() : nearby.hasGround())
++        {
++            _bioTankAttackStatus = _terranPlan == TerranPlanId::BioTank
++                ? "DEFEND base: local garrison outmatched" : "DEFEND ground threat at base";
+         }
+         else if (_terranPlan == TerranPlanId::TvZ_SK &&
+             rememberedEnemyUnitCount(BWAPI::UnitTypes::Zerg_Lurker) > 0 &&
+@@ -14753,7 +14852,7 @@
+         {
+             _bioTankAttackStatus = "DEFEND replace Lurker detection Vessel";
+         }
+-        else if (nearby.hasAir() &&
++        else if (_terranPlan != TerranPlanId::BioTank && nearby.hasAir() &&
+             the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) < 14)
+         {
+             _bioTankAttackStatus = "DEFEND air threat: need Marines";
+--- before/Strategy/StrategyManager.h
++++ after/Strategy/StrategyManager.h
+@@ -137,6 +137,7 @@
+     bool bioTankPlanActive() const;
+     bool deepSixPlanActive() const;
+     bool bioTankUsesTanks() const;
++    int bioTankDesiredTankPercent() const;
+     bool bioTankPushReady();
+     void updateBioTankAttackState();
+     const std::string& bioTankAttackStatus() const { return _bioTankAttackStatus; }
+--- before/Combat/Micro/MicroRanged.cpp
++++ after/Combat/Micro/MicroRanged.cpp
+@@ -1,5 +1,6 @@
+ #include "Combat/Micro/MicroRanged.h"
+ #include "Combat/Micro/Terran/MicroMarines.h"
++#include "Combat/Micro/Terran/BioInfantrySafety.h"
+ #include "Strategy/StrategyManager.h"
+ #include "Map/Bases.h"
+ #include "Intelligence/InformationManager.h"
+@@ -79,6 +80,7 @@
+             continue;
+         }
+ 
++        if (BioInfantrySafety::evade(marine)) continue;
+         BWAPI::Unit target = nullptr;
+         int targetScore = INT_MAX;
+         for (BWAPI::Unit enemy : threats)
+@@ -321,7 +323,19 @@
+                 !MicroMarines::shouldKite(unit, target);
+             if (Config::Micro::KiteWithRangedUnits && kite &&
+                 !marineCommits)
+-                the.micro.KiteTarget(unit, target);
++            {
++                if (unit->getType() == BWAPI::UnitTypes::Terran_Marine &&
++                    StrategyManager::Instance().bioTankPlanActive())
++                {
++                    if (unit->isAttackFrame() || unit->isStartingAttack()) continue;
++                    const int latency = BWAPI::Broodwar->getRemainingLatencyFrames();
++                    if (unit->getGroundWeaponCooldown() <= latency + 2)
++                        the.micro.CatchAndAttackUnit(unit, target);
++                    else
++                        the.micro.KiteTarget(unit, target);
++                }
++                else the.micro.KiteTarget(unit, target);
++            }
+             else
+                 the.micro.CatchAndAttackUnit(unit, target);
+         }
+--- before/Combat/Squads/Squad.cpp
++++ after/Combat/Squads/Squad.cpp
+@@ -9,6 +9,7 @@
+ #include "Utilities/UnitUtil.h"
+ #include "Combat/Micro/Terran/MicroTanks.h"
+ #include "Combat/Micro/Terran/MicroMarines.h"
++#include "Combat/Micro/Terran/BioInfantrySafety.h"
+ #include "Combat/Micro/Terran/TerranFormation.h"
+ #include <climits>
+ #include <cmath>
+@@ -220,6 +221,7 @@
+     BWAPI::Unitset unitsToCluster;
+     for (BWAPI::Unit unit : _units)
+     {
++        if (BioInfantrySafety::evade(unit)) continue;
+         if (unit->getType().isDetector() ||
+             unit->getType().spaceProvided() > 0)
+         {
+@@ -509,10 +511,15 @@
+         {
+             return false;
+         }
++        const bool bio = StrategyManager::Instance().bioTankPlanActive();
+         for (const UnitCluster & cluster2 : _clusters)
+         {
++            // A fight twenty tiles away is not immediate support for a weak
++            // bio reinforcement. Join only a substantial nearby fighting group.
++            if (bio && (cluster2.units.size() < std::max(size_t(8), cluster.units.size()) ||
++                !the.partitions.connected(cluster.center, cluster2.center))) continue;
+             if (cluster2.status == ClusterStatus::Attack &&
+-                cluster.center.getApproxDistance(cluster2.center) < 20 * 32)
++                cluster.center.getApproxDistance(cluster2.center) < (bio ? 6 : 20) * 32)
+             {
+                 cluster.status = ClusterStatus::Attack;
+                 return true;
+@@ -1442,8 +1449,8 @@
+ 
+     // Carrier combat needs its own readiness check. The old unconditional
+     // "four Goliaths never retreat" rule fed small groups into large fleets.
+-    // Bio remains aggressive by design; mech advances only with completed
+-    // range and enough local Goliaths for the visible Carrier count.
++    // Bio always reaches the ordinary combat evaluation below. Only mech
++    // receives this shortcut with completed range and enough local Goliaths.
+     if ((_name == "AntiAir" || _name == "Ground") &&
+         (StrategyManager::Instance().getTerranArmyPosture() ==
+             TerranArmyPosture::PureAir ||
+@@ -1452,8 +1459,7 @@
+         cluster.center.isValid())
+     {
+         const int clusterGoliaths = countGoliathsInUnits(cluster.units);
+-        const bool bioPureAir =
+-            StrategyManager::Instance().getOpeningGroup() == "bio";
++        const bool bioArmy = StrategyManager::Instance().bioTankPlanActive();
+         int visibleGroundThreats = 0;
+         int visibleCarriers = 0;
+         int visibleSmallAirThreats = 0;
+@@ -1497,7 +1503,7 @@
+             ? 4
+             : std::max(8, std::min(30, 3 * visibleCarriers + 4));
+ 
+-        if (visibleCarriers == 0 && visibleNonCarrierAir > 0 &&
++        if (!bioArmy && visibleCarriers == 0 && visibleNonCarrierAir > 0 &&
+             clusterGoliaths >= std::max(3, 2 * visibleSmallAirThreats + 1) &&
+             visibleGroundThreats <= std::max(1, clusterGoliaths / 3))
+         {
+@@ -1505,8 +1511,7 @@
+             return false;
+         }
+ 
+-        if ((bioPureAir ||
+-             (charonCompleted && clusterGoliaths >= requiredGoliaths)) &&
++        if (!bioArmy && charonCompleted && clusterGoliaths >= requiredGoliaths &&
+             visibleGroundThreats <= std::max(2, clusterGoliaths / 2))
+         {
+             _regroupStatus = green + std::string("AntiAir advance");
+@@ -1523,6 +1528,8 @@
+         _attackAtMax = true;
+     }
+ 
++    // Global supply does not make a small detached bio cluster win a fight.
++    if (StrategyManager::Instance().bioTankPlanActive()) _attackAtMax = false;
+     if (_attackAtMax)
+     {
+         if (the.self()->supplyUsed() < 320)
+@@ -1590,12 +1597,49 @@
+     CombatSimulation & sim = the.combatSim;
+ 
+     double score = 0.0;
+-    ++_lastUpdateProfile.simulations;
+-    _lastUpdateProfile.measure(SquadUpdateProfile::Simulation, [&]
+-    {
+-        sim.setCombatUnits(cluster.units, vanguard->getPosition(), _combatSimRadius, _fightVisibleOnly);
+-        score = sim.simulateCombat(_meatgrinder);
+-    });
++    BioCombatResult* cached = nullptr;
++    bool reuse = false;
++    const UnitCluster* enemy = nullptr;
++    if (StrategyManager::Instance().bioTankPlanActive())
++    {
++        for (auto it = _bioCombatResults.begin(); it != _bioCombatResults.end(); )
++            if (the.now() < it->second.frame || the.now() - it->second.frame > 24)
++                it = _bioCombatResults.erase(it);
++            else ++it;
++        cached = &_bioCombatResults[vanguard->getID()];
++        enemy = the.ops.getNearestEnemyClusterVs(cluster.center, !cluster.air, cluster.air);
++        // Re-enabling retreat at high supply must not run a full FAP battle
++        // every frame. Reuse for at most 1/4 second unless the local armies change.
++        reuse = the.now() >= cached->frame && the.now() - cached->frame < 6 &&
++            cached->units == cluster.units.size() &&
++            std::abs(cached->hp - cluster.hp) <= std::max(40, cached->hp / 10) &&
++            cached->center.isValid() && cached->center.getApproxDistance(cluster.center) <= 64 &&
++            cached->enemyUnits == (enemy ? enemy->units.size() : 0) &&
++            std::abs(cached->enemyHP - (enemy ? enemy->hp : 0)) <= std::max(40, cached->enemyHP / 10) &&
++            (!enemy || (cached->enemyCenter.isValid() &&
++                cached->enemyCenter.getApproxDistance(enemy->center) <= 64));
++        if (reuse) score = cached->score;
++    }
++    if (!reuse)
++    {
++        ++_lastUpdateProfile.simulations;
++        _lastUpdateProfile.measure(SquadUpdateProfile::Simulation, [&]
++        {
++            sim.setCombatUnits(cluster.units, vanguard->getPosition(), _combatSimRadius, _fightVisibleOnly);
++            score = sim.simulateCombat(_meatgrinder);
++        });
++        if (cached)
++        {
++            cached->frame = the.now();
++            cached->center = cluster.center;
++            cached->units = cluster.units.size();
++            cached->hp = cluster.hp;
++            cached->enemyUnits = enemy ? enemy->units.size() : 0;
++            cached->enemyHP = enemy ? enemy->hp : 0;
++            cached->enemyCenter = enemy ? enemy->center : BWAPI::Positions::Invalid;
++            cached->score = score;
++        }
++    }
+ 
+     // Use the smoothing mechanism to average out recent results.
+ 	the.micro.setAttack(cluster.units, score >= 0.0);
+--- before/Combat/Squads/Squad.h
++++ after/Combat/Squads/Squad.h
+@@ -104,6 +104,17 @@
+     std::map<int, std::pair<int, int>> _stimHealingReservations;
+     int _lastStimReservationFrame = -1;
+ 
++    struct BioCombatResult
++    {
++        int frame = -100000;
++        BWAPI::Position center = BWAPI::Positions::Invalid;
++        BWAPI::Position enemyCenter = BWAPI::Positions::Invalid;
++        size_t units = 0, enemyUnits = 0;
++        int hp = 0, enemyHP = 0;
++        double score = 0.0;
++    };
++    std::map<int, BioCombatResult> _bioCombatResults;
++
+     MicroAirToAir		_microAirToAir;
+     MicroMelee			_microMelee;
+     MicroRanged			_microRanged;
+--- before/Combat/Micro/Terran/MicroMarines.h
++++ after/Combat/Micro/Terran/MicroMarines.h
+@@ -2,6 +2,7 @@
+ 
+ #include "Utilities/UnitUtil.h"
+ #include "Combat/Micro/Terran/TerranSiegeSafety.h"
++#include "Strategy/StrategyManager.h"
+ #include <algorithm>
+ #include <cmath>
+ 
+@@ -25,7 +26,9 @@
+         const BWAPI::Unitset& nearbyEnemies)
+     {
+         if (!marine || !marine->exists() || marine->isStimmed() ||
+-            marine->getHitPoints() <= 30 || !marine->getPosition().isValid())
++            marine->getHitPoints() <= 30 ||
++            (marine->isUnderStorm() && StrategyManager::Instance().bioTankPlanActive()) ||
++            !marine->getPosition().isValid())
+         {
+             return false;
+         }
+@@ -71,10 +74,14 @@
+ 
+     static bool shouldKite(BWAPI::Unit marine, BWAPI::Unit target)
+     {
+-        // Stim speed is spent attacking; moving between every volley gives
+-        // Mutalisks free shots and pulls Marines away from their Medics.
+-        return marine && target && !marine->isStimmed() &&
+-            !target->isFlying();
++        if (!marine || !target || target->isFlying()) return false;
++        if (!marine->isStimmed()) return true;
++        // Keep firing at air and ranged targets, but spend Stim speed escaping
++        // a closing Zealot/Zergling rather than trading at melee range.
++        if (!StrategyManager::Instance().bioTankPlanActive() ||
++            target->getType().isBuilding() || !UnitUtil::CanAttack(target, marine)) return false;
++        const int enemyRange = UnitUtil::GetAttackRange(target, marine);
++        return enemyRange <= 64 && marine->getDistance(target) <= enemyRange + 80;
+     }
+ };
+ }
+--- /dev/null
++++ after/Strategy/Terran/BioTankPolicy.h
+@@ -0,0 +1,57 @@
++#pragma once
++
++#include <algorithm>
++
++namespace UAlbertaBot { namespace BioTankPolicy
++{
++    // Ordinary BioTank only. Sparks, Pre-Hive, SK and Deep Six own their targets.
++    inline bool recallArmy(int enemyPower, int localDefense, bool depotCritical)
++    {
++        return (enemyPower >= 6 && enemyPower > localDefense + 4) ||
++            (depotCritical && enemyPower > localDefense);
++    }
++
++    inline int firebats(int marines, int zerglings)
++    {
++        return zerglings < 4 ? 0 :
++            std::min({ 4, marines / 8, (zerglings + 5) / 6 });
++    }
++
++    inline int tankPercent(int heavyGround, int lightGround, int air)
++    {
++        if (air > heavyGround + lightGround) return 15;
++        return heavyGround >= 4 && heavyGround >= lightGround ? 30 : 20;
++    }
++
++    inline int factories(int tankTarget, int completed, int workers,
++        int minerals, int gas, bool allBusy)
++    {
++        const int normal = tankTarget >= 5 && workers >= 28 ? 2 : 1;
++        if (!allBusy || workers < 40 || minerals < 850 || gas < 400)
++            return normal;
++        const int capacity = tankTarget >= 10 ? 3 : normal;
++        return std::max(normal, std::min(capacity, completed + 1));
++    }
++
++    inline int vessels(int marines, int bases, bool zerg,
++        bool lurkers, bool defilers, bool enemyCasters)
++    {
++        if (!zerg) return enemyCasters ? 2 : 1;
++        int target = std::max(1, (marines + 15) / 16);
++        if (lurkers) target = std::max(2, target);
++        if (defilers) target = std::max(3, target);
++        return std::min(bases < 2 ? 1 : bases < 3 ? 4 : 6, target);
++    }
++
++    inline int guardianWraiths(int guardians, int antiAir)
++    {
++        return guardians > 0 && antiAir < std::max(4, guardians)
++            ? std::min(6, std::max(2, guardians)) : 0;
++    }
++
++    inline int goliaths(int carriers, int battlecruisers, int guardians)
++    {
++        return std::min(20, std::max({ carriers > 0 ? 4 + 3 * carriers : 0,
++            2 * battlecruisers, 2 * guardians }));
++    }
++} }
+--- /dev/null
++++ after/Strategy/Terran/BioTankAssessment.h
+@@ -0,0 +1,207 @@
++#pragma once
++
++#include "Strategy/Terran/BioTankPolicy.h"
++#include "Strategy/BioProductionPolicy.h"
++#include "Combat/CombatCommander.h"
++#include "Intelligence/InformationManager.h"
++#include "Map/Bases.h"
++#include "Core/The.h"
++#include "Utilities/UnitUtil.h"
++
++namespace UAlbertaBot { namespace BioTankPolicy
++{
++    struct EnemyMix
++    {
++        int zerglings = 0, heavyGround = 0, lightGround = 0, air = 0;
++        int carriers = 0, battlecruisers = 0, guardians = 0, mutalisks = 0;
++        int antiAir = 0;
++    };
++
++    inline const EnemyMix& enemyMix()
++    {
++        static int frame = -100000;
++        static EnemyMix mix;
++        if (the.now() >= frame && the.now() - frame < 12) return mix;
++        frame = the.now();
++        mix = EnemyMix();
++        // UnitData removes confirmed deaths; "ever seen" would keep ordering
++        // counters for a dead fleet. Refresh once per half second.
++        for (const auto& entry :
++            InformationManager::Instance().getUnitData(the.enemy()).getUnits())
++        {
++            const BWAPI::UnitType type = entry.second.type;
++            if (type.isWorker() || type.isBuilding() || type.isSpell()) continue;
++            if (type == BWAPI::UnitTypes::Zerg_Zergling) ++mix.zerglings;
++            if (type == BWAPI::UnitTypes::Protoss_Carrier) ++mix.carriers;
++            if (type == BWAPI::UnitTypes::Terran_Battlecruiser) ++mix.battlecruisers;
++            if (type == BWAPI::UnitTypes::Zerg_Guardian) ++mix.guardians;
++            if (type == BWAPI::UnitTypes::Zerg_Mutalisk) ++mix.mutalisks;
++            if (UnitUtil::TypeCanAttackAir(type)) ++mix.antiAir;
++            if (type.isFlyer())
++            {
++                if (UnitUtil::TypeCanAttackGround(type) || UnitUtil::TypeCanAttackAir(type))
++                    ++mix.air;
++            }
++            else if (type == BWAPI::UnitTypes::Zerg_Hydralisk ||
++                type == BWAPI::UnitTypes::Zerg_Lurker ||
++                type == BWAPI::UnitTypes::Zerg_Ultralisk ||
++                type == BWAPI::UnitTypes::Protoss_Dragoon ||
++                type == BWAPI::UnitTypes::Protoss_Reaver ||
++                type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode ||
++                type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode ||
++                type == BWAPI::UnitTypes::Terran_Goliath) ++mix.heavyGround;
++            else if (UnitUtil::TypeCanAttackGround(type)) ++mix.lightGround;
++        }
++        return mix;
++    }
++
++    inline int goliathTarget(bool carrierPreparation = false)
++    {
++        const EnemyMix& mix = enemyMix();
++        return std::max(carrierPreparation ? 4 : 0,
++            goliaths(mix.carriers, mix.battlecruisers,
++                guardianWraiths(mix.guardians, mix.antiAir) > 0 ? 0 : mix.guardians));
++    }
++
++    inline bool reserveGoliathSupply()
++    {
++        return StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank &&
++            the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= 16 &&
++            the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
++                the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode) >= 2 &&
++            the.my.all.count(BWAPI::UnitTypes::Terran_Goliath) < goliathTarget() &&
++            the.self()->supplyTotal() - the.self()->supplyUsed() <
++                2 * BWAPI::UnitTypes::Terran_Goliath.supplyRequired();
++    }
++
++    inline bool coreTogether(int marineTarget, int tankTarget)
++    {
++        static int frame = -100000, lastMarines = 0, lastTanks = 0;
++        static bool ready = false;
++        if (the.now() >= frame && the.now() - frame < 12 &&
++            marineTarget == lastMarines && tankTarget == lastTanks) return ready;
++        frame = the.now();
++        lastMarines = marineTarget;
++        lastTanks = tankTarget;
++        ready = false;
++        const auto& squads = CombatCommander::Instance().squadDiagnostics().getSquads();
++        const auto ground = squads.find("Ground");
++        if (ground == squads.end()) return false;
++        BWAPI::Unitset mobile;
++        // Bunkers, local defense, scouts and drops cannot satisfy this gate.
++        for (BWAPI::Unit unit : ground->second.getUnits())
++            if (unit && unit->exists() && unit->isCompleted() && !unit->isLoaded() &&
++                unit->getPosition().isValid() && !unit->isStasised() &&
++                !unit->isMaelstrommed() && !unit->isLockedDown()) mobile.insert(unit);
++        for (BWAPI::Unit seed : mobile)
++        {
++            if (seed->getType() != BWAPI::UnitTypes::Terran_Marine) continue;
++            int marines = 0, medics = 0, tanks = 0;
++            for (BWAPI::Unit unit : mobile)
++            {
++                if (unit->getDistance(seed) > 10 * 32 ||
++                    !the.partitions.connected(seed->getPosition(), unit->getPosition())) continue;
++                const BWAPI::UnitType type = unit->getType();
++                if (type == BWAPI::UnitTypes::Terran_Marine) ++marines;
++                else if (type == BWAPI::UnitTypes::Terran_Medic && unit->getEnergy() >= 5) ++medics;
++                else if (type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode ||
++                    type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode) ++tanks;
++            }
++            if (marines >= marineTarget &&
++                medics >= BioProductionPolicy::medicTarget(marineTarget) &&
++                tanks >= tankTarget) return ready = true;
++        }
++        return false;
++    }
++
++    inline bool canThreatenBase(BWAPI::Unit enemy, Base* base, int maxGroundDistance)
++    {
++        if (!enemy || !enemy->exists() || !enemy->getPosition().isValid() ||
++            !base || !base->getDepot() || !base->getDepot()->exists()) return false;
++        if (enemy->isFlying()) return true;
++        BWAPI::Unit depot = base->getDepot();
++        // Guns can fire across cliffs even where walking is impossible.
++        if (UnitUtil::CanAttackGround(enemy) && enemy->getDistance(depot) <=
++            UnitUtil::GetAttackRange(enemy, depot) + 64) return true;
++        if (!the.partitions.connected(enemy->getPosition(), base->getPosition())) return false;
++        // All attackers share the cached field rooted at this base.
++        const int distance = the.map.getGroundDistance(enemy->getPosition(), base->getPosition());
++        return distance >= 0 && distance <= maxGroundDistance;
++    }
++
++    inline bool homeDefenseRequired()
++    {
++        static int frame = -100000;
++        static bool required = false;
++        if (the.now() >= frame && the.now() - frame < 8) return required;
++        frame = the.now();
++        required = false;
++        BWAPI::Unitset garrison;
++        for (const auto& squad : CombatCommander::Instance().squadDiagnostics().getSquads())
++            if (squad.first.compare(0, 5, "Base ") == 0)
++                for (BWAPI::Unit unit : squad.second.getUnits()) garrison.insert(unit);
++        auto power = [](BWAPI::Unit unit)
++        {
++            const BWAPI::UnitType type = unit->getType();
++            int value = std::max(1, type.supplyRequired());
++            if (type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode ||
++                type == BWAPI::UnitTypes::Zerg_Lurker ||
++                type == BWAPI::UnitTypes::Protoss_Reaver) value += 4;
++            if (type.isBuilding()) value = 6;
++            return std::max(1, value * unit->getHitPoints() /
++                std::max(1, type.maxHitPoints()));
++        };
++        for (Base* base : the.bases.getAll())
++        {
++            if (!base || base->getOwner() != the.self() || !base->isCompleted()) continue;
++            BWAPI::Unit depot = base->getDepot();
++            if (!depot || !depot->exists() || depot->isFlying()) continue;
++            int groundPower = 0, airPower = 0, groundDefense = 0, airDefense = 0;
++            for (BWAPI::Unit enemy : the.enemy()->getUnits())
++            {
++                if (!enemy || !enemy->exists() || !enemy->isVisible() || enemy->isInvincible() ||
++                    !enemy->getPosition().isValid() || enemy->getType().isWorker() ||
++                    !UnitUtil::CanAttackGround(enemy) ||
++                    enemy->getType() == BWAPI::UnitTypes::Protoss_Interceptor ||
++                    enemy->getDistance(depot) > 12 * 32 ||
++                    !canThreatenBase(enemy, base, 14 * 32)) continue;
++                if (enemy->isFlying()) airPower += power(enemy);
++                else groundPower += power(enemy);
++            }
++            if (groundPower == 0 && airPower == 0) continue;
++            for (BWAPI::Unit unit : the.self()->getUnits())
++            {
++                if (!unit || !unit->exists() || !unit->isCompleted() || unit->isLoaded() ||
++                    unit->isStasised() || unit->isLockedDown() || unit->isMaelstrommed() ||
++                    !unit->getPosition().isValid() || unit->getType().isWorker() ||
++                    unit->getDistance(depot) > 10 * 32 ||
++                    (!unit->isFlying() && !the.partitions.connected(
++                        unit->getPosition(), depot->getPosition()))) continue;
++                if (unit->getType() == BWAPI::UnitTypes::Terran_Bunker)
++                {
++                    for (BWAPI::Unit passenger : unit->getLoadedUnits())
++                    {
++                        if (!passenger) continue;
++                        if (UnitUtil::CanAttackGround(passenger)) groundDefense += power(passenger);
++                        if (UnitUtil::CanAttackAir(passenger)) airDefense += power(passenger);
++                    }
++                }
++                else if (unit->getType().isBuilding() || garrison.find(unit) != garrison.end())
++                {
++                    // The returning main army is temporary help, not a local
++                    // garrison: counting it would toggle attack/recall forever.
++                    if (UnitUtil::CanAttackGround(unit)) groundDefense += power(unit);
++                    if (UnitUtil::CanAttackAir(unit)) airDefense += power(unit);
++                }
++            }
++            const bool critical = depot->getHitPoints() < depot->getType().maxHitPoints() / 3;
++            if (recallArmy(groundPower, groundDefense, critical) ||
++                recallArmy(airPower, airDefense, critical))
++            {
++                required = true;
++                break;
++            }
++        }
++        return required;
++    }
++} }
+--- /dev/null
++++ after/Combat/Micro/Terran/BioInfantrySafety.h
+@@ -0,0 +1,130 @@
++#pragma once
++
++#include "Core/The.h"
++#include "Strategy/StrategyManager.h"
++#include "Map/MapTools.h"
++#include <climits>
++
++namespace UAlbertaBot
++{
++// Immediate hazards own movement before squad clustering, including Advance
++// and Regroup. One snapshot per frame, no full-map searches or retained units.
++class BioInfantrySafety
++{
++    struct Hazard
++    {
++        BWAPI::Position position;
++        int radius;
++    };
++    struct Snapshot
++    {
++        int frame = -1;
++        std::vector<Hazard> hazards;
++        std::map<int, bool> decisions;
++    };
++
++    static Snapshot& snapshot()
++    {
++        static Snapshot cache;
++        if (cache.frame == the.now()) return cache;
++        cache.frame = the.now();
++        cache.hazards.clear();
++        cache.decisions.clear();
++        for (BWAPI::Bullet bullet : BWAPI::Broodwar->getBullets())
++        {
++            if (!bullet || bullet->getType() != BWAPI::BulletTypes::Psionic_Storm)
++                continue;
++            BWAPI::Position position = bullet->getPosition();
++            if (!position.isValid()) position = bullet->getTargetPosition();
++            if (position.isValid()) cache.hazards.push_back({ position, 80 });
++        }
++        for (BWAPI::Unit enemy : the.enemy()->getUnits())
++        {
++            if (enemy && enemy->exists() && enemy->isVisible() &&
++                enemy->getType() == BWAPI::UnitTypes::Protoss_Scarab &&
++                enemy->getPosition().isValid())
++                cache.hazards.push_back({ enemy->getPosition(), 80 });
++        }
++        return cache;
++    }
++
++public:
++    static bool evade(BWAPI::Unit unit)
++    {
++        if (!StrategyManager::Instance().bioTankPlanActive() ||
++            !unit || !unit->exists() || !unit->isCompleted() || unit->isLoaded() ||
++            !unit->getPosition().isValid() || unit->isStasised() ||
++            unit->isMaelstrommed() || unit->isLockedDown() ||
++            (unit->getType() != BWAPI::UnitTypes::Terran_Marine &&
++             unit->getType() != BWAPI::UnitTypes::Terran_Medic &&
++             unit->getType() != BWAPI::UnitTypes::Terran_Firebat)) return false;
++
++        Snapshot& cache = snapshot();
++        const auto previous = cache.decisions.find(unit->getID());
++        if (previous != cache.decisions.end()) return previous->second;
++
++        const BWAPI::Position start = unit->getPosition();
++        // Some BWAPI versions expose the affected-unit flag before the bullet.
++        const bool underStorm = unit->isUnderStorm();
++        auto clearance = [&cache, &start, underStorm](const BWAPI::Position& position)
++        {
++            int result = underStorm ? position.getApproxDistance(start) - 64 : INT_MAX;
++            for (const Hazard& hazard : cache.hazards)
++                result = std::min(result,
++                    position.getApproxDistance(hazard.position) - hazard.radius);
++            return result;
++        };
++        const int current = clearance(start);
++        if (current >= 0)
++        {
++            cache.decisions[unit->getID()] = false;
++            return false;
++        }
++
++        BWAPI::Position best = BWAPI::Positions::Invalid;
++        int bestClearance = current;
++        int bestCost = INT_MAX;
++        const int directions[][2] = {
++            {1,0}, {-1,0}, {0,1}, {0,-1},
++            {1,1}, {1,-1}, {-1,1}, {-1,-1}
++        };
++        for (int step : { 48, 80, 112 }) for (int index = 0; index < 8; ++index)
++        {
++            const auto& direction = directions[(index + unit->getID()) % 8];
++            const BWAPI::Position candidate(start.x + step * direction[0],
++                start.y + step * direction[1]);
++            if (!candidate.isValid() ||
++                !the.partitions.connected(start, candidate)) continue;
++            bool clear = true;
++            // A clear endpoint alone can still lie across a closed gate/wall.
++            for (int part = 1; part <= 8; ++part)
++            {
++                const BWAPI::Position point(
++                    start.x + (candidate.x - start.x) * part / 8,
++                    start.y + (candidate.y - start.y) * part / 8);
++                if (!the.map.isGroundPositionWalkable(point, unit->getType(), true))
++                {
++                    clear = false;
++                    break;
++                }
++            }
++            if (!clear) continue;
++            // Once outside every blast, prefer a short exit with less enemy fire.
++            const int margin = std::min(0, clearance(candidate));
++            const int cost = start.getApproxDistance(candidate) +
++                128 * the.groundHits(BWAPI::TilePosition(candidate));
++            if (margin > bestClearance ||
++                (margin == bestClearance && margin > current && cost < bestCost))
++            {
++                best = candidate;
++                bestClearance = margin;
++                bestCost = cost;
++            }
++        }
++        const bool escaping = best.isValid();
++        cache.decisions[unit->getID()] = escaping;
++        if (escaping) the.micro.Move(unit, best);
++        return escaping;
++    }
++};
++}

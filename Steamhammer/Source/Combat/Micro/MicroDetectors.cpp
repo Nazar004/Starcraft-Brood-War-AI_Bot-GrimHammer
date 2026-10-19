@@ -216,14 +216,60 @@ bool MicroDetectors::canCastAnotherSpell(BWAPI::Unit vessel) const
     return BWAPI::Broodwar->getFrameCount() - it->second >= SPELL_COOLDOWN_FRAMES;
 }
 
-void MicroDetectors::rememberSpellCast(BWAPI::Unit vessel)
+void MicroDetectors::rememberSpellCast(BWAPI::Unit vessel, BWAPI::TechType tech,
+    BWAPI::Unit target, const BWAPI::Position& position, int energyBefore)
 {
-    if (!vessel || !vessel->exists())
-    {
-        return;
-    }
+    const int now = BWAPI::Broodwar->getFrameCount();
+    _lastSpellCastFrame[vessel->getID()] = now;
+    // Allow approach plus command latency, with a bounded lease so a failed
+    // order cannot take ownership of the Vessel indefinitely.
+    const int approachFrames = int(vessel->getDistance(position) /
+        std::max(1.0, vessel->getType().topSpeed()));
+    const int timeout = std::min(4 * 24, std::max(48,
+        approachFrames + 2 * BWAPI::Broodwar->getLatencyFrames() + 12));
+    _pendingSpells[vessel->getID()] =
+        { tech, target ? target->getID() : -1, energyBefore, now + timeout, -1 };
+}
 
-    _lastSpellCastFrame[vessel->getID()] = BWAPI::Broodwar->getFrameCount();
+bool MicroDetectors::spellPending(BWAPI::Unit vessel)
+{
+    auto it = _pendingSpells.find(vessel->getID());
+    if (it == _pendingSpells.end()) return false;
+    PendingSpell& pending = it->second;
+    const int now = BWAPI::Broodwar->getFrameCount();
+    BWAPI::Unit target = pending.targetId >= 0
+        ? BWAPI::Broodwar->getUnit(pending.targetId) : nullptr;
+    const bool targetLost = pending.targetId >= 0 &&
+        (!target || !target->exists() || !target->getPosition().isValid() ||
+         (pending.tech == BWAPI::TechTypes::Irradiate &&
+          (!target->isVisible() || !target->isDetected())));
+    const bool emergency = vessel->isUnderAttack() &&
+        vessel->getHitPoints() <= vessel->getType().maxHitPoints() / 2 &&
+        the.micro.inWeaponsDanger(vessel, 0);
+    if (targetLost || emergency || now >= pending.deadline)
+    {
+        // Give escort/escape movement a turn before selecting another cast.
+        _lastSpellCastFrame[vessel->getID()] = now;
+        _pendingSpells.erase(it);
+        return false;
+    }
+    // Regeneration during latency can leave slightly more than
+    // energyBefore - cost, so detect the drop rather than an exact cost.
+    const bool completed = vessel->getEnergy() < pending.energyBefore ||
+        (target && pending.tech == BWAPI::TechTypes::Defensive_Matrix && target->isDefenseMatrixed()) ||
+        (target && pending.tech == BWAPI::TechTypes::Irradiate && target->isIrradiated());
+    if (completed && pending.completedFrame < 0)
+    {
+        pending.completedFrame = now;
+        _lastSpellCastFrame[vessel->getID()] = now;
+    }
+    if (pending.completedFrame >= 0 && now >= pending.completedFrame +
+        std::max(4, BWAPI::Broodwar->getLatencyFrames()))
+    {
+        _pendingSpells.erase(it);
+        return false;
+    }
+    return true;
 }
 
 int MicroDetectors::scoreDefensiveMatrixTarget(BWAPI::Unit vessel, BWAPI::Unit unit) const
@@ -267,7 +313,7 @@ int MicroDetectors::scoreDefensiveMatrixTarget(BWAPI::Unit vessel, BWAPI::Unit u
 
     for (BWAPI::Unit enemy : BWAPI::Broodwar->getUnitsInRadius(
         unit->getPosition(),
-        8 * 32,
+        14 * 32,
         BWAPI::Filter::IsEnemy))
     {
         if (!enemy || !enemy->exists() || !enemy->isCompleted())
@@ -275,14 +321,18 @@ int MicroDetectors::scoreDefensiveMatrixTarget(BWAPI::Unit vessel, BWAPI::Unit u
             continue;
         }
 
-        if (!enemy->getType().canAttack())
+        if (!enemy->getPosition().isValid() || enemy->isLoaded() ||
+            enemy->isStasised() || enemy->isMaelstrommed() || enemy->isLockedDown() ||
+            !UnitUtil::CanAttack(enemy, unit))
         {
             continue;
         }
-
+        const int distance = unit->getDistance(enemy);
+        const int range = UnitUtil::GetAttackRange(enemy, unit);
+        if (distance > range + 2 * 32) continue;
         ++nearbyEnemyAttackers;
 
-        if (unit->getDistance(enemy) <= 4 * 32)
+        if (distance <= range)
         {
             ++veryCloseEnemyAttackers;
         }
@@ -295,7 +345,7 @@ int MicroDetectors::scoreDefensiveMatrixTarget(BWAPI::Unit vessel, BWAPI::Unit u
         unit->isUnderAttack() ||
         nearbyEnemyAttackers >= 2 ||
         veryCloseEnemyAttackers >= 1 ||
-        hpRatio <= 0.75;
+        (hpRatio <= 0.75 && nearbyEnemyAttackers >= 1);
 
     if (!underRealThreat)
     {
@@ -360,9 +410,11 @@ bool MicroDetectors::tryDefensiveMatrix(BWAPI::Unit vessel, const BWAPI::Unitset
         return false;
     }
 
-    if (vessel->useTech(BWAPI::TechTypes::Defensive_Matrix, bestTarget))
+    const int energyBefore = vessel->getEnergy();
+    if (the.micro.UseTech(vessel, BWAPI::TechTypes::Defensive_Matrix, bestTarget))
     {
-        rememberSpellCast(vessel);
+        rememberSpellCast(vessel, BWAPI::TechTypes::Defensive_Matrix,
+            bestTarget, bestTarget->getPosition(), energyBefore);
         return true;
     }
 
@@ -586,9 +638,11 @@ bool MicroDetectors::tryIrradiate(BWAPI::Unit vessel)
         return false;
     }
 
-    if (vessel->useTech(BWAPI::TechTypes::Irradiate, bestTarget))
+    const int energyBefore = vessel->getEnergy();
+    if (the.micro.UseTech(vessel, BWAPI::TechTypes::Irradiate, bestTarget))
     {
-        rememberSpellCast(vessel);
+        rememberSpellCast(vessel, BWAPI::TechTypes::Irradiate,
+            bestTarget, bestTarget->getPosition(), energyBefore);
 
         BWAPI::Broodwar->drawLineMap(
             vessel->getPosition(),
@@ -735,9 +789,11 @@ bool MicroDetectors::tryEMP(BWAPI::Unit vessel)
         return false;
     }
 
-    if (vessel->useTech(BWAPI::TechTypes::EMP_Shockwave, bestPos))
+    const int energyBefore = vessel->getEnergy();
+    if (the.micro.UseTech(vessel, BWAPI::TechTypes::EMP_Shockwave, bestPos))
     {
-        rememberSpellCast(vessel);
+        rememberSpellCast(vessel, BWAPI::TechTypes::EMP_Shockwave,
+            nullptr, bestPos, energyBefore);
         return true;
     }
 
@@ -756,6 +812,11 @@ bool MicroDetectors::useScienceVesselAbilities(BWAPI::Unit vessel, const BWAPI::
         return false;
     }
 
+    // Pending casts own movement during approach and command latency.
+    if (spellPending(vessel))
+    {
+        return true;
+    }
     if (!canCastAnotherSpell(vessel))
     {
         return false;
@@ -1311,8 +1372,16 @@ void MicroDetectors::go(const BWAPI::Unitset& squadUnits)
     if (_lastStateFrame > now)
     {
         _lastSpellCastFrame.clear();
+        _pendingSpells.clear();
     }
     _lastStateFrame = now;
+    for (auto it = _pendingSpells.begin(); it != _pendingSpells.end(); )
+    {
+        if (liveVesselIDs.find(it->first) == liveVesselIDs.end())
+            it = _pendingSpells.erase(it);
+        else
+            ++it;
+    }
 
     for (auto it = _lastSpellCastFrame.begin(); it != _lastSpellCastFrame.end(); )
     {
@@ -1534,7 +1603,7 @@ void MicroDetectors::go(const BWAPI::Unitset& squadUnits)
             biggestSquadCenter) <= 12 * 32;
 
     const bool expansionRequestActive =
-        orderedDetectors.size() >= 2 &&
+        !orderedDetectors.empty() &&
         _expansionDetectionPosition.isValid() &&
         _expansionDetectionFrame >= 0 &&
         now >= _expansionDetectionFrame &&
@@ -1544,7 +1613,7 @@ void MicroDetectors::go(const BWAPI::Unitset& squadUnits)
     if (expansionRequestActive)
     {
         int bestDistance = MAX_DISTANCE;
-        const int firstIndex = detectionRequestActive ? 1 : 0;
+        const int firstIndex = detectionRequestActive && orderedDetectors.size() > 1 ? 1 : 0;
         for (int i = firstIndex; i < int(orderedDetectors.size()); ++i)
         {
             const int distance = orderedDetectors[i]->getDistance(
@@ -1590,7 +1659,7 @@ void MicroDetectors::go(const BWAPI::Unitset& squadUnits)
             continue;
         }
 
-        if (squadSize == 1 && !detectionRequestActive && cloakedTargets.empty())
+        if (squadSize == 1 && !detectionRequestActive && !expansionRequestActive && cloakedTargets.empty())
         {
             const BWAPI::Position safeHome =
                 getScienceVesselDefaultScoutPosition(
@@ -1630,7 +1699,7 @@ void MicroDetectors::go(const BWAPI::Unitset& squadUnits)
                 destination = DistanceAndDirection(detectorUnit->getPosition(), nearestEnemy->getPosition(), -8 * 32);
             }
         }
-        else if (detectorIndex == 0 && detectionRequestActive)
+        else if (detectorIndex == 0 && detectionRequestActive && detectorIndex != expansionDetectorIndex)
         {
             const int detectionRange =
                 UnitUtil::GetDetectionRange(detectorUnit->getType()) * 32;

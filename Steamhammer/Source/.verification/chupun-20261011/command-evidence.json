@@ -1,0 +1,7322 @@
+{
+  "header": {
+    "Engine": {
+      "Name": "Brood War",
+      "ID": 1,
+      "ShortName": "BW"
+    },
+    "Version": "-1.16",
+    "Frames": 58204,
+    "StartTime": "2026-10-11T18:49:01+02:00",
+    "Title": "GrimHammer",
+    "MapWidth": 96,
+    "MapHeight": 128,
+    "AvailSlotsCount": 2,
+    "Speed": {
+      "Name": "Fastest",
+      "ID": 6
+    },
+    "Type": {
+      "Name": "Melee",
+      "ID": 2,
+      "ShortName": "Melee"
+    },
+    "SubType": 1,
+    "Host": "GrimHammer",
+    "Map": "| iCCup | Chupung-Ryeung 1",
+    "Players": [
+      {
+        "SlotID": 0,
+        "ID": 0,
+        "Type": {
+          "Name": "Human",
+          "ID": 2
+        },
+        "Race": {
+          "Name": "Terran",
+          "ID": 1,
+          "ShortName": "ran",
+          "Letter": 84
+        },
+        "Team": 1,
+        "Name": "GrimHammer",
+        "Color": {
+          "Name": "Purple",
+          "ID": 3,
+          "RGB": 8929436
+        },
+        "Observer": false
+      },
+      {
+        "SlotID": 1,
+        "ID": 1,
+        "Type": {
+          "Name": "Human",
+          "ID": 2
+        },
+        "Race": {
+          "Name": "Protoss",
+          "ID": 2,
+          "ShortName": "toss",
+          "Letter": 80
+        },
+        "Team": 2,
+        "Name": "venator",
+        "Color": {
+          "Name": "Yellow",
+          "ID": 7,
+          "RGB": 16579640
+        },
+        "Observer": false
+      }
+    ]
+  },
+  "map": {
+    "Version": 59,
+    "TileSet": {
+      "Name": "Jungle",
+      "ID": 4
+    },
+    "Name": "| iCCup | Chupung-Ryeung 1.2",
+    "Description": "Created By Str18-02      \r\nPresented by KeSPA\r\n[ www.iccup.com ] modification\r\n",
+    "PlayerOwners": [
+      {
+        "Name": "Human (Open Slot)",
+        "ID": 6
+      },
+      {
+        "Name": "Human (Open Slot)",
+        "ID": 6
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 0
+      }
+    ],
+    "PlayerSides": [
+      {
+        "Name": "User Selectable",
+        "ID": 5
+      },
+      {
+        "Name": "User Selectable",
+        "ID": 5
+      },
+      {
+        "Name": "Protoss",
+        "ID": 2
+      },
+      {
+        "Name": "Terran",
+        "ID": 1
+      },
+      {
+        "Name": "Zerg",
+        "ID": 0
+      },
+      {
+        "Name": "Protoss",
+        "ID": 2
+      },
+      {
+        "Name": "Terran",
+        "ID": 1
+      },
+      {
+        "Name": "Zerg",
+        "ID": 0
+      },
+      {
+        "Name": "Inactive",
+        "ID": 7
+      },
+      {
+        "Name": "Inactive",
+        "ID": 7
+      },
+      {
+        "Name": "Inactive",
+        "ID": 7
+      },
+      {
+        "Name": "Invalid (Neutral)",
+        "ID": 4
+      }
+    ],
+    "MineralFields": [
+      {
+        "X": 1216,
+        "Y": 624,
+        "Amount": 1500
+      },
+      {
+        "X": 1248,
+        "Y": 656,
+        "Amount": 1500
+      },
+      {
+        "X": 1024,
+        "Y": 624,
+        "Amount": 1500
+      },
+      {
+        "X": 1088,
+        "Y": 624,
+        "Amount": 1500
+      },
+      {
+        "X": 992,
+        "Y": 656,
+        "Amount": 1500
+      },
+      {
+        "X": 1120,
+        "Y": 656,
+        "Amount": 1500
+      },
+      {
+        "X": 64,
+        "Y": 176,
+        "Amount": 1500
+      },
+      {
+        "X": 96,
+        "Y": 240,
+        "Amount": 1500
+      },
+      {
+        "X": 2976,
+        "Y": 3920,
+        "Amount": 1500
+      },
+      {
+        "X": 3008,
+        "Y": 3888,
+        "Amount": 1500
+      },
+      {
+        "X": 2976,
+        "Y": 3824,
+        "Amount": 1500
+      },
+      {
+        "X": 3008,
+        "Y": 3856,
+        "Amount": 1500
+      },
+      {
+        "X": 96,
+        "Y": 144,
+        "Amount": 1500
+      },
+      {
+        "X": 96,
+        "Y": 304,
+        "Amount": 1500
+      },
+      {
+        "X": 64,
+        "Y": 208,
+        "Amount": 1500
+      },
+      {
+        "X": 64,
+        "Y": 336,
+        "Amount": 1500
+      },
+      {
+        "X": 96,
+        "Y": 368,
+        "Amount": 1500
+      },
+      {
+        "X": 2976,
+        "Y": 3728,
+        "Amount": 1500
+      },
+      {
+        "X": 3008,
+        "Y": 3760,
+        "Amount": 1500
+      },
+      {
+        "X": 2976,
+        "Y": 3792,
+        "Amount": 1500
+      },
+      {
+        "X": 512,
+        "Y": 2000,
+        "Amount": 1500
+      },
+      {
+        "X": 480,
+        "Y": 1968,
+        "Amount": 1500
+      },
+      {
+        "X": 480,
+        "Y": 2032,
+        "Amount": 1500
+      },
+      {
+        "X": 512,
+        "Y": 2064,
+        "Amount": 1500
+      },
+      {
+        "X": 480,
+        "Y": 2096,
+        "Amount": 1500
+      },
+      {
+        "X": 512,
+        "Y": 2128,
+        "Amount": 1500
+      },
+      {
+        "X": 2560,
+        "Y": 2064,
+        "Amount": 1500
+      },
+      {
+        "X": 2592,
+        "Y": 2032,
+        "Amount": 1500
+      },
+      {
+        "X": 2560,
+        "Y": 2128,
+        "Amount": 1500
+      },
+      {
+        "X": 2592,
+        "Y": 2160,
+        "Amount": 1500
+      },
+      {
+        "X": 2592,
+        "Y": 2096,
+        "Amount": 1500
+      },
+      {
+        "X": 2560,
+        "Y": 2000,
+        "Amount": 1500
+      },
+      {
+        "X": 1120,
+        "Y": 2128,
+        "Amount": 1500
+      },
+      {
+        "X": 1952,
+        "Y": 2064,
+        "Amount": 1500
+      },
+      {
+        "X": 1952,
+        "Y": 2000,
+        "Amount": 1500
+      },
+      {
+        "X": 1088,
+        "Y": 2096,
+        "Amount": 1500
+      },
+      {
+        "X": 1088,
+        "Y": 2160,
+        "Amount": 1500
+      },
+      {
+        "X": 1120,
+        "Y": 2064,
+        "Amount": 1500
+      },
+      {
+        "X": 1984,
+        "Y": 1968,
+        "Amount": 1500
+      },
+      {
+        "X": 1984,
+        "Y": 2032,
+        "Amount": 1500
+      },
+      {
+        "X": 1888,
+        "Y": 3504,
+        "Amount": 1500
+      },
+      {
+        "X": 1856,
+        "Y": 3472,
+        "Amount": 1500
+      },
+      {
+        "X": 2048,
+        "Y": 336,
+        "Amount": 1500
+      },
+      {
+        "X": 1984,
+        "Y": 336,
+        "Amount": 1500
+      },
+      {
+        "X": 2080,
+        "Y": 368,
+        "Amount": 1500
+      },
+      {
+        "X": 1952,
+        "Y": 368,
+        "Amount": 1500
+      },
+      {
+        "X": 1024,
+        "Y": 3792,
+        "Amount": 1500
+      },
+      {
+        "X": 1088,
+        "Y": 3792,
+        "Amount": 1500
+      },
+      {
+        "X": 1152,
+        "Y": 3760,
+        "Amount": 1500
+      },
+      {
+        "X": 992,
+        "Y": 3760,
+        "Amount": 1500
+      },
+      {
+        "X": 96,
+        "Y": 3344,
+        "Amount": 1500
+      },
+      {
+        "X": 128,
+        "Y": 3472,
+        "Amount": 1500
+      },
+      {
+        "X": 2976,
+        "Y": 816,
+        "Amount": 1500
+      },
+      {
+        "X": 2944,
+        "Y": 784,
+        "Amount": 1500
+      },
+      {
+        "X": 2944,
+        "Y": 720,
+        "Amount": 1500
+      },
+      {
+        "X": 2976,
+        "Y": 752,
+        "Amount": 1500
+      },
+      {
+        "X": 2944,
+        "Y": 848,
+        "Amount": 1500
+      },
+      {
+        "X": 2944,
+        "Y": 624,
+        "Amount": 1500
+      },
+      {
+        "X": 128,
+        "Y": 3248,
+        "Amount": 1500
+      },
+      {
+        "X": 96,
+        "Y": 3280,
+        "Amount": 1500
+      },
+      {
+        "X": 128,
+        "Y": 3312,
+        "Amount": 1500
+      },
+      {
+        "X": 2080,
+        "Y": 3472,
+        "Amount": 1500
+      },
+      {
+        "X": 1952,
+        "Y": 3472,
+        "Amount": 1500
+      },
+      {
+        "X": 1984,
+        "Y": 3504,
+        "Amount": 1500
+      },
+      {
+        "X": 2048,
+        "Y": 3504,
+        "Amount": 1500
+      },
+      {
+        "X": 960,
+        "Y": 3792,
+        "Amount": 1500
+      },
+      {
+        "X": 2112,
+        "Y": 336,
+        "Amount": 1500
+      },
+      {
+        "X": 2208,
+        "Y": 400,
+        "Amount": 1500
+      },
+      {
+        "X": 864,
+        "Y": 3728,
+        "Amount": 1500
+      },
+      {
+        "X": 2176,
+        "Y": 368,
+        "Amount": 1500
+      },
+      {
+        "X": 896,
+        "Y": 3760,
+        "Amount": 1500
+      },
+      {
+        "X": 128,
+        "Y": 3440,
+        "Amount": 1500
+      },
+      {
+        "X": 2944,
+        "Y": 656,
+        "Amount": 1500
+      },
+      {
+        "X": 2912,
+        "Y": 592,
+        "Amount": 1500
+      },
+      {
+        "X": 128,
+        "Y": 3376,
+        "Amount": 1500
+      },
+      {
+        "X": 160,
+        "Y": 3504,
+        "Amount": 1500
+      }
+    ],
+    "Geysers": [
+      {
+        "X": 288,
+        "Y": 64,
+        "Amount": 5000
+      },
+      {
+        "X": 2752,
+        "Y": 4000,
+        "Amount": 5000
+      },
+      {
+        "X": 2784,
+        "Y": 1888,
+        "Amount": 5000
+      },
+      {
+        "X": 288,
+        "Y": 2208,
+        "Amount": 5000
+      },
+      {
+        "X": 2240,
+        "Y": 480,
+        "Amount": 5000
+      },
+      {
+        "X": 1344,
+        "Y": 832,
+        "Amount": 5000
+      },
+      {
+        "X": 1760,
+        "Y": 3328,
+        "Amount": 5000
+      },
+      {
+        "X": 832,
+        "Y": 3648,
+        "Amount": 5000
+      },
+      {
+        "X": 2752,
+        "Y": 576,
+        "Amount": 5000
+      },
+      {
+        "X": 320,
+        "Y": 3168,
+        "Amount": 5000
+      }
+    ],
+    "StartLocations": [
+      {
+        "X": 2752,
+        "Y": 752,
+        "SlotID": 1
+      },
+      {
+        "X": 320,
+        "Y": 3344,
+        "SlotID": 0
+      }
+    ]
+  },
+  "construction": [
+    {
+      "Frame": 1346,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 20,
+        "Y": 103
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3646
+      ]
+    },
+    {
+      "Frame": 1774,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 8,
+        "Y": 98
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      },
+      "Selected": [
+        3654
+      ]
+    },
+    {
+      "Frame": 2488,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3656
+      ]
+    },
+    {
+      "Frame": 3436,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 23,
+        "Y": 103
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 4136,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 21,
+        "Y": 101
+      },
+      "Unit": {
+        "Name": "Bunker",
+        "ID": 125
+      },
+      "Selected": [
+        3656
+      ]
+    },
+    {
+      "Frame": 4994,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 14,
+        "Y": 99
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3656
+      ]
+    },
+    {
+      "Frame": 5476,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 98
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3631
+      ]
+    },
+    {
+      "Frame": 6046,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 8,
+        "Y": 109
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 6232,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 100
+      },
+      "Unit": {
+        "Name": "Machine Shop",
+        "ID": 120
+      },
+      "Selected": [
+        3619
+      ]
+    },
+    {
+      "Frame": 7598,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 12,
+        "Y": 110
+      },
+      "Unit": {
+        "Name": "Machine Shop",
+        "ID": 120
+      },
+      "Selected": [
+        3606
+      ]
+    },
+    {
+      "Frame": 8206,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 96
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3644
+      ]
+    },
+    {
+      "Frame": 8268,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 96
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3644
+      ]
+    },
+    {
+      "Frame": 8362,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 31,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        3654
+      ]
+    },
+    {
+      "Frame": 8492,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 110
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        5691
+      ]
+    },
+    {
+      "Frame": 8864,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 24,
+        "Y": 113
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      },
+      "Selected": [
+        5709
+      ]
+    },
+    {
+      "Frame": 9080,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 113
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3621
+      ]
+    },
+    {
+      "Frame": 9374,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 115
+      },
+      "Unit": {
+        "Name": "Academy",
+        "ID": 112
+      },
+      "Selected": [
+        3633
+      ]
+    },
+    {
+      "Frame": 9604,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 31,
+        "Y": 87
+      },
+      "Unit": {
+        "Name": "Bunker",
+        "ID": 125
+      },
+      "Selected": [
+        3631
+      ]
+    },
+    {
+      "Frame": 10862,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 12,
+        "Y": 104
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        3658
+      ]
+    },
+    {
+      "Frame": 11090,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 35,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        7721
+      ]
+    },
+    {
+      "Frame": 11270,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 8,
+        "Y": 113
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3638
+      ]
+    },
+    {
+      "Frame": 11484,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 117
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3612
+      ]
+    },
+    {
+      "Frame": 11626,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 98
+      },
+      "Unit": {
+        "Name": "Armory",
+        "ID": 123
+      },
+      "Selected": [
+        3646
+      ]
+    },
+    {
+      "Frame": 11824,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 8,
+        "Y": 117
+      },
+      "Unit": {
+        "Name": "Starport",
+        "ID": 114
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 12588,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 117
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 12590,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3561
+      ]
+    },
+    {
+      "Frame": 12898,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 8,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Science Facility",
+        "ID": 116
+      },
+      "Selected": [
+        3612
+      ]
+    },
+    {
+      "Frame": 13102,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 96
+      },
+      "Unit": {
+        "Name": "Armory",
+        "ID": 123
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 13450,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        5709
+      ]
+    },
+    {
+      "Frame": 14006,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 113
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3507
+      ]
+    },
+    {
+      "Frame": 14100,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3507
+      ]
+    },
+    {
+      "Frame": 14494,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Engineering Bay",
+        "ID": 122
+      },
+      "Selected": [
+        3576
+      ]
+    },
+    {
+      "Frame": 14724,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 3,
+        "Y": 122
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3561
+      ]
+    },
+    {
+      "Frame": 14882,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 113
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3499
+      ]
+    },
+    {
+      "Frame": 15674,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3512
+      ]
+    },
+    {
+      "Frame": 15768,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 6,
+        "Y": 107
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3638
+      ]
+    },
+    {
+      "Frame": 15770,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 6,
+        "Y": 102
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3520
+      ]
+    },
+    {
+      "Frame": 15780,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 14,
+        "Y": 108
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3507
+      ]
+    },
+    {
+      "Frame": 15836,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 6,
+        "Y": 101
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3612
+      ]
+    },
+    {
+      "Frame": 15838,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 16,
+        "Y": 109
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5709
+      ]
+    },
+    {
+      "Frame": 16110,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 30,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3629
+      ]
+    },
+    {
+      "Frame": 16172,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3511
+      ]
+    },
+    {
+      "Frame": 16200,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 33,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3656
+      ]
+    },
+    {
+      "Frame": 16234,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3644
+      ]
+    },
+    {
+      "Frame": 16262,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 32,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3556
+      ]
+    },
+    {
+      "Frame": 16324,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 32,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3485
+      ]
+    },
+    {
+      "Frame": 16386,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 32,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3528
+      ]
+    },
+    {
+      "Frame": 16396,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 116
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 16448,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 33,
+        "Y": 115
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3511
+      ]
+    },
+    {
+      "Frame": 17024,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 34,
+        "Y": 108
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3612
+      ]
+    },
+    {
+      "Frame": 17158,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 12,
+        "Y": 118
+      },
+      "Unit": {
+        "Name": "Control Tower",
+        "ID": 115
+      },
+      "Selected": [
+        3533
+      ]
+    },
+    {
+      "Frame": 17542,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 118
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3638
+      ]
+    },
+    {
+      "Frame": 17646,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 9,
+        "Y": 100
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3511
+      ]
+    },
+    {
+      "Frame": 17648,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 102
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3621
+      ]
+    },
+    {
+      "Frame": 18682,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 12,
+        "Y": 122
+      },
+      "Unit": {
+        "Name": "Covert Ops",
+        "ID": 117
+      },
+      "Selected": [
+        3515
+      ]
+    },
+    {
+      "Frame": 18690,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 60,
+        "Y": 102
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        3562
+      ]
+    },
+    {
+      "Frame": 18758,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3638
+      ]
+    },
+    {
+      "Frame": 19104,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 19518,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 7,
+        "Y": 96
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3621
+      ]
+    },
+    {
+      "Frame": 19602,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 15,
+        "Y": 124
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3638
+      ]
+    },
+    {
+      "Frame": 19736,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 12,
+        "Y": 101
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3635
+      ]
+    },
+    {
+      "Frame": 20054,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 20656,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 53,
+        "Y": 103
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      },
+      "Selected": [
+        3499
+      ]
+    },
+    {
+      "Frame": 20832,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 1,
+        "Y": 107
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3563
+      ]
+    },
+    {
+      "Frame": 21114,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 17,
+        "Y": 103
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5579
+      ]
+    },
+    {
+      "Frame": 21202,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 64,
+        "Y": 103
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        3366
+      ]
+    },
+    {
+      "Frame": 21732,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 61,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3519
+      ]
+    },
+    {
+      "Frame": 22272,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 64,
+        "Y": 100
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 22332,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 57,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3524
+      ]
+    },
+    {
+      "Frame": 22990,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 107
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3644
+      ]
+    },
+    {
+      "Frame": 23042,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 6,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 23106,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 6,
+        "Y": 104
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 23142,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 31,
+        "Y": 87
+      },
+      "Unit": {
+        "Name": "Bunker",
+        "ID": 125
+      },
+      "Selected": [
+        5691
+      ]
+    },
+    {
+      "Frame": 23162,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 31,
+        "Y": 87
+      },
+      "Unit": {
+        "Name": "Bunker",
+        "ID": 125
+      },
+      "Selected": [
+        3556
+      ]
+    },
+    {
+      "Frame": 23188,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 34,
+        "Y": 103
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3644
+      ]
+    },
+    {
+      "Frame": 23364,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 85,
+        "Y": 118
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        3519
+      ]
+    },
+    {
+      "Frame": 23420,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 124
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        5579
+      ]
+    },
+    {
+      "Frame": 23500,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 84,
+        "Y": 124
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      },
+      "Selected": [
+        3562
+      ]
+    },
+    {
+      "Frame": 24116,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 70,
+        "Y": 109
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        3485
+      ]
+    },
+    {
+      "Frame": 24520,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 69,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3556
+      ]
+    },
+    {
+      "Frame": 24804,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 63,
+        "Y": 116
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3562
+      ]
+    },
+    {
+      "Frame": 24868,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 72,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5405
+      ]
+    },
+    {
+      "Frame": 25226,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 89,
+        "Y": 119
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        3328
+      ]
+    },
+    {
+      "Frame": 25848,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 43,
+        "Y": 123
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        5451
+      ]
+    },
+    {
+      "Frame": 25848,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 89,
+        "Y": 116
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        7764
+      ]
+    },
+    {
+      "Frame": 26328,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 45,
+        "Y": 73
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 26484,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 38,
+        "Y": 115
+      },
+      "Unit": {
+        "Name": "Supply Depot",
+        "ID": 109
+      },
+      "Selected": [
+        7458
+      ]
+    },
+    {
+      "Frame": 26810,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 41,
+        "Y": 72
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3648
+      ]
+    },
+    {
+      "Frame": 27552,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 53,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 27576,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 81,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5579
+      ]
+    },
+    {
+      "Frame": 27738,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 114
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5553
+      ]
+    },
+    {
+      "Frame": 27798,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 7,
+        "Y": 62
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        3648
+      ]
+    },
+    {
+      "Frame": 27804,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 77
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 27860,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 88,
+        "Y": 109
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5709
+      ]
+    },
+    {
+      "Frame": 27922,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 7,
+        "Y": 68
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      },
+      "Selected": [
+        3631
+      ]
+    },
+    {
+      "Frame": 28286,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 74
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3650
+      ]
+    },
+    {
+      "Frame": 28386,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 109
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5712
+      ]
+    },
+    {
+      "Frame": 28448,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 88,
+        "Y": 125
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3644
+      ]
+    },
+    {
+      "Frame": 28772,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 43,
+        "Y": 123
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3650
+      ]
+    },
+    {
+      "Frame": 28972,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 24,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        7407
+      ]
+    },
+    {
+      "Frame": 29016,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29084,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        7407
+      ]
+    },
+    {
+      "Frame": 29146,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 107
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        7407
+      ]
+    },
+    {
+      "Frame": 29208,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 24,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3612
+      ]
+    },
+    {
+      "Frame": 29244,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29278,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 45,
+        "Y": 73
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3576
+      ]
+    },
+    {
+      "Frame": 29306,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29368,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29394,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 29,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3612
+      ]
+    },
+    {
+      "Frame": 29430,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29492,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29554,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29616,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29670,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 11,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        3265
+      ]
+    },
+    {
+      "Frame": 29678,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29682,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 11,
+        "Y": 60
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3648
+      ]
+    },
+    {
+      "Frame": 29718,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 9,
+        "Y": 60
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3631
+      ]
+    },
+    {
+      "Frame": 29740,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29758,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 67
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        11671
+      ]
+    },
+    {
+      "Frame": 29760,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 41,
+        "Y": 72
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        5326
+      ]
+    },
+    {
+      "Frame": 29802,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29816,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3250
+      ]
+    },
+    {
+      "Frame": 29852,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 6,
+        "Y": 70
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3507
+      ]
+    },
+    {
+      "Frame": 29864,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29926,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 29988,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30050,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30112,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30174,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30236,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30298,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30360,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30422,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 30460,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 85,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        9563
+      ]
+    },
+    {
+      "Frame": 30580,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 5,
+        "Y": 55
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3259
+      ]
+    },
+    {
+      "Frame": 30672,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 58,
+        "Y": 96
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3524
+      ]
+    },
+    {
+      "Frame": 30722,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 77
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        9459
+      ]
+    },
+    {
+      "Frame": 30746,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 60,
+        "Y": 96
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3523
+      ]
+    },
+    {
+      "Frame": 30910,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 9,
+        "Y": 60
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3631
+      ]
+    },
+    {
+      "Frame": 30922,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 67
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        11671
+      ]
+    },
+    {
+      "Frame": 30984,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 14,
+        "Y": 67
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3249
+      ]
+    },
+    {
+      "Frame": 30990,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 39,
+        "Y": 65
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        9563
+      ]
+    },
+    {
+      "Frame": 31046,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 67
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3249
+      ]
+    },
+    {
+      "Frame": 31108,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 67
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3249
+      ]
+    },
+    {
+      "Frame": 31208,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 13,
+        "Y": 74
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        9459
+      ]
+    },
+    {
+      "Frame": 31216,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 4,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3250
+      ]
+    },
+    {
+      "Frame": 31570,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 24,
+        "Y": 111
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3633
+      ]
+    },
+    {
+      "Frame": 31572,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 112
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 31684,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 43,
+        "Y": 123
+      },
+      "Unit": {
+        "Name": "Factory",
+        "ID": 113
+      },
+      "Selected": [
+        3520
+      ]
+    },
+    {
+      "Frame": 32144,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 32,
+        "Y": 122
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3657
+      ]
+    },
+    {
+      "Frame": 32146,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 41,
+        "Y": 115
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3621
+      ]
+    },
+    {
+      "Frame": 32812,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 10,
+        "Y": 70
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3250
+      ]
+    },
+    {
+      "Frame": 32814,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 8,
+        "Y": 56
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3576
+      ]
+    },
+    {
+      "Frame": 33352,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 43,
+        "Y": 66
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        9601
+      ]
+    },
+    {
+      "Frame": 33360,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 37,
+        "Y": 66
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        9563
+      ]
+    },
+    {
+      "Frame": 33362,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 36,
+        "Y": 62
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5712
+      ]
+    },
+    {
+      "Frame": 33364,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 38,
+        "Y": 69
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3528
+      ]
+    },
+    {
+      "Frame": 33366,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 42,
+        "Y": 68
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        17952
+      ]
+    },
+    {
+      "Frame": 33368,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 40,
+        "Y": 60
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3259
+      ]
+    },
+    {
+      "Frame": 33370,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 42,
+        "Y": 71
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3520
+      ]
+    },
+    {
+      "Frame": 33372,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 34,
+        "Y": 59
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        11671
+      ]
+    },
+    {
+      "Frame": 33374,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 39,
+        "Y": 72
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3576
+      ]
+    },
+    {
+      "Frame": 33380,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 40,
+        "Y": 68
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3323
+      ]
+    },
+    {
+      "Frame": 33382,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 42,
+        "Y": 73
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5677
+      ]
+    },
+    {
+      "Frame": 33794,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 36,
+        "Y": 62
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5712
+      ]
+    },
+    {
+      "Frame": 33822,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 38,
+        "Y": 69
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3528
+      ]
+    },
+    {
+      "Frame": 33856,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 36,
+        "Y": 62
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5712
+      ]
+    },
+    {
+      "Frame": 33918,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 36,
+        "Y": 61
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        9563
+      ]
+    },
+    {
+      "Frame": 34682,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 56,
+        "Y": 100
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 34684,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 5,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3250
+      ]
+    },
+    {
+      "Frame": 35400,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 68,
+        "Y": 100
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 35402,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 54,
+        "Y": 106
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3524
+      ]
+    },
+    {
+      "Frame": 36238,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 85,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Command Center",
+        "ID": 106
+      },
+      "Selected": [
+        3633
+      ]
+    },
+    {
+      "Frame": 36496,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 82,
+        "Y": 116
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3261
+      ]
+    },
+    {
+      "Frame": 36498,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 86,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3635
+      ]
+    },
+    {
+      "Frame": 36564,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 89,
+        "Y": 121
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3635
+      ]
+    },
+    {
+      "Frame": 37024,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 85,
+        "Y": 58
+      },
+      "Unit": {
+        "Name": "Refinery",
+        "ID": 110
+      },
+      "Selected": [
+        17952
+      ]
+    },
+    {
+      "Frame": 37228,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 86,
+        "Y": 115
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3261
+      ]
+    },
+    {
+      "Frame": 37230,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 78,
+        "Y": 120
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3615
+      ]
+    },
+    {
+      "Frame": 37864,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 118
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3635
+      ]
+    },
+    {
+      "Frame": 38678,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceAddon",
+        "ID": 36
+      },
+      "Pos": {
+        "X": 89,
+        "Y": 64
+      },
+      "Unit": {
+        "Name": "ComSat",
+        "ID": 107
+      },
+      "Selected": [
+        9550
+      ]
+    },
+    {
+      "Frame": 38680,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 63
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3633
+      ]
+    },
+    {
+      "Frame": 38686,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 65
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        17952
+      ]
+    },
+    {
+      "Frame": 38688,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 85,
+        "Y": 60
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3506
+      ]
+    },
+    {
+      "Frame": 38690,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 67
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5451
+      ]
+    },
+    {
+      "Frame": 38692,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 91,
+        "Y": 64
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3635
+      ]
+    },
+    {
+      "Frame": 38694,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 88,
+        "Y": 60
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3259
+      ]
+    },
+    {
+      "Frame": 38696,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 88,
+        "Y": 69
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5406
+      ]
+    },
+    {
+      "Frame": 38698,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 57
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3576
+      ]
+    },
+    {
+      "Frame": 38700,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 86,
+        "Y": 66
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3568
+      ]
+    },
+    {
+      "Frame": 38710,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 88,
+        "Y": 66
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3562
+      ]
+    },
+    {
+      "Frame": 38712,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 85,
+        "Y": 56
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        3655
+      ]
+    },
+    {
+      "Frame": 38760,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 83,
+        "Y": 57
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        9563
+      ]
+    },
+    {
+      "Frame": 39172,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Build",
+        "ID": 12
+      },
+      "Order": {
+        "Name": "PlaceBuilding",
+        "ID": 30
+      },
+      "Pos": {
+        "X": 88,
+        "Y": 68
+      },
+      "Unit": {
+        "Name": "Missile Turret",
+        "ID": 124
+      },
+      "Selected": [
+        5406
+      ]
+    }
+  ],
+  "gate": [
+    {
+      "Frame": 4224,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 4332,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 4812,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 4974,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 8490,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 8592,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 8754,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 8940,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9012,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9156,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9228,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9366,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9438,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9576,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9648,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9786,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9858,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 9996,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10068,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10206,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10278,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10434,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10506,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10632,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10650,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 18,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10722,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 10836,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Land",
+        "ID": 254
+      },
+      "Order": {
+        "Name": "BuildingLand",
+        "ID": 71
+      },
+      "Pos": {
+        "X": 34,
+        "Y": 105
+      },
+      "Unit": {
+        "Name": "Barracks",
+        "ID": 111
+      },
+      "Selected": [
+        3636
+      ]
+    },
+    {
+      "Frame": 15774,
+      "PlayerID": 0,
+      "Type": {
+        "Name": "Lift Off",
+        "ID": 47
+      },
+      "Pos": {
+        "X": 0,
+        "Y": 0
+      },
+      "Selected": [
+        3474
+      ]
+    }
+  ],
+  "movementCases": [
+    {
+      "tag": 5707,
+      "fromFrame": 10000,
+      "throughFrame": 10850,
+      "commands": [
+        {
+          "f": 10026,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10040,
+          "order": "Move",
+          "p": {
+            "X": 601,
+            "Y": 3584
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10052,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10054,
+          "order": "Move",
+          "p": {
+            "X": 1088,
+            "Y": 3045
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10076,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10114,
+          "order": "Move",
+          "p": {
+            "X": 610,
+            "Y": 3581
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10128,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10154,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10166,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3440
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10180,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10182,
+          "order": "Move",
+          "p": {
+            "X": 511,
+            "Y": 3535
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10274,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10300,
+          "order": "Move",
+          "p": {
+            "X": 431,
+            "Y": 3457
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10314,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10366,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10404,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10430,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10444,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3440
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10456,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10464,
+          "order": "Move",
+          "p": {
+            "X": 568,
+            "Y": 3343
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10476,
+          "order": "Move",
+          "p": {
+            "X": 543,
+            "Y": 3311
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10502,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10548,
+          "order": "Move",
+          "p": {
+            "X": 1088,
+            "Y": 3045
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10574,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10578,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10604,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10618,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3440
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10630,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10638,
+          "order": "Move",
+          "p": {
+            "X": 568,
+            "Y": 3343
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10650,
+          "order": "Move",
+          "p": {
+            "X": 479,
+            "Y": 3471
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10718,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10744,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10770,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10796,
+          "order": "Move",
+          "p": {
+            "X": 732,
+            "Y": 3448
+          },
+          "s": [
+            5707
+          ]
+        },
+        {
+          "f": 10810,
+          "order": "Move",
+          "p": {
+            "X": 429,
+            "Y": 3613
+          },
+          "s": [
+            5707
+          ]
+        }
+      ]
+    },
+    {
+      "tag": 3430,
+      "fromFrame": 18500,
+      "throughFrame": 19100,
+      "commands": [
+        {
+          "f": 18500,
+          "order": "Move",
+          "p": {
+            "X": 1440,
+            "Y": 2269
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18520,
+          "order": "Move",
+          "p": {
+            "X": 1432,
+            "Y": 2323
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18552,
+          "order": "Move",
+          "p": {
+            "X": 1428,
+            "Y": 2370
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18570,
+          "order": "Move",
+          "p": {
+            "X": 1415,
+            "Y": 2424
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18588,
+          "order": "Move",
+          "p": {
+            "X": 1391,
+            "Y": 2468
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18592,
+          "order": "Move",
+          "p": {
+            "X": 1429,
+            "Y": 2394
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18594,
+          "order": "Move",
+          "p": {
+            "X": 1427,
+            "Y": 2399
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18596,
+          "order": "Move",
+          "p": {
+            "X": 1425,
+            "Y": 2404
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18598,
+          "order": "Move",
+          "p": {
+            "X": 1423,
+            "Y": 2409
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18600,
+          "order": "Move",
+          "p": {
+            "X": 1422,
+            "Y": 2414
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18602,
+          "order": "Move",
+          "p": {
+            "X": 1382,
+            "Y": 2505
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18624,
+          "order": "Move",
+          "p": {
+            "X": 1370,
+            "Y": 2546
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18642,
+          "order": "Move",
+          "p": {
+            "X": 1361,
+            "Y": 2598
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18656,
+          "order": "Move",
+          "p": {
+            "X": 1413,
+            "Y": 2531
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18658,
+          "order": "Move",
+          "p": {
+            "X": 1413,
+            "Y": 2536
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18660,
+          "order": "Move",
+          "p": {
+            "X": 1412,
+            "Y": 2541
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18662,
+          "order": "Move",
+          "p": {
+            "X": 1410,
+            "Y": 2544
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18664,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18668,
+          "order": "Move",
+          "p": {
+            "X": 1321,
+            "Y": 2781
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18670,
+          "order": "Move",
+          "p": {
+            "X": 1320,
+            "Y": 2783
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18672,
+          "order": "Move",
+          "p": {
+            "X": 1318,
+            "Y": 2785
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18674,
+          "order": "Move",
+          "p": {
+            "X": 1315,
+            "Y": 2791
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18676,
+          "order": "Move",
+          "p": {
+            "X": 1312,
+            "Y": 2799
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18678,
+          "order": "Move",
+          "p": {
+            "X": 1310,
+            "Y": 2806
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18680,
+          "order": "Move",
+          "p": {
+            "X": 1307,
+            "Y": 2814
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18682,
+          "order": "Move",
+          "p": {
+            "X": 1305,
+            "Y": 2822
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18684,
+          "order": "Move",
+          "p": {
+            "X": 1302,
+            "Y": 2831
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18686,
+          "order": "Move",
+          "p": {
+            "X": 1314,
+            "Y": 2798
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18688,
+          "order": "Move",
+          "p": {
+            "X": 1311,
+            "Y": 2805
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18690,
+          "order": "Move",
+          "p": {
+            "X": 1309,
+            "Y": 2813
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18692,
+          "order": "Move",
+          "p": {
+            "X": 1306,
+            "Y": 2821
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18694,
+          "order": "Move",
+          "p": {
+            "X": 1302,
+            "Y": 2828
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18696,
+          "order": "Move",
+          "p": {
+            "X": 1298,
+            "Y": 2836
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18698,
+          "order": "Move",
+          "p": {
+            "X": 1295,
+            "Y": 2843
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18700,
+          "order": "Move",
+          "p": {
+            "X": 1292,
+            "Y": 2850
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18702,
+          "order": "Move",
+          "p": {
+            "X": 1289,
+            "Y": 2857
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18704,
+          "order": "Move",
+          "p": {
+            "X": 1286,
+            "Y": 2865
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18706,
+          "order": "Move",
+          "p": {
+            "X": 1283,
+            "Y": 2873
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18724,
+          "order": "Move",
+          "p": {
+            "X": 1283,
+            "Y": 2911
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18734,
+          "order": "Move",
+          "p": {
+            "X": 1252,
+            "Y": 2970
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18752,
+          "order": "Move",
+          "p": {
+            "X": 1212,
+            "Y": 3025
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18770,
+          "order": "Move",
+          "p": {
+            "X": 1178,
+            "Y": 3081
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18772,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18776,
+          "order": "Move",
+          "p": {
+            "X": 1197,
+            "Y": 3049
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18784,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18788,
+          "order": "Move",
+          "p": {
+            "X": 1160,
+            "Y": 3119
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18806,
+          "order": "Move",
+          "p": {
+            "X": 1137,
+            "Y": 3151
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18824,
+          "order": "Move",
+          "p": {
+            "X": 1088,
+            "Y": 3202
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18842,
+          "order": "Move",
+          "p": {
+            "X": 1048,
+            "Y": 3247
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18854,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18876,
+          "order": "Move",
+          "p": {
+            "X": 1003,
+            "Y": 3279
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18890,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18908,
+          "order": "Move",
+          "p": {
+            "X": 1157,
+            "Y": 3119
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18924,
+          "order": "Move",
+          "p": {
+            "X": 1030,
+            "Y": 3270
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18926,
+          "order": "Move",
+          "p": {
+            "X": 1031,
+            "Y": 3273
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18930,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18932,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18934,
+          "order": "Move",
+          "p": {
+            "X": 1030,
+            "Y": 3283
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18936,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18938,
+          "order": "Move",
+          "p": {
+            "X": 1151,
+            "Y": 3141
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18952,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18954,
+          "order": "Move",
+          "p": {
+            "X": 1004,
+            "Y": 3298
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18966,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18974,
+          "order": "Move",
+          "p": {
+            "X": 997,
+            "Y": 3319
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18980,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 18986,
+          "order": "Move",
+          "p": {
+            "X": 1043,
+            "Y": 3328
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19002,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19012,
+          "order": "Move",
+          "p": {
+            "X": 971,
+            "Y": 3368
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19020,
+          "order": "Move",
+          "p": {
+            "X": 1032,
+            "Y": 3348
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19026,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19030,
+          "order": "Move",
+          "p": {
+            "X": 1025,
+            "Y": 3354
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19034,
+          "order": "Move",
+          "p": {
+            "X": 964,
+            "Y": 3374
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19038,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19056,
+          "order": "Move",
+          "p": {
+            "X": 959,
+            "Y": 3386
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19058,
+          "order": "Move",
+          "p": {
+            "X": 960,
+            "Y": 3387
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19060,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19062,
+          "order": "Move",
+          "p": {
+            "X": 1017,
+            "Y": 3376
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19070,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19072,
+          "order": "Move",
+          "p": {
+            "X": 957,
+            "Y": 3390
+          },
+          "s": [
+            3430
+          ]
+        },
+        {
+          "f": 19074,
+          "order": "Move",
+          "p": {
+            "X": 688,
+            "Y": 3408
+          },
+          "s": [
+            3430
+          ]
+        }
+      ]
+    },
+    {
+      "tag": 3388,
+      "fromFrame": 31000,
+      "throughFrame": 31650,
+      "commands": [
+        {
+          "f": 31002,
+          "order": "Move",
+          "p": {
+            "X": 795,
+            "Y": 3052
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31004,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3017
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31030,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3017
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31040,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3011
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31066,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3011
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31080,
+          "order": "Move",
+          "p": {
+            "X": 497,
+            "Y": 3152
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31092,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3011
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31118,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3011
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31132,
+          "order": "Move",
+          "p": {
+            "X": 527,
+            "Y": 3131
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31144,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3011
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31170,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3011
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31184,
+          "order": "Move",
+          "p": {
+            "X": 497,
+            "Y": 3152
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31196,
+          "order": "Move",
+          "p": {
+            "X": 674,
+            "Y": 3017
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31214,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3026
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31232,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31258,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31270,
+          "order": "Move",
+          "p": {
+            "X": 496,
+            "Y": 3152
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31284,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31310,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31322,
+          "order": "Move",
+          "p": {
+            "X": 496,
+            "Y": 3152
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31336,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31362,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31374,
+          "order": "Move",
+          "p": {
+            "X": 496,
+            "Y": 3152
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31388,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3012
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31400,
+          "order": "Move",
+          "p": {
+            "X": 673,
+            "Y": 3016
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31418,
+          "order": "Move",
+          "p": {
+            "X": 672,
+            "Y": 3038
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31436,
+          "order": "Move",
+          "p": {
+            "X": 672,
+            "Y": 3047
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31462,
+          "order": "Move",
+          "p": {
+            "X": 672,
+            "Y": 3047
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31488,
+          "order": "Move",
+          "p": {
+            "X": 535,
+            "Y": 3123
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31502,
+          "order": "Move",
+          "p": {
+            "X": 672,
+            "Y": 3047
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31506,
+          "order": "Move",
+          "p": {
+            "X": 667,
+            "Y": 3048
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31524,
+          "order": "Move",
+          "p": {
+            "X": 675,
+            "Y": 3047
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31564,
+          "order": "Move",
+          "p": {
+            "X": 675,
+            "Y": 3047
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31576,
+          "order": "Move",
+          "p": {
+            "X": 537,
+            "Y": 3117
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31590,
+          "order": "Move",
+          "p": {
+            "X": 675,
+            "Y": 3047
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31616,
+          "order": "Move",
+          "p": {
+            "X": 573,
+            "Y": 3118
+          },
+          "s": [
+            3388
+          ]
+        },
+        {
+          "f": 31628,
+          "order": "Move",
+          "p": {
+            "X": 675,
+            "Y": 3042
+          },
+          "s": [
+            3388
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,8 @@
 #include <BWAPI.h>
 #include "Combat/CombatCommander.h"
 #include "Utilities/TimerManager.h"
+#include <string>
+#include <vector>
 
 namespace UAlbertaBot
 {
@@ -24,6 +26,13 @@ class GameCommander
 {
     CombatCommander &	_combatCommander;
     TimerManager		_timerManager;
+    struct PerformanceSpike
+    {
+        int frame;
+        double milliseconds;
+        std::string details;
+    };
+    std::vector<PerformanceSpike> _performanceSpikes;
     int                 _lastSpikePathFields = 0;
     int                 _lastSpikeAllDistanceFields = 0;
     int                 _lastSpikeGroundWaypoints = 0;
@@ -43,10 +52,26 @@ class GameCommander
     std::string         _lastSpikeUrgentStage;
     double              _lastSpikeUrgentStageMs = 0.0;
     double              _lastSpikeTerranRulePlanMs = 0.0;
+    double              _lastSpikeTerranRuleGoalMs = 0.0;
+    std::string         _lastSpikeGoalStage;
+    double              _lastSpikeGoalStageMs = 0.0;
     double              _lastSpikeCombatPreparationMs = 0.0;
     double              _lastSpikeSquadsMs = 0.0;
+    SquadUpdateProfile  _lastSpikeSquadTotals;
+    double              _lastSpikeTankDefensePlanMs = 0.0;
+    double              _lastSpikeTankGatherPlanMs = 0.0;
+    int                 _lastSpikeTankDefensePlanBuilds = 0;
+    int                 _lastSpikeTankGatherPlanBuilds = 0;
+    SquadUpdateProfile  _lastSpikeSlowestSquad;
+    double              _lastSpikeSlowestSquadMs = 0.0;
     double              _lastSpikeTaskMs = 0.0;
     std::string         _lastSpikeTaskName;
+    std::string         _lastSpikeWorkerPhase;
+    double              _lastSpikeWorkerPhaseMs = 0.0;
+    double              _lastSpikeWorkerDefenseMs = 0.0;
+    int                 _lastSpikeWorkerDefenseQueries = 0;
+    double              _lastSpikeWorkerDangerMs = 0.0;
+    int                 _lastSpikeWorkerDangerChecks = 0;
 
     BWAPI::Unitset      _validUnits;
     BWAPI::Unitset      _combatUnits;
@@ -65,6 +90,8 @@ class GameCommander
     BWAPI::Unit         getAnyFreeWorker();
 
     void                drawDebugInterface();
+    void                recordPerformanceSpike();
+    void                writePerformanceReport(bool isWinner) const;
     // Draw the variable-height game summary and return the first free row.
     // Other top-left debug panels must use the returned coordinate instead of
     // assuming that this block always has the same number of lines.

@@ -3,6 +3,7 @@
 #include "Map/Bases.h"
 #include "Map/MapTools.h"
 #include "Intelligence/Learning/OpponentModel.h"
+#include "Strategy/StrategyManager.h"
 #include "Core/The.h"
 #include <climits>
 #include <cmath>
@@ -2592,10 +2593,19 @@ bool BuildingPlacer::keepsMovementLaneClear(
         return true;
     }
 
-    const int left = std::max(0, x1 - 1);
-    const int top = std::max(0, y1 - 1);
-    const int right = std::min(BWAPI::Broodwar->mapWidth() - 1, x2 + 1);
-    const int bottom = std::min(BWAPI::Broodwar->mapHeight() - 1, y2 + 1);
+    // The wall Bunker is planned against the actual exit route. Its advance
+    // reservation may touch the one-tile lane buffer on narrow ramps; only a
+    // direct overlap with the lane should invalidate that specific slot.
+    const bool reservedWallBunker =
+        type == BWAPI::UnitTypes::Terran_Bunker &&
+        BWAPI::TilePosition(x1, y1) == _terranMainWallBunker &&
+        x2 == x1 + type.tileWidth() - 1 &&
+        y2 == y1 + type.tileHeight() - 1;
+    const int margin = reservedWallBunker ? 0 : 1;
+    const int left = std::max(0, x1 - margin);
+    const int top = std::max(0, y1 - margin);
+    const int right = std::min(BWAPI::Broodwar->mapWidth() - 1, x2 + margin);
+    const int bottom = std::min(BWAPI::Broodwar->mapHeight() - 1, y2 + margin);
     for (int x = left; x <= right; ++x)
     {
         for (int y = top; y <= bottom; ++y)
@@ -2670,6 +2680,19 @@ bool BuildingPlacer::canBuildWithSpace(const BWAPI::TilePosition & position, con
                 return false;
             }
         }
+    }
+
+    // The lane reservation protects its current tiles, but the front of a
+    // base is deliberately left flexible for defensive buildings. A sequence
+    // of ordinary Depots, Factories or Turrets can therefore close the last
+    // ground passage even though every individual footprint is buildable.
+    // Apply the same exit check used for Bunkers and landed buildings to all
+    // Terran placement candidates before accepting a new footprint.
+    if (the.selfRace() == BWAPI::Races::Terran &&
+        !b.type.isResourceDepot() && !b.type.isRefinery() &&
+        !preservesGroundExit(b.type, position))
+    {
+        return false;
     }
 
     return true;
@@ -3194,9 +3217,23 @@ bool BuildingPlacer::preservesGroundExit(
     {
         return p.x >= left && p.x < right && p.y >= top && p.y < bottom;
     };
+    // A build-tile path can remain open for an SCV while a Tank or Goliath
+    // cannot fit between this new building and the existing wall. Keep one
+    // build tile beside ordinary Terran footprints clear for the army. The
+    // planned wall Bunker has its own verified gate geometry while active.
+    const int clearance =
+        type.isResourceDepot() || type.isRefinery() ||
+        (type == BWAPI::UnitTypes::Terran_Bunker &&
+         _terranMainWallValid && !_terranMainWallReleased)
+        ? 0 : 1;
+    const auto blocksArmy = [=](BWAPI::TilePosition p)
+    {
+        return p.x >= left - clearance && p.x < right + clearance &&
+               p.y >= top - clearance && p.y < bottom + clearance;
+    };
     const auto open = [&](BWAPI::TilePosition p)
     {
-        return p.isValid() && !covered(p) && the.map.isRuntimeWalkable(p);
+        return p.isValid() && !blocksArmy(p) && the.map.isRuntimeWalkable(p);
     };
 
     // The active path is a cheap filter: a building away from every protected
@@ -3211,6 +3248,26 @@ bool BuildingPlacer::preservesGroundExit(
         const auto key = std::make_pair(
             from.y * mapWidth + from.x,
             to.y * mapWidth + to.x);
+        // Wall Bunkers must preserve the future route with the Barracks gate
+        // open, even while the current runtime route still takes another path.
+        // Otherwise a slot reserved before the wall closes can become
+        // permanently illegal as soon as the wall is complete.
+        if (type == BWAPI::UnitTypes::Terran_Bunker && _terranMainWallValid)
+        {
+            auto future = terrainRouteCache.find(key);
+            if (future == terrainRouteCache.end())
+            {
+                std::vector<BWAPI::TilePosition> terrainPath;
+                the.map.getGroundPath(from, to, terrainPath, 160, false);
+                future = terrainRouteCache.emplace(
+                    key, std::move(terrainPath)).first;
+            }
+            if (std::any_of(
+                future->second.begin(), future->second.end(), covered))
+            {
+                return false;
+            }
+        }
         auto cached = routeCache.find(key);
         if (cached == routeCache.end())
         {
@@ -3221,11 +3278,12 @@ bool BuildingPlacer::preservesGroundExit(
         const std::vector<BWAPI::TilePosition>& path = cached->second;
         if (path.size() < 2)
         {
-            // A closed wall can make the current route disappear. That does
-            // not make the future open gate expendable: at minimum protect
-            // its terrain route until the Barracks has lifted.
-            if (type == BWAPI::UnitTypes::Terran_Bunker &&
-                _terranMainWallValid)
+            // A grounded Barracks can hide the runtime route while its gate
+            // is active. Do not let another ordinary building occupy the
+            // future Tank-width passage before that Barracks lifts.
+            if (_terranMainWallValid && !_terranMainWallReleased &&
+                type != BWAPI::UnitTypes::Terran_Bunker &&
+                !type.isResourceDepot() && !type.isRefinery())
             {
                 auto future = terrainRouteCache.find(key);
                 if (future == terrainRouteCache.end())
@@ -3235,15 +3293,15 @@ bool BuildingPlacer::preservesGroundExit(
                     future = terrainRouteCache.emplace(
                         key, std::move(terrainPath)).first;
                 }
-                if (std::any_of(
-                    future->second.begin(), future->second.end(), covered))
+                if (std::any_of(future->second.begin(), future->second.end(),
+                        blocksArmy))
                 {
                     return false;
                 }
             }
             return true;
         }
-        if (std::none_of(path.begin(), path.end(), covered))
+        if (std::none_of(path.begin(), path.end(), blocksArmy))
         {
             return true;
         }
@@ -3252,55 +3310,93 @@ bool BuildingPlacer::preservesGroundExit(
             return false;
         }
 
-        const int cellCount = mapWidth * mapHeight;
-        const auto indexOf = [mapWidth](BWAPI::TilePosition p)
-        {
-            return p.y * mapWidth + p.x;
-        };
-        std::vector<unsigned char> visited(cellCount, 0);
-        std::queue<BWAPI::TilePosition> pending;
-        pending.push(path.front());
-        visited[indexOf(path.front())] = 1;
         const int dx[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
         const int dy[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
-        while (!pending.empty())
+        const auto canConnect = [&](BWAPI::TilePosition start,
+                                    BWAPI::TilePosition goal,
+                                    bool local)
         {
-            const BWAPI::TilePosition current = pending.front();
-            pending.pop();
-            if (current == path.back())
+            // A candidate footprint normally needs only a short detour around
+            // itself. Try that first; the original full-map flood remains the
+            // fallback when the only valid detour is wider.
+            const int margin = 8;
+            const int minX = std::max(0, left - clearance - margin);
+            const int maxX = std::min(mapWidth - 1, right + clearance + margin);
+            const int minY = std::max(0, top - clearance - margin);
+            const int maxY = std::min(mapHeight - 1, bottom + clearance + margin);
+            const auto within = [&](BWAPI::TilePosition p)
             {
-                return true;
+                return p.x >= 0 && p.x < mapWidth &&
+                       p.y >= 0 && p.y < mapHeight &&
+                       (!local || (p.x >= minX && p.x <= maxX &&
+                                   p.y >= minY && p.y <= maxY));
+            };
+            if (!within(start) || !within(goal)) return false;
+            const int originX = local ? minX : 0;
+            const int originY = local ? minY : 0;
+            const int visitWidth = local ? maxX - minX + 1 : mapWidth;
+            const int visitHeight = local ? maxY - minY + 1 : mapHeight;
+            const auto indexOf = [=](BWAPI::TilePosition p)
+            {
+                return (p.y - originY) * visitWidth + p.x - originX;
+            };
+            std::vector<unsigned char> visited(visitWidth * visitHeight, 0);
+            std::queue<BWAPI::TilePosition> pending;
+            pending.push(start);
+            visited[indexOf(start)] = 1;
+            while (!pending.empty())
+            {
+                const BWAPI::TilePosition current = pending.front();
+                pending.pop();
+                if (current == goal) return true;
+                for (int direction = 0; direction < 8; ++direction)
+                {
+                    const BWAPI::TilePosition next(
+                        current.x + dx[direction], current.y + dy[direction]);
+                    if (!within(next) || visited[indexOf(next)] || !open(next) ||
+                        !the.map.isGroundTransitionRuntimeWalkable(current, next))
+                    {
+                        continue;
+                    }
+                    // An occupied corner cannot be crossed diagonally, even
+                    // if the current runtime map still sees it as empty.
+                    if (dx[direction] && dy[direction])
+                    {
+                        const BWAPI::TilePosition sideX(
+                            current.x + dx[direction], current.y);
+                        const BWAPI::TilePosition sideY(
+                            current.x, current.y + dy[direction]);
+                        const bool viaX = open(sideX) &&
+                            the.map.isGroundTransitionWalkable(current, sideX) &&
+                            the.map.isGroundTransitionWalkable(sideX, next);
+                        const bool viaY = open(sideY) &&
+                            the.map.isGroundTransitionWalkable(current, sideY) &&
+                            the.map.isGroundTransitionWalkable(sideY, next);
+                        if (!viaX && !viaY) continue;
+                    }
+                    visited[indexOf(next)] = 1;
+                    pending.push(next);
+                }
             }
-            for (int direction = 0; direction < 8; ++direction)
+            return false;
+        };
+
+        size_t firstBlocked = path.size();
+        size_t lastBlocked = 0;
+        for (size_t i = 0; i < path.size(); ++i)
+        {
+            if (blocksArmy(path[i]))
             {
-                const BWAPI::TilePosition next(
-                    current.x + dx[direction], current.y + dy[direction]);
-                if (!open(next) || visited[indexOf(next)] ||
-                    !the.map.isGroundTransitionRuntimeWalkable(current, next))
-                {
-                    continue;
-                }
-                // An occupied corner cannot be crossed diagonally, even if
-                // the current runtime map still sees it as empty.
-                if (dx[direction] && dy[direction])
-                {
-                    const BWAPI::TilePosition sideX(
-                        current.x + dx[direction], current.y);
-                    const BWAPI::TilePosition sideY(
-                        current.x, current.y + dy[direction]);
-                    const bool viaX = open(sideX) &&
-                        the.map.isGroundTransitionWalkable(current, sideX) &&
-                        the.map.isGroundTransitionWalkable(sideX, next);
-                    const bool viaY = open(sideY) &&
-                        the.map.isGroundTransitionWalkable(current, sideY) &&
-                        the.map.isGroundTransitionWalkable(sideY, next);
-                    if (!viaX && !viaY) continue;
-                }
-                visited[indexOf(next)] = 1;
-                pending.push(next);
+                firstBlocked = std::min(firstBlocked, i);
+                lastBlocked = i;
             }
         }
-        return false;
+        if (firstBlocked > 0 && lastBlocked + 1 < path.size() &&
+            canConnect(path[firstBlocked - 1], path[lastBlocked + 1], true))
+        {
+            return true;
+        }
+        return canConnect(path.front(), path.back(), false);
     };
 
     const Base * main = the.bases.myMain();
@@ -4118,7 +4214,9 @@ BWAPI::TilePosition BuildingPlacer::getMacroLocationTile(MacroLocation loc) cons
         }
         const bool gasStarved =
             the.selfRace() == BWAPI::Races::Terran &&
-            the.self()->minerals() >= 900 && the.self()->gas() <= 125;
+            the.self()->minerals() >= 900 &&
+            the.self()->gas() <=
+                (StrategyManager::Instance().airTanksPlanActive() ? 250 : 125);
         BWAPI::TilePosition pos = the.map.getNextExpansion(
             false, true, ownedGasBases < 2 || gasStarved);
         if (pos.isValid())

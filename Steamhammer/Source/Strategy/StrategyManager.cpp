@@ -1,5 +1,11 @@
 #include "Strategy/StrategyManager.h"
 #include "Strategy/BioProductionPolicy.h"
+#include "Strategy/Terran/BioTankAssessment.h"
+#include "Strategy/Terran/AirTanks.h"
+#include "Strategy/Terran/TvZSparks.h"
+#include "Strategy/Terran/TvZPreHive.h"
+#include "Strategy/Terran/TvZSK.h"
+#include "Strategy/Terran/TvZBioSupport.h"
 #include "Construction/BunkerPlacementPolicy.h"
 
 #include "Map/Bases.h"
@@ -23,6 +29,20 @@ using namespace UAlbertaBot;
 
 namespace
 {
+    bool visibleEnemyGroundNearMainOrClosestExpansion();
+    bool visibleEnemyAirNearOwnedBase();
+
+    const TvZBioPlan::Policy* tvzBioPolicy(TerranPlanId plan)
+    {
+        switch (plan)
+        {
+        case TerranPlanId::TvZ_Sparks: return &TvZSparks::policy();
+        case TerranPlanId::TvZ_PreHive: return &TvZPreHive::policy();
+        case TerranPlanId::TvZ_SK: return &TvZSK::policy();
+        default: return nullptr;
+        }
+    }
+
     // A new mineral line is urgent before the last patches disappear. This
     // also catches the stronger signal that SCVs have already begun mining a
     // neutral base without a Command Center there.
@@ -72,6 +92,10 @@ StrategyManager::StrategyManager()
     , _openingStaticDefenseDropped(false)
     , _defaultTankGather(true)
     , _bioTankFirstPushReleased(false)
+    , _tankFirstAttackReleased(false)
+    , _airTanksFirstPushReleased(false)
+    , _airTanksAirReleased(false)
+    , _bioFirstAttackFrame(-1)
     , _openingTerranPlanName("")
     , _terranBaselinePlan(TerranPlanId::None)
     , _terranPlan(TerranPlanId::None)
@@ -128,11 +152,34 @@ const bool StrategyManager::shouldExpandNow() const
         return true;
     }
 
-    // Keep the natural, but do not start a greedy third base while the scout
-    // has already found a committed one- or two-base production attack.
+    // A remembered opening threat must not hold a developed Tanks economy
+    // until minute 12 while thousands of minerals accumulate. The plan's
+    // earliest-third timing still applies; require two completed depots and
+    // workers, no visible attack at our bases, and a legal expansion above.
+    const bool tankExpansionSurplus =
+        the.selfRace() == BWAPI::Races::Terran &&
+        _openingGroup == "tanks" &&
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Command_Center) >= 2 &&
+        the.my.all.count(BWAPI::UnitTypes::Terran_SCV) >= 24 &&
+        the.self()->minerals() >= 1800 &&
+        !visibleEnemyGroundNearMainOrClosestExpansion() &&
+        !visibleEnemyAirNearOwnedBase();
+
+    // Release a contained BioTank opening by current safety and economy,
+    // rather than remembering its rush label until minute twelve.
+    const bool bioExpansionReady = _terranPlan == TerranPlanId::BioTank &&
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Command_Center) >= 2 &&
+        the.my.all.count(BWAPI::UnitTypes::Terran_SCV) >= 28 &&
+        (the.self()->minerals() >= 500 ||
+         the.my.all.count(BWAPI::UnitTypes::Terran_SCV) >=
+            int(std::ceil(0.82 * WorkerManager::Instance().getMaxWorkers()))) &&
+        !BioTankPolicy::homeDefenseRequired();
+
+    // Keep the natural, but delay a greedy third during opening pressure.
     if (the.selfRace() == BWAPI::Races::Terran &&
         numDepots >= 2 &&
         minute <= 11 &&
+        !tankExpansionSurplus && !bioExpansionReady &&
         (the.oppModel().hasEnemyOpeningThreat(OpeningThreat::GatewayPressure) ||
          the.oppModel().hasEnemyOpeningThreat(OpeningThreat::FactoryPressure) ||
          the.oppModel().hasEnemyOpeningThreat(OpeningThreat::MassBarracks) ||
@@ -238,6 +285,12 @@ void StrategyManager::setOpeningGroup()
     _openingStaticDefenseDropped = false;
     _pureAirPlan = false;
     _bioTankFirstPushReleased = false;
+    _tankFirstAttackReleased = false;
+    _airTanksFirstPushReleased = false;
+    _airTanksAirReleased = false;
+    _airTanksAttackStatus.clear();
+    _airTanksVariant.clear();
+    _bioFirstAttackFrame = -1;
     _openingTerranPlanName.clear();
     _terranBaselinePlan = TerranPlanId::None;
     _terranPlan = TerranPlanId::None;
@@ -255,6 +308,7 @@ void StrategyManager::setOpeningGroup()
     {
         _openingGroup = (*buildOrderItr).second._openingGroup;
         _openingTerranPlanName = (*buildOrderItr).second._terranPlan;
+        _airTanksVariant = (*buildOrderItr).second._airTanksVariant;
         _pureAirPlan = false;
         _defaultTankGather = _openingGroup == "tanks";
         _tankMassReleaseTanks = _defaultTankGather ? 15 : 0;
@@ -296,6 +350,35 @@ bool StrategyManager::bioTankPlanActive() const
         _openingGroup == "bio" && !_pureAirPlan;
 }
 
+bool StrategyManager::deepSixPlanActive() const
+{
+    return _selfRace == BWAPI::Races::Terran &&
+        _terranPlan == TerranPlanId::TvP_DeepSix;
+}
+
+int StrategyManager::bioTankDesiredTankPercent() const
+{
+    if (!bioTankUsesTanks()) return 0;
+    if (_terranPlan == TerranPlanId::BioTank &&
+        ProductionManager::Instance().isOutOfBook())
+    {
+        const auto& mix = BioTankPolicy::enemyMix();
+        return BioTankPolicy::tankPercent(mix.heavyGround, mix.lightGround, mix.air);
+    }
+    const int infantrySupply = 2 * (
+        the.my.all.count(BWAPI::UnitTypes::Terran_Marine) +
+        the.my.all.count(BWAPI::UnitTypes::Terran_Medic) +
+        the.my.all.count(BWAPI::UnitTypes::Terran_Firebat));
+    return BioProductionPolicy::tankPercent(the.self()->minerals(), the.self()->gas(),
+        infantrySupply, ProductionManager::Instance().isOutOfBook());
+}
+
+bool StrategyManager::bioTankUsesTanks() const
+{
+    const auto* policy = tvzBioPolicy(_terranPlan);
+    return !policy || policy->tankFloor > 0;
+}
+
 bool StrategyManager::bioTankPushReady()
 {
     if (!bioTankPlanActive())
@@ -308,14 +391,51 @@ bool StrategyManager::bioTankPushReady()
         return true;
     }
 
+    // SK starts pressuring with its Marine/Medic core. Waiting for the first
+    // Vessel and Irradiate kept an otherwise ready army at home until the
+    // midgame; those remain independent production and support goals.
+    if (_terranPlan == TerranPlanId::TvZ_SK)
+    {
+        _bioTankFirstPushReleased =
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= 16 &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Medic) >=
+                BioProductionPolicy::medicTarget(16) &&
+            the.self()->hasResearched(BWAPI::TechTypes::Stim_Packs);
+        return _bioTankFirstPushReleased;
+    }
+
+    if (const auto* policy = tvzBioPolicy(_terranPlan))
+    {
+        const auto& push = policy->push;
+        _bioTankFirstPushReleased =
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= push.marines &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Medic) >=
+                BioProductionPolicy::medicTarget(push.marines) &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
+                the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode) >= push.tanks &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Science_Vessel) >= push.vessels &&
+            the.self()->hasResearched(BWAPI::TechTypes::Stim_Packs) &&
+            (!push.siege || the.self()->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode)) &&
+            (!push.range || the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::U_238_Shells) > 0) &&
+            (!push.irradiate || the.self()->hasResearched(BWAPI::TechTypes::Irradiate));
+        return _bioTankFirstPushReleased;
+    }
+
+    const bool deepSix = deepSixPlanActive();
+    const int marineTarget = deepSix ? 24 : 16;
+    const int tankTarget = deepSix ? 4 : 2;
     _bioTankFirstPushReleased =
-        the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= 16 &&
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= marineTarget &&
         the.my.completed.count(BWAPI::UnitTypes::Terran_Medic) >=
-            BioProductionPolicy::medicTarget(16) &&
+            BioProductionPolicy::medicTarget(marineTarget) &&
         the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
-            the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode) >= 2 &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode) >= tankTarget &&
         the.self()->hasResearched(BWAPI::TechTypes::Stim_Packs) &&
-        the.self()->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode);
+        the.self()->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode) &&
+        (!deepSix ||
+            (the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::U_238_Shells) >= 1 &&
+             the.self()->getUpgradeLevel(BWAPI::UpgradeTypes::Terran_Infantry_Armor) >= 1)) &&
+        BioTankPolicy::coreTogether(marineTarget, tankTarget);
     return _bioTankFirstPushReleased;
 }
 
@@ -1887,7 +2007,10 @@ namespace
                 continue;
             }
 
-            if (!base->getGeysers().empty())
+            // The live geyser set is rebuilt from visible units and can be
+            // temporarily empty. Initial geysers describe the base's geography
+            // even while the live BWAPI handles are unavailable.
+            if (!base->getInitialGeysers().empty())
             {
                 ++desired;
             }
@@ -2467,6 +2590,15 @@ namespace
             return false;
         }
 
+        // Add-ons leave the queue before they appear in the unit snapshot.
+        // Pending goals already own the request and retry its footprint;
+        // do not recreate the same urgent order on every frame.
+        if (type.isAddon() && committed +
+            int(ProductionManager::Instance().getPendingGoalCount(type)) >= targetCount)
+        {
+            return true;
+        }
+
         if (waitForUrgentTerranPrerequisite(
                 queue,
                 MacroAct(type, location),
@@ -2528,10 +2660,19 @@ namespace
         int targetCount,
         int maxImmediateQueued = 2)
     {
-        // PlayerSnapshot::all already includes units currently in production,
-        // so do not count producer training a second time here.
-        const int currentOrTraining =
-            the.my.all.count(unitType);
+        if (unitType == BWAPI::UnitTypes::Terran_Marine &&
+            !ProductionManager::Instance().isOutOfBook())
+        {
+            ProductionManager::Instance().requestOpeningDefensiveMarines(targetCount);
+            return false;
+        }
+
+        // PlayerSnapshot::all includes training. A deployed Tank is the
+        // same artillery unit, not a deficit to replace with another Tank.
+        const int currentOrTraining = the.my.all.count(unitType) +
+            (unitType == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode
+                ? the.my.all.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode)
+                : 0);
 
         if (currentOrTraining >= targetCount)
         {
@@ -2763,10 +2904,11 @@ namespace
             targetSupplyUsed > 0 &&
             the.self()->supplyUsed() < targetSupplyUsed;
 
-        // A huge mineral bank is a hard signal that our conversion capacity is
-        // insufficient even if we sampled one producer in the brief idle frame
-        // between units.
-        if (the.self()->minerals() >= 1800)
+        // A large bank alone is not a reason to add another Factory: it can
+        // mean the existing Factories are waiting for gas. Other producer
+        // types retain their bank-driven scaling behavior.
+        if (producerType != BWAPI::UnitTypes::Terran_Factory &&
+            the.self()->minerals() >= 1800)
         {
             return true;
         }
@@ -3843,10 +3985,13 @@ namespace
         return count;
     }
 
+    static int bioTankLurkerTankTarget();
+
     // Army percentages are measured in supply. Keep the normal 80/20 core,
     // but allow 25-30% Tanks when both resources bank up behind that ceiling.
     static int bioTankTankCeiling()
     {
+        if (!StrategyManager::Instance().bioTankUsesTanks()) return 0;
         const int infantrySupply =
             the.my.all.count(BWAPI::UnitTypes::Terran_Marine) *
                 BWAPI::UnitTypes::Terran_Marine.supplyRequired() +
@@ -3856,10 +4001,15 @@ namespace
                 BWAPI::UnitTypes::Terran_Firebat.supplyRequired();
         const int tankSupply =
             BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode.supplyRequired();
-        const int percent = BioProductionPolicy::tankPercent(
-            the.self()->minerals(), the.self()->gas(), infantrySupply,
-            ProductionManager::Instance().isOutOfBook());
-        return BioProductionPolicy::tankCeiling(infantrySupply, tankSupply, percent);
+        const int percent = StrategyManager::Instance().bioTankDesiredTankPercent();
+        const int openingTankFloor =
+            StrategyManager::Instance().deepSixPlanActive() ? 4 :
+            tvzBioPolicy(StrategyManager::Instance().getTerranPlan())
+                ? tvzBioPolicy(StrategyManager::Instance().getTerranPlan())->tankFloor :
+                  StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank ? 2 : 0;
+        return std::max({
+            BioProductionPolicy::tankCeiling(infantrySupply, tankSupply, percent),
+            bioTankLurkerTankTarget(), openingTankFloor });
     }
 
     // BOSS plans in waves. While a new search is finishing, completed
@@ -3887,6 +4037,8 @@ namespace
 
         const std::string openingGroup =
             StrategyManager::Instance().getOpeningGroup();
+        if (BioTankPolicy::reserveGoliathSupply() ||
+            StrategyManager::Instance().airTanksPlanActive()) return false;
 
         const bool nearbyAirOnlyAttack =
             visibleEnemyAirOnlyNearOwnedBase();
@@ -3953,6 +4105,12 @@ namespace
                 return true;
             }
         }
+
+        // A real capital fleet gets the Factory gas before optional Tanks.
+        if (openingGroup == "bio" &&
+            StrategyManager::Instance().getTerranPlan() == TerranPlanId::BioTank &&
+            the.my.all.count(BWAPI::UnitTypes::Terran_Goliath) < BioTankPolicy::goliathTarget())
+            return false;
 
         const int idleFactories =
             idleCompletedLandedTerranProductionBuildings(
@@ -5348,6 +5506,23 @@ namespace
         }
 
         return count;
+    }
+
+    static int bioTankLurkerTankTarget()
+    {
+        if (!StrategyManager::Instance().bioTankPlanActive() ||
+            !StrategyManager::Instance().bioTankUsesTanks() ||
+            the.enemyRace() != BWAPI::Races::Zerg)
+        {
+            return 0;
+        }
+        // UnitData forgets confirmed deaths; an old sighting alone must not
+        // keep the maximum artillery floor after the Lurker army is gone.
+        const int lurkers =
+            rememberedEnemyUnitCount(BWAPI::UnitTypes::Zerg_Lurker) +
+            rememberedEnemyUnitCount(BWAPI::UnitTypes::Zerg_Lurker_Egg);
+        return BioProductionPolicy::lurkerTankTarget(lurkers,
+            enemyHasOpeningThreat(OpeningThreat::ZergTwoHatchLurker));
     }
 
     bool enemyFlyingUnitEverSeen()
@@ -7150,6 +7325,7 @@ namespace
         const bool severe = workerRush || breach || plan == OpeningPlan::WorkerRush || guess == OpeningPlan::WorkerRush ||
             plan == OpeningPlan::Proxy || guess == OpeningPlan::Proxy ||
             plan == OpeningPlan::HeavyRush || guess == OpeningPlan::HeavyRush ||
+            plan == OpeningPlan::FastRush || guess == OpeningPlan::FastRush ||
             actualEarlyGroundRushDetected() || actualEarlyProtossZealotRushDetected();
         const int completedMech = the.my.completed.count(BWAPI::UnitTypes::Terran_Vulture) +
             2 * (the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
@@ -7547,11 +7723,197 @@ namespace
     }
 
 
-    // Put bunkers at the entrance shoulder rather than at an arbitrary offset
-    // from the CC. The first and second bunker use opposite shoulders, while
-    // the center of the entrance remains free for SCVs, vultures and tanks.
+    // Without a wall, rush defense starts with a shelter close to the main CC.
+    // Extend it to the entrance only after the shelter is ready and the site is safe.
+    bool noWallRushBunkerPolicy()
+    {
+        return the.selfRace() == BWAPI::Races::Terran &&
+            the.now() <= 10 * 60 * 24 &&
+            (!the.placer.hasTerranMainWall() || the.placer.isTerranMainWallReleased()) &&
+            (terranInfantryDefense().groundEmergency ||
+             OpponentModel::Instance().hasEarlyGroundRushRisk());
+    }
+
+    bool completedMainRushShelter()
+    {
+        Base * main = the.bases.myMain();
+        if (!main) return false;
+        for (BWAPI::Unit unit : the.self()->getUnits())
+            if (unit && unit->exists() && unit->isCompleted() &&
+                unit->getType() == BWAPI::UnitTypes::Terran_Bunker &&
+                unit->getDistance(main->getCenter()) <= 7 * 32)
+                return true;
+        return false;
+    }
+
+    bool safeForwardRushBunkerTile(BWAPI::TilePosition tile)
+    {
+        Base * main = the.bases.myMain();
+        if (!main || !tile.isValid() || !completedMainRushShelter()) return false;
+        const BWAPI::Position center = BWAPI::Position(tile) + BWAPI::Position(48, 32);
+        const BWAPI::Position entrance = getBunkerEntrancePosition(main);
+        // A safe tile beside the CC is still the wrong place for bunker #2.
+        // Keep the second shelter at the main entrance and clear of bunker #1.
+        if (!entrance.isValid() ||
+            center.getApproxDistance(main->getCenter()) <= 6 * 32 ||
+            center.getApproxDistance(entrance) > 4 * 32)
+            return false;
+        for (BWAPI::Unit unit : the.self()->getUnits())
+        {
+            if (unit && unit->exists() && unit->isCompleted() &&
+                unit->getType() == BWAPI::UnitTypes::Terran_Bunker &&
+                unit->getDistance(main->getCenter()) <= 7 * 32)
+            {
+                if (unit->getDistance(center) < 3 * 32) return false;
+            }
+        }
+        const BWAPI::UnitType bunker = BWAPI::UnitTypes::Terran_Bunker;
+        for (int x = 0; x < bunker.tileWidth(); ++x)
+            for (int y = 0; y < bunker.tileHeight(); ++y)
+            {
+                const BWAPI::TilePosition cell = tile + BWAPI::TilePosition(x, y);
+                if (!cell.isValid() || !BWAPI::Broodwar->isVisible(cell) ||
+                    the.groundHitsFixed.at(cell) > 0 || the.groundHitsMobile.at(cell) > 0)
+                    return false;
+            }
+        if (main->getGroundSafePaths().isInitialized() && main->getSafeTileDistance(tile) < 0)
+            return false;
+        for (BWAPI::Unit enemy : the.enemy()->getUnits())
+        {
+            if (enemy && enemy->exists() && enemy->isVisible() &&
+                enemy->getPosition().isValid() && UnitUtil::CanAttackGround(enemy) &&
+                enemy->getDistance(center) <= std::max(8 * 32,
+                    UnitUtil::GetAttackRangeAssumingUpgrades(
+                        enemy->getType(), BWAPI::UnitTypes::Terran_SCV) + 3 * 32))
+                return false;
+        }
+        return true;
+    }
+
+    bool safeNaturalRushBunkerTile(BWAPI::TilePosition tile)
+    {
+        Base * natural = the.bases.myNatural();
+        if (!naturalExpansionStarted() || !natural || !tile.isValid()) return false;
+        const BWAPI::Position center = BWAPI::Position(tile) + BWAPI::Position(48, 32);
+        const BWAPI::Position entrance = getBunkerEntrancePosition(natural);
+        if (!entrance.isValid() ||
+            center.getApproxDistance(entrance) > 6 * 32 ||
+            center.getApproxDistance(natural->getCenter()) < 4 * 32 ||
+            natural->getTileDistance(tile) < 0) return false;
+
+        const BWAPI::UnitType bunker = BWAPI::UnitTypes::Terran_Bunker;
+        for (int x = 0; x < bunker.tileWidth(); ++x)
+            for (int y = 0; y < bunker.tileHeight(); ++y)
+            {
+                const BWAPI::TilePosition cell = tile + BWAPI::TilePosition(x, y);
+                if (!cell.isValid() || !BWAPI::Broodwar->isVisible(cell) ||
+                    the.groundHitsFixed.at(cell) > 0 || the.groundHitsMobile.at(cell) > 0)
+                    return false;
+            }
+        for (BWAPI::Unit enemy : the.enemy()->getUnits())
+            if (enemy && enemy->exists() && enemy->isVisible() &&
+                enemy->getPosition().isValid() && UnitUtil::CanAttackGround(enemy) &&
+                enemy->getDistance(center) <= std::max(8 * 32,
+                    UnitUtil::GetAttackRangeAssumingUpgrades(
+                        enemy->getType(), BWAPI::UnitTypes::Terran_SCV) + 3 * 32))
+                return false;
+        return true;
+    }
+
+    BWAPI::TilePosition findCloseMainRushBunkerTile()
+    {
+        Base * main = the.bases.myMain();
+        if (!main) return BWAPI::TilePositions::Invalid;
+        const BWAPI::UnitType bunker = BWAPI::UnitTypes::Terran_Bunker;
+        static int lastSearchFrame = -100000;
+        static BWAPI::TilePosition cachedTile = BWAPI::TilePositions::Invalid;
+        if (the.now() >= lastSearchFrame && the.now() - lastSearchFrame < 12)
+            return cachedTile.isValid() && tileIsBuildableFor(cachedTile, bunker)
+                ? cachedTile : BWAPI::TilePositions::Invalid;
+        lastSearchFrame = the.now();
+        cachedTile = BWAPI::TilePositions::Invalid;
+        const BWAPI::Position center = main->getCenter();
+        const BWAPI::Position entrance = getBunkerEntrancePosition(main);
+        if (!entrance.isValid()) return cachedTile;
+        double dx = entrance.x - center.x;
+        double dy = entrance.y - center.y;
+        const double length = std::hypot(dx, dy);
+        if (length < 1.0) return cachedTile;
+        dx /= length;
+        dy /= length;
+        const BWAPI::Position wanted(int(center.x + dx * 4.5 * 32),
+            int(center.y + dy * 4.5 * 32));
+        const BWAPI::TilePosition origin(center);
+        std::vector<std::pair<int, BWAPI::TilePosition>> candidates;
+        const BWAPI::Unitset minerals = main->getRemainingMinerals();
+        for (int x = -9; x <= 9; ++x)
+            for (int y = -9; y <= 9; ++y)
+            {
+                const BWAPI::TilePosition tile = origin + BWAPI::TilePosition(x, y);
+                if (!tile.isValid() ||
+                    tile.x + bunker.tileWidth() > BWAPI::Broodwar->mapWidth() ||
+                    tile.y + bunker.tileHeight() > BWAPI::Broodwar->mapHeight())
+                    continue;
+                const BWAPI::Position pos = BWAPI::Position(tile) + BWAPI::Position(48, 32);
+                const int distance = pos.getApproxDistance(center);
+                if (distance < 3 * 32 || distance > 7 * 32) continue;
+                // The first shelter must face the main's exit. A legal tile
+                // beside the minerals or behind the depot is not a useful
+                // substitute when the forward slots are occupied.
+                const double forward =
+                    double(pos.x - center.x) * dx + double(pos.y - center.y) * dy;
+                if (forward < 32.0) continue;
+                const int groundDistance = main->getTileDistance(tile);
+                if (groundDistance < 0 || groundDistance > 14) continue;
+                bool sameFloor = true;
+                for (int bx = 0; bx < bunker.tileWidth(); ++bx)
+                    for (int by = 0; by < bunker.tileHeight(); ++by)
+                        if (GroundHeight(tile + BWAPI::TilePosition(bx, by)) !=
+                            GroundHeight(main->getCenterTile())) sameFloor = false;
+                if (!sameFloor) continue;
+                int mineralDistance = MAX_DISTANCE;
+                for (BWAPI::Unit mineral : minerals)
+                    if (mineral && mineral->exists())
+                        mineralDistance = std::min(mineralDistance, mineral->getDistance(pos));
+                if (mineralDistance < 3 * 32) continue;
+                // buildingOK/canBuildHere are much more expensive than the
+                // directional, distance and terrain filters above.
+                if (!tileIsBuildableFor(tile, bunker)) continue;
+                int barracksDistance = 8 * 32;
+                for (BWAPI::Unit unit : the.self()->getUnits())
+                    if (unit && unit->exists() && !unit->isFlying() &&
+                        unit->getType() == BWAPI::UnitTypes::Terran_Barracks)
+                        barracksDistance = std::min(barracksDistance, unit->getDistance(pos));
+                candidates.emplace_back(pos.getApproxDistance(wanted) * 2 + barracksDistance +
+                    std::max(0, 5 * 32 - mineralDistance) * 4, tile);
+            }
+        std::sort(candidates.begin(), candidates.end(),
+            [](const std::pair<int, BWAPI::TilePosition> & a,
+               const std::pair<int, BWAPI::TilePosition> & b) { return a.first < b.first; });
+        for (const auto & candidate : candidates)
+            if (the.placer.preservesGroundExit(bunker, candidate.second))
+            {
+                cachedTile = candidate.second;
+                break;
+            }
+        return cachedTile;
+    }
+
     BWAPI::TilePosition findDefensiveBunkerTile(Base* base, int bunkerIndex)
     {
+        // The no-wall rush rule owns only the first two shelters at main.
+        // Once the natural CC starts, its separate front still needs a bunker.
+        const bool noWallRush = noWallRushBunkerPolicy() &&
+            base == the.bases.myMain();
+        const bool naturalDuringRush = noWallRushBunkerPolicy() &&
+            base == the.bases.myNatural() && naturalExpansionStarted();
+        if (noWallRush)
+        {
+            base = the.bases.myMain();
+            bunkerIndex = std::max(bunkerIndex, the.my.all.count(BWAPI::UnitTypes::Terran_Bunker));
+            if (bunkerIndex == 0) return findCloseMainRushBunkerTile();
+            if (!completedMainRushShelter()) return BWAPI::TilePositions::Invalid;
+        }
         if (!base || !base->getCenter().isValid())
         {
             return BWAPI::TilePositions::Invalid;
@@ -7564,16 +7926,51 @@ namespace
             const BWAPI::TilePosition reservedTile =
                 the.placer.getTerranMainWallBunkerTile();
             const BWAPI::TilePosition wallTile = the.placer.getTerranMainWallBunkerLocation();
-            // The displayed reservation is the actual first-Bunker site. A
-            // passing unit can make getTerranMainWallBunkerLocation() choose a
-            // different shoulder; wait for the reservation instead of making
-            // that temporary fallback permanent.
+            static BWAPI::TilePosition blockedWallTile = BWAPI::TilePositions::None;
+            static int blockedSinceFrame = -1;
+            static int previousFrame = -1;
+            const int now = the.now();
+            if (now < previousFrame || blockedWallTile != reservedTile)
+            {
+                blockedWallTile = reservedTile;
+                blockedSinceFrame = -1;
+            }
+            previousFrame = now;
             if (reservedTile.isValid())
             {
-                return wallTile == reservedTile
-                    ? reservedTile : BWAPI::TilePositions::Invalid;
+                Building reservedBunker(BWAPI::UnitTypes::Terran_Bunker, reservedTile);
+                reservedBunker.macroLocation = MacroLocation::Main;
+                if (wallTile == reservedTile &&
+                    the.placer.buildingOK(reservedBunker, reservedTile))
+                {
+                    blockedSinceFrame = -1;
+                    return reservedTile;
+                }
+                // A passing unit may temporarily block the planned spot, so
+                // allow it a short time to clear. A route conflict or a slot
+                // blocked for several seconds must not freeze the build book.
+                if (blockedSinceFrame < 0)
+                {
+                    blockedSinceFrame = now;
+                }
+                if (the.placer.preservesGroundExit(
+                        BWAPI::UnitTypes::Terran_Bunker, reservedTile) &&
+                    now - blockedSinceFrame < 3 * 24)
+                {
+                    return BWAPI::TilePositions::Invalid;
+                }
+                if (wallTile.isValid() && wallTile != reservedTile &&
+                    the.placer.buildingOK(reservedBunker, wallTile))
+                {
+                    return wallTile;
+                }
             }
-            return wallTile;
+            else if (wallTile.isValid())
+            {
+                return wallTile;
+            }
+            // A wall layout without a legal Bunker slot still needs a
+            // defensive Bunker. Continue with the regular entrance search.
         }
 
         const BWAPI::UnitType bunkerType =
@@ -7695,11 +8092,10 @@ namespace
                 const BWAPI::TilePosition tile(
                     centerTile.x + dx,
                     centerTile.y + dy);
-
-                if (!tileIsBuildableFor(tile, bunkerType))
-                {
+                if (!tile.isValid() ||
+                    tile.x + bunkerType.tileWidth() > BWAPI::Broodwar->mapWidth() ||
+                    tile.y + bunkerType.tileHeight() > BWAPI::Broodwar->mapHeight())
                     continue;
-                }
 
                 // A defensive bunker belongs on OUR side of the entrance.
                 // Reject a buildable lower-floor pocket under a cliff even if
@@ -7808,6 +8204,8 @@ namespace
                     score += 3500;
                 }
 
+                if (noWallRush && !safeForwardRushBunkerTile(tile)) continue;
+
                 // Prefer the requested shoulder. This makes bunker #1/#2
                 // visually stable instead of both drifting to one side.
 
@@ -7818,6 +8216,10 @@ namespace
                     // bunker #2 on top of the opposite mineral line.
                     score += 800;
                 }
+
+                // Defer the full placement validation until the cheap
+                // geometry has narrowed the candidate set.
+                if (!tileIsBuildableFor(tile, bunkerType)) continue;
 
                 candidates.emplace_back(score, tile);
             }
@@ -7831,7 +8233,8 @@ namespace
             });
         for (const auto & candidate : candidates)
         {
-            if (the.placer.preservesGroundExit(bunkerType, candidate.second))
+            if (the.placer.preservesGroundExit(bunkerType, candidate.second) &&
+                (!naturalDuringRush || safeNaturalRushBunkerTile(candidate.second)))
             {
                 bestTile = candidate.second;
                 break;
@@ -7961,10 +8364,23 @@ namespace
             return false;
         }
 
+        if (noWallRushBunkerPolicy())
+        {
+            const int count = totalBunkerCountIncludingPlanned(queue);
+            if (count < 2)
+            {
+                const BWAPI::TilePosition tile =
+                    findDefensiveBunkerTile(the.bases.myMain(), count);
+                return tile.isValid() && queueTankOpeningBunkerRequest(queue,
+                    MacroAct(BWAPI::UnitTypes::Terran_Bunker, tile), 2, "NO WALL RUSH");
+            }
+        }
+
+        if (totalBunkerCountIncludingPlanned(queue) >= 3) return false;
+
         Base * natural = the.bases.myNatural();
         const BWAPI::UnitType bunker = BWAPI::UnitTypes::Terran_Bunker;
-        const BWAPI::Position entrance =
-            getBaseEntranceApproxPosition(natural);
+        const BWAPI::Position entrance = getBunkerEntrancePosition(natural);
         if (!entrance.isValid()) return false;
         const BWAPI::Position naturalCenter = natural->getCenter();
         const double forwardX = double(entrance.x - naturalCenter.x);
@@ -7974,6 +8390,10 @@ namespace
         const auto nearNaturalFront = [&](BWAPI::TilePosition check)
         {
             if (!check.isValid()) return false;
+            const int groundDistance = natural->getTileDistance(check);
+            if (groundDistance < 0 || groundDistance > 24 ||
+                GroundHeight(check) != GroundHeight(natural->getCenterTile()))
+                return false;
             const BWAPI::Position pos(
                 check.x * 32 + bunker.tileWidth() * 16,
                 check.y * 32 + bunker.tileHeight() * 16);
@@ -8334,7 +8754,13 @@ namespace
 
         // A wall does not stop air. Use a small Marine bridge only while the
         // local Goliath/turret layer cannot cover the current attack.
-        if (plannedMarines < marineTarget)
+        if (plannedMarines < marineTarget &&
+            !ProductionManager::Instance().isOutOfBook())
+        {
+            ProductionManager::Instance().requestOpeningDefensiveMarines(marineTarget);
+            CombatCommander::Instance().goDefensive();
+        }
+        else if (plannedMarines < marineTarget)
         {
             if (!hasCompletedLandedBarracks())
             {
@@ -8460,6 +8886,11 @@ namespace
 
         const BWAPI::UnitType marine = BWAPI::UnitTypes::Terran_Marine;
         const int marineTarget = predictedVultureRush ? 4 : 2;
+        if (!ProductionManager::Instance().isOutOfBook())
+        {
+            ProductionManager::Instance().requestOpeningDefensiveMarines(marineTarget);
+            return false;
+        }
         if (the.my.all.count(marine) < marineTarget && !queue.isEmpty() &&
             !(queue.getHighestPriorityItem().macroAct.isUnit() &&
               queue.getHighestPriorityItem().macroAct.getUnitType() == marine) &&
@@ -8597,7 +9028,15 @@ namespace
                 immediateQueuedUnitCount(
                     queue, BWAPI::UnitTypes::Terran_Bunker, 3);
 
-            if (immediateBunkers < BUNKER_TARGET)
+            // Do not queue bunker #2 while the close shelter is still being
+            // built. Marines and the rest of the opening can continue meanwhile.
+            const bool waitingForMainRushShelter =
+                noWallRushBunkerPolicy() &&
+                the.my.all.count(BWAPI::UnitTypes::Terran_Bunker) +
+                    (int)BuildingManager::Instance().getNumUnstarted(
+                        BWAPI::UnitTypes::Terran_Bunker) > 0 &&
+                !completedMainRushShelter();
+            if (immediateBunkers < BUNKER_TARGET && !waitingForMainRushShelter)
             {
                 if (waitForUrgentTerranPrerequisite(
                         queue,
@@ -8658,7 +9097,13 @@ namespace
                 immediateQueuedUnitCount(
                     queue, BWAPI::UnitTypes::Terran_Marine, 3);
 
-            if (immediateMarines < MARINE_TARGET)
+            if (immediateMarines < MARINE_TARGET &&
+                !ProductionManager::Instance().isOutOfBook())
+            {
+                ProductionManager::Instance().requestOpeningDefensiveMarines(MARINE_TARGET);
+                CombatCommander::Instance().goDefensive();
+            }
+            else if (immediateMarines < MARINE_TARGET)
             {
                 if (!hasCompletedLandedBarracks())
                 {
@@ -8854,7 +9299,11 @@ namespace
 
         if (currentMarines < marineTargetForRush)
         {
-            if ((strongEarlyGroundRush || oneGateCoreOpening) &&
+            if (!ProductionManager::Instance().isOutOfBook())
+            {
+                ProductionManager::Instance().requestOpeningDefensiveMarines(marineTargetForRush);
+            }
+            else if ((strongEarlyGroundRush || oneGateCoreOpening) &&
                 hasCompletedLandedBarracks() &&
                 !queue.anyInQueue(BWAPI::UnitTypes::Terran_Marine))
             {
@@ -8890,6 +9339,7 @@ namespace
         }
 
         const int maxEmergencyBunkers =
+            noWallRushBunkerPolicy() && enemyRushPlan ? 2 :
             StrategyManager::Instance().getOpeningGroup() == "tanks" ? defense.bunkers :
             strongEarlyGroundRush ? 2 : 1;
 
@@ -9357,6 +9807,9 @@ namespace
 BWAPI::TilePosition StrategyManager::getTerranDefensiveBunkerTile(
     int bunkerIndex) const
 {
+    if (noWallRushBunkerPolicy() &&
+        (bunkerIndex < 2 || !naturalExpansionStarted()))
+        return findDefensiveBunkerTile(the.bases.myMain(), bunkerIndex);
     BWAPI::TilePosition tile = BWAPI::TilePositions::Invalid;
     const bool naturalFrontActive = naturalExpansionStarted() ||
         the.bases.completedBaseCount(the.self()) > 1;
@@ -9375,6 +9828,34 @@ BWAPI::TilePosition StrategyManager::getTerranDefensiveBunkerTile(
         the.placer.getTerranMainWallBunkerTile().isValid();
     return tile.isValid() || naturalFrontActive || waitingForMainWallSlot
         ? tile : findBuildTileNearBaseExit(BWAPI::UnitTypes::Terran_Bunker);
+}
+
+bool StrategyManager::isNoWallRushBunkerPlacementActive() const
+{
+    return noWallRushBunkerPolicy();
+}
+
+bool StrategyManager::canBuildTerranDefensiveBunkerAt(BWAPI::TilePosition tile) const
+{
+    if (!tile.isValid()) return false;
+    if (!noWallRushBunkerPolicy()) return true;
+    if (safeNaturalRushBunkerTile(tile)) return true;
+    Base * main = the.bases.myMain();
+    if (!main) return false;
+    const BWAPI::Position center = BWAPI::Position(tile) + BWAPI::Position(48, 32);
+    // A second close Bunker must not inherit the first shelter's exception.
+    // This also protects generic and previously queued Bunker requests.
+    if (center.getApproxDistance(main->getCenter()) <= 6 * 32)
+    {
+        for (BWAPI::Unit unit : the.self()->getUnits())
+            if (unit && unit->exists() &&
+                unit->getType() == BWAPI::UnitTypes::Terran_Bunker &&
+                unit->getDistance(main->getCenter()) <= 7 * 32 &&
+                unit->getTilePosition() != tile)
+                return false;
+        return true;
+    }
+    return safeForwardRushBunkerTile(tile);
 }
 
 namespace
@@ -9403,6 +9884,10 @@ namespace
             { TerranPlanId::None, "None", "", 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, true };
         static const TerranPlanProfile bioTank =
             { TerranPlanId::BioTank, "BioTank", "bio", 2, 1, 1, 0, 0, 0, 0, 0, 0, 8, true };
+        static const TerranPlanProfile airTanks =
+            { TerranPlanId::AirTanks, "AirTanks", "airtanks", 1, 1, 1, 0, 0, 0, 0, 0, 0, AirTanks::ThirdMinute, false };
+        static const TerranPlanProfile tvpDeepSix =
+            { TerranPlanId::TvP_DeepSix, "TvP_DeepSix", "bio", 6, 2, 2, 0, 0, 0, 0, 0, 0, 12, false };
         static const TerranPlanProfile tvpSiege =
             { TerranPlanId::TvP_Siege, "TvP_Siege", "tanks", 1, 2, 1, 5, 2, 1, 3, 15, 0, 8, true };
         static const TerranPlanProfile tvpAntiZealot =
@@ -9411,6 +9896,12 @@ namespace
             { TerranPlanId::TvP_AntiDragoon, "TvP_AntiDragoon", "tanks", 1, 3, 2, 4, 3, 0, 0, 10, 0, 10, false };
         static const TerranPlanProfile tvpAntiCarrier =
             { TerranPlanId::TvP_AntiCarrier, "TvP_AntiCarrier", "tanks", 2, 4, 0, 0, 0, 10, 16, 0, 0, 9, false };
+        static const TerranPlanProfile tvzSparks =
+            { TerranPlanId::TvZ_Sparks, "TvZ_Sparks", "bio", 3, 0, 0, 0, 0, 0, 0, 0, 0, TvZSparks::policy().thirdMinute, false };
+        static const TerranPlanProfile tvzPreHive =
+            { TerranPlanId::TvZ_PreHive, "TvZ_PreHive", "bio", 3, 1, 1, 0, 0, 0, 0, 0, 0, TvZPreHive::policy().thirdMinute, false };
+        static const TerranPlanProfile tvzSK =
+            { TerranPlanId::TvZ_SK, "TvZ_SK", "bio", 4, 1, 0, 0, 0, 0, 0, 0, 0, TvZSK::policy().thirdMinute, false };
         static const TerranPlanProfile tvzMech =
             { TerranPlanId::TvZ_Mech, "TvZ_Mech", "tanks", 1, 2, 1, 3, 4, 1, 3, 10, 0, 8, true };
         static const TerranPlanProfile tvzAntiLing =
@@ -9431,10 +9922,15 @@ namespace
         switch (id)
         {
         case TerranPlanId::BioTank:            return bioTank;
+        case TerranPlanId::AirTanks:           return airTanks;
+        case TerranPlanId::TvP_DeepSix:        return tvpDeepSix;
         case TerranPlanId::TvP_Siege:          return tvpSiege;
         case TerranPlanId::TvP_AntiZealot:     return tvpAntiZealot;
         case TerranPlanId::TvP_AntiDragoon:    return tvpAntiDragoon;
         case TerranPlanId::TvP_AntiCarrier:    return tvpAntiCarrier;
+        case TerranPlanId::TvZ_Sparks:         return tvzSparks;
+        case TerranPlanId::TvZ_PreHive:        return tvzPreHive;
+        case TerranPlanId::TvZ_SK:             return tvzSK;
         case TerranPlanId::TvZ_Mech:           return tvzMech;
         case TerranPlanId::TvZ_AntiLing:       return tvzAntiLing;
         case TerranPlanId::TvZ_VulturePressure:return tvzVulturePressure;
@@ -9453,10 +9949,15 @@ namespace
         const TerranPlanId plans[] =
         {
             TerranPlanId::BioTank,
+            TerranPlanId::AirTanks,
+            TerranPlanId::TvP_DeepSix,
             TerranPlanId::TvP_Siege,
             TerranPlanId::TvP_AntiZealot,
             TerranPlanId::TvP_AntiDragoon,
             TerranPlanId::TvP_AntiCarrier,
+            TerranPlanId::TvZ_Sparks,
+            TerranPlanId::TvZ_PreHive,
+            TerranPlanId::TvZ_SK,
             TerranPlanId::TvZ_Mech,
             TerranPlanId::TvZ_AntiLing,
             TerranPlanId::TvZ_VulturePressure,
@@ -9479,7 +9980,7 @@ namespace
 
     bool terranPlanMatchesEnemyRace(TerranPlanId plan, BWAPI::Race race)
     {
-        if (plan == TerranPlanId::BioTank)
+        if (plan == TerranPlanId::BioTank || plan == TerranPlanId::AirTanks)
         {
             return true;
         }
@@ -9487,6 +9988,7 @@ namespace
         if (race == BWAPI::Races::Protoss)
         {
             return
+                plan == TerranPlanId::TvP_DeepSix ||
                 plan == TerranPlanId::TvP_Siege ||
                 plan == TerranPlanId::TvP_AntiZealot ||
                 plan == TerranPlanId::TvP_AntiDragoon ||
@@ -9496,6 +9998,9 @@ namespace
         if (race == BWAPI::Races::Zerg)
         {
             return
+                plan == TerranPlanId::TvZ_Sparks ||
+                plan == TerranPlanId::TvZ_PreHive ||
+                plan == TerranPlanId::TvZ_SK ||
                 plan == TerranPlanId::TvZ_Mech ||
                 plan == TerranPlanId::TvZ_AntiLing ||
                 plan == TerranPlanId::TvZ_VulturePressure ||
@@ -9518,6 +10023,8 @@ namespace
         const std::string & openingGroup,
         BWAPI::Race enemyRace)
     {
+        if (openingGroup == "airtanks") return TerranPlanId::AirTanks;
+
         const bool zergDropTransitionsToBio =
             openingGroup == "drop" && enemyRace == BWAPI::Races::Zerg;
 
@@ -9559,6 +10066,10 @@ namespace
         case TerranPlanId::TvP_AntiZealot:
         case TerranPlanId::TvZ_AntiLing:
             return 60;
+        case TerranPlanId::TvZ_Sparks:
+        case TerranPlanId::TvZ_PreHive:
+        case TerranPlanId::TvZ_SK:
+        case TerranPlanId::TvP_DeepSix:
         case TerranPlanId::TvZ_VulturePressure:
             return 40;
         case TerranPlanId::TvP_Siege:
@@ -10375,13 +10886,12 @@ void StrategyManager::initializeTerranPlan()
     }
 
     TerranPlanId plan = defaultPlan;
-    // Keep the temporary TvZ BioTank trial on its BioTank macro host even if
-    // the opponent model learned a different initial Terran plan.
-    const bool bioTankZergTrial =
-        _enemyRace == BWAPI::Races::Zerg &&
-        _openingGroup == "bio" &&
-        defaultPlan == TerranPlanId::BioTank;
-    if (!bioTankZergTrial)
+    // Opening selection already learns between the allowed Bio books. Do not
+    // let a second, independent plan recommendation turn a selected BioTank
+    // opening into mech before its Marine/Medic production starts. Deep Six
+    // still has its explicit safety cancellation in updateTerranPlan().
+    if (_openingGroup != "bio" && defaultPlan != TerranPlanId::TvP_DeepSix &&
+        !tvzBioPolicy(defaultPlan) && defaultPlan != TerranPlanId::AirTanks)
     {
         const std::string recommendation = OpponentModel::Instance().recommendTerranPlan(
             terranPlanProfile(defaultPlan).name,
@@ -10492,7 +11002,104 @@ void StrategyManager::updateTerranPlan()
     std::string reason = std::string("opening baseline ") +
         terranPlanProfile(candidate).name;
 
-    if (race == BWAPI::Races::Protoss)
+    if (race == BWAPI::Races::Zerg)
+    {
+        if (const auto* policy = tvzBioPolicy(_terranBaselinePlan))
+        {
+            const TvZBioPlan::State state = {
+                the.now(), _bioFirstAttackFrame,
+                the.my.completed.count(BWAPI::UnitTypes::Terran_Science_Vessel),
+                enemyHasMutaliskTech() ||
+                    enemyHasOpeningThreat(OpeningThreat::ZergTwoHatchLurker) ||
+                    enemyHasOpeningThreat(OpeningThreat::HydraliskPressure) ||
+                    rememberedEnemyUnitCount(BWAPI::UnitTypes::Zerg_Lurker) > 0 ||
+                    rememberedEnemyUnitCount(BWAPI::UnitTypes::Zerg_Lurker_Egg) > 0,
+                the.your.seen.count(BWAPI::UnitTypes::Zerg_Hive) > 0 ||
+                    the.your.seen.count(BWAPI::UnitTypes::Zerg_Defiler_Mound) > 0 ||
+                    the.your.seen.count(BWAPI::UnitTypes::Zerg_Defiler) > 0,
+                the.self()->hasResearched(BWAPI::TechTypes::Irradiate)
+            };
+            const auto next = policy->transition(state);
+            if (next != TvZBioPlan::Next::Keep)
+            {
+                candidate = next == TvZBioPlan::Next::SK
+                    ? TerranPlanId::TvZ_SK : TerranPlanId::BioTank;
+                reason = std::string(policy->name) + " -> " + terranPlanProfile(candidate).name;
+                _terranBaselinePlan = candidate;
+                _openingTerranPlanName = terranPlanProfile(candidate).name;
+                // Keep an already released Pre-Hive army moving into SK.
+                if (next == TvZBioPlan::Next::BioTank)
+                {
+                    _bioTankFirstPushReleased = false;
+                    _bioFirstAttackFrame = -1;
+                }
+                ProductionManager::Instance().goOutOfBookAndClearQueue();
+                switchTerranPlan(candidate, reason, true);
+            }
+        }
+    }
+
+    if (race == BWAPI::Races::Protoss &&
+        _terranBaselinePlan == TerranPlanId::TvP_DeepSix)
+    {
+        // A Robotics Facility alone is not a Reaver. Ordinary Dragoons are
+        // exactly what the Marine/Medic switch is intended to punish.
+        const bool splashTech =
+            the.your.seen.count(BWAPI::UnitTypes::Protoss_Templar_Archives) > 0 ||
+            the.your.seen.count(BWAPI::UnitTypes::Protoss_High_Templar) > 0 ||
+            the.your.seen.count(BWAPI::UnitTypes::Protoss_Reaver) > 0 ||
+            the.your.seen.count(BWAPI::UnitTypes::Protoss_Robotics_Support_Bay) > 0;
+        const bool committedDragoonRush =
+            enemyHasOpeningThreat(OpeningThreat::ProtossFourGateDragoon) ||
+            (actualEarlyGroundRushDetected() &&
+             enemyHasOpeningThreat(OpeningThreat::DragoonPressure));
+        const bool zealotRush = actualEarlyProtossZealotRushDetected();
+        const bool carrierArmy =
+            rememberedEnemyUnitCount(BWAPI::UnitTypes::Protoss_Carrier) >= 2;
+        const OpeningPlan observedPlan =
+            OpponentModel::Instance().getEnemyPlan();
+        const bool expansionConfirmed =
+            rememberedEnemyUnitCount(BWAPI::UnitTypes::Protoss_Nexus) >= 2 ||
+            observedPlan == OpeningPlan::SafeExpand ||
+            observedPlan == OpeningPlan::NakedExpand;
+        const bool unsuitableEconomy =
+            observedPlan == OpeningPlan::Turtle ||
+            (ProductionManager::Instance().isOutOfBook() && !expansionConfirmed);
+
+        if (splashTech || committedDragoonRush || zealotRush ||
+            carrierArmy || unsuitableEconomy)
+        {
+            candidate = carrierArmy ? TerranPlanId::TvP_AntiCarrier :
+                (splashTech || committedDragoonRush) ? TerranPlanId::TvP_AntiDragoon :
+                zealotRush ? TerranPlanId::TvP_AntiZealot : TerranPlanId::TvP_Siege;
+            reason = carrierArmy ? "Deep Six cancelled: Carrier army" :
+                splashTech ? "Deep Six cancelled: Templar/Reaver tech" :
+                committedDragoonRush ? "Deep Six cancelled: committed Dragoon rush" :
+                zealotRush ? "Deep Six cancelled: Zealot rush" :
+                "Deep Six cancelled: no vulnerable expansion confirmed";
+
+            // Commit the escape so a sticky expansion label cannot restart
+            // the bio investment next frame. Preserve construction already
+            // in progress, but discard the unstarted opening and rule wave.
+            _terranBaselinePlan = candidate;
+            _openingTerranPlanName = terranPlanProfile(candidate).name;
+            _openingGroup = "tanks";
+            _pureAirPlan = false;
+            _defaultTankGather = true;
+            _tankMassReleaseTanks = terranPlanProfile(candidate).tankRelease;
+            _tankMassReleaseGoliaths = terranPlanProfile(candidate).goliathRelease;
+            _bioTankFirstPushReleased = false;
+            ProductionManager::Instance().goOutOfBookAndClearQueue();
+            CombatCommander::Instance().goDefensive();
+        }
+        else
+        {
+            candidate = TerranPlanId::TvP_DeepSix;
+            reason = expansionConfirmed ? "Deep Six: expanded Protoss" :
+                "Deep Six: scouting during Siege Expand";
+        }
+    }
+    else if (race == BWAPI::Races::Protoss)
     {
         if (enemyMode == EnemyArmyMode::PureAir)
         {
@@ -10541,7 +11148,12 @@ void StrategyManager::updateTerranPlan()
         // Marines with Stim and Turrets are a real Mutalisk defense. Keep the
         // selected BioTank plan so ordinary Spire/Hydra/Ling evidence does not
         // silently turn a test Bio opening into the mech macro host.
-        if (bioZergBaseline && !guardianSeen)
+        if (tvzBioPolicy(_terranBaselinePlan))
+        {
+            candidate = _terranBaselinePlan;
+            reason = std::string(terranPlanProfile(candidate).name) + " bio response";
+        }
+        else if (bioZergBaseline && !guardianSeen)
         {
             candidate = TerranPlanId::BioTank;
             reason = "BioTank Zerg response";
@@ -10621,6 +11233,12 @@ void StrategyManager::updateTerranPlan()
         reason = "BioTank counter composition";
     }
 
+    if (_terranBaselinePlan == TerranPlanId::AirTanks)
+    {
+        candidate = TerranPlanId::AirTanks;
+        reason = "AirTanks counter composition";
+    }
+
     if (candidate != _terranPlan)
     {
         switchTerranPlan(candidate, reason, true);
@@ -10638,6 +11256,9 @@ void StrategyManager::updateTerranPlan()
         const std::string oldHost = _openingGroup;
         _openingGroup = activePlan.hostOpeningGroup;
         _defaultTankGather = _openingGroup == "tanks";
+        _tankMassReleaseTanks = activePlan.tankRelease;
+        _tankMassReleaseGoliaths = activePlan.goliathRelease;
+        _bioTankFirstPushReleased = false;
 
         BOSSManager::Instance().reset();
         ProductionManager::Instance().invalidateTerranRulePlan(
@@ -10654,11 +11275,50 @@ void StrategyManager::updateTerranPlan()
 
 const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
 {
+    _slowestGoalStage = "";
+    _slowestGoalStageMs = 0.0;
+    // Include normalization and early returns in the plan's detailed timing.
+    struct GoalStageTimer
+    {
+        const char *& slowestName;
+        double& slowestMs;
+        const char * currentName = "plan identity";
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+        GoalStageTimer(const char *& name, double& ms)
+            : slowestName(name), slowestMs(ms) {}
+
+        void next(const char * name)
+        {
+            const auto now = std::chrono::steady_clock::now();
+            const double ms = std::chrono::duration<double, std::milli>(now - start).count();
+            if (ms > slowestMs)
+            {
+                slowestName = currentName;
+                slowestMs = ms;
+            }
+            currentName = name;
+            start = now;
+        }
+
+        ~GoalStageTimer() { next(""); }
+    } stage(_slowestGoalStage, _slowestGoalStageMs);
     // Refresh the long-lived macro identity before deriving this rule wave.
     // The selected profile is deliberately stable; EnemyArmyMode below remains
     // the short-term tactical modifier.
     updateTerranPlan();
     const TerranPlanProfile & terranPlan = terranPlanProfile(_terranPlan);
+    if (airTanksPlanActive())
+    {
+        stage.next("AirTanks independent plan");
+        const int desiredGas = desiredRefineryCountForOwnedTerranBases();
+        if (ownedCompletedRefineryNeedsWorkers()) WorkerManager::Instance().setCollectGas(true);
+        return AirTanks::productionGoals(shouldExpandNow(), desiredGas,
+            WorkerManager::Instance().needsExpansionFerry(), terranMineralExpansionEmergency(),
+            visibleEnemyGroundNearMainOrClosestExpansion() || actualEarlyGroundRushDetected());
+    }
+    const auto* bioPolicy = tvzBioPolicy(_terranPlan);
+    stage.next("threats");
 
     // the goal to return
     std::vector<MetaPair> goal;
@@ -10714,7 +11374,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
     bool makeVessel =
         InformationManager::Instance().enemyHasCloakTech() ||
         enemyHasOpeningThreat(OpeningThreat::CloakTech) ||
-        currentCloakThreat;
+        currentCloakThreat || bioTankLurkerTankTarget() > 0;
     bool hasArmory = the.my.all.count(BWAPI::UnitTypes::Terran_Armory) > 0;
     bool hasFactory = the.my.completed.count(BWAPI::UnitTypes::Terran_Factory) > 0;
     const EnemyArmyMode enemyMode =
@@ -10739,7 +11399,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         the.your.seen.count(BWAPI::UnitTypes::Zerg_Guardian) == 0;
 
     const bool activePureAirCommitment =
-        _openingGroup != "bio" &&
+        _openingGroup != "bio" && !deepSixPlanActive() &&
         ((currentPureAirCommitment && !bioHandlesZergAir) ||
          learnedAntiCarrierCommitment);
 
@@ -10855,6 +11515,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
     int maxSCVs = WorkerManager::Instance().getMaxWorkers();
 
     BWAPI::Player self = the.self();
+    stage.next("economy");
 
     // Immediate ground danger is expressed as part of the strategic goal,
     // not only as queue surgery. This is especially important after an
@@ -10947,6 +11608,17 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         expansionGoalAdded = true;
     }
 
+    // Gas on an already owned base is economy, not optional Factory scaling.
+    // Put this fixed target before recurring SCV/army waves and normal extra
+    // bases/producers. Immediate rush defense and a mineral-line emergency
+    // retain their earlier slots; the JSON opening keeps its own ordering.
+    if ((_openingGroup == "bio" || _openingGroup == "tanks") &&
+        numRefineries < desiredRefineries)
+    {
+        goal.push_back(MetaPair(
+            BWAPI::UnitTypes::Terran_Refinery, desiredRefineries));
+    }
+
     // Detection must remain available against cloak, but paying for an Academy
     // before the natural in every game slows the first economy/army cycle.
     // The six-minute fallback still covers an unseen tech switch.
@@ -10974,6 +11646,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 1));
         goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 1));
         goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Dropship, 1));
+        stage.next("normalize");
         return normalizeTerranBuildOrderGoal(goal);
     }
 
@@ -11021,9 +11694,10 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
     // into the expansion.
     const int currentMinute = the.now() / (24 * 60);
     const bool planAllowsExpansion =
-        numCC < 2 ||
-        terranPlan.earliestThirdMinute <= 0 ||
-        currentMinute >= terranPlan.earliestThirdMinute;
+        !(bioPolicy && bioPolicy->oneBaseTiming) &&
+        (numCC < 2 ||
+         terranPlan.earliestThirdMinute <= 0 ||
+         currentMinute >= terranPlan.earliestThirdMinute);
 
     const bool wallTankCoreReadyForExpansion =
         !the.placer.hasTerranMainWall() ||
@@ -11040,6 +11714,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
     // the natural is committed. The same lift which releases that builder then
     // permanently transfers the wall Barracks to Tank-vision duty.
 
+    stage.next("composition");
     if (_openingGroup == "anti-rush")
     {
         int numRax = the.my.all.count(BWAPI::UnitTypes::Terran_Barracks);
@@ -11077,10 +11752,27 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             (int)BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Barracks) +
             (int)queue.numInQueue(BWAPI::UnitTypes::Terran_Barracks);
 
-        int desiredBarracks = std::max(2, terranPlan.minBarracks);
+        const bool deepSix = deepSixPlanActive();
+        const bool ordinaryBioTank = _terranPlan == TerranPlanId::BioTank;
+        const auto& bioEnemy = BioTankPolicy::enemyMix();
+        const int counterValkyries = ordinaryBioTank && completedBases >= 2 &&
+            numMarines >= 16
+            ? BioTankPolicy::valkyries(bioEnemy.mutalisks,
+                bioEnemy.guardians, bioEnemy.devourers) : 0;
+        // Once both prerequisites are ready, fund the anti-air Starport lane
+        // ahead of recurring Marine/Tank waves and optional upgrades.
+        if (counterValkyries > 0 &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0 &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Armory) > 0)
+            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Valkyrie,
+                std::min(counterValkyries,
+                    the.my.all.count(BWAPI::UnitTypes::Terran_Valkyrie) + 1)));
+        int desiredBarracks = deepSix && completedBases < 2
+            ? 2 : std::max(2, terranPlan.minBarracks);
         if (completedBases >= 2)
         {
-            desiredBarracks = 2 * std::min(completedBases, 5);
+            desiredBarracks = std::max(desiredBarracks,
+                2 * std::min(completedBases, 5));
         }
 
         const bool bioBankPressure = terranBankedArmyFillPressure();
@@ -11088,6 +11780,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             desiredBarracks, numSCVs, self->minerals(),
             the.my.completed.count(BWAPI::UnitTypes::Terran_Barracks),
             bioBankPressure);
+        if (bioPolicy) desiredBarracks = bioPolicy->barracks(completedBases);
 
         if (currentBarracks < desiredBarracks)
         {
@@ -11097,13 +11790,32 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             ));
         }
 
+        if (bioPolicy)
+        {
+            TvZBioPlan::appendInfantryTechGoals(goal, *bioPolicy, queue);
+        }
+
+        if (bioPolicy && bioPolicy->push.vessels > 0 && numMarines >= 8)
+        {
+            TvZBioPlan::appendSupportGoals(goal, *bioPolicy, queue, numMarines,
+                completedBases, numVessels, scienceVesselsCurrentlyTraining());
+        }
+
+        const bool urgentBioAirCounter = ordinaryBioTank && numTanks >= 2 &&
+            numMarines >= 16 && numGoliaths < BioTankPolicy::goliathTarget();
+        const bool earlyGoliathGoal = urgentBioAirCounter &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Armory) > 0;
+        if (earlyGoliathGoal)
+            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Goliath,
+                std::min(BioTankPolicy::goliathTarget(), numGoliaths + 2)));
         const int marinesAddedPerGoal =
             std::max(6, std::min(12, 3 * std::max(1, desiredBarracks)));
-
-        goal.push_back(MetaPair(
-            BWAPI::UnitTypes::Terran_Marine,
-            numMarines + marinesAddedPerGoal
-        ));
+        // Do not refill every free slot with a Marine while two needed
+        // anti-air units wait for enough supply to train.
+        const bool reserveCounterSupply = BioTankPolicy::reserveGoliathSupply();
+        if (!reserveCounterSupply)
+            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Marine,
+                numMarines + marinesAddedPerGoal));
 
         const int academiesPlanned =
             the.my.all.count(BWAPI::UnitTypes::Terran_Academy) +
@@ -11114,14 +11826,6 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Academy, 1));
         }
 
-        if (numRefineries < desiredRefineries)
-        {
-            goal.push_back(MetaPair(
-                BWAPI::UnitTypes::Terran_Refinery,
-                desiredRefineries
-            ));
-        }
-
         if (hasAcademy)
         {
             if (!self->hasResearched(BWAPI::TechTypes::Stim_Packs) &&
@@ -11130,7 +11834,8 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             {
                 goal.push_back(MetaPair(BWAPI::TechTypes::Stim_Packs, 1));
             }
-            else if (self->hasResearched(BWAPI::TechTypes::Stim_Packs) &&
+            else if ((!bioPolicy || bioPolicy->push.range) &&
+                self->hasResearched(BWAPI::TechTypes::Stim_Packs) &&
                 self->getUpgradeLevel(BWAPI::UpgradeTypes::U_238_Shells) == 0 &&
                 !self->isUpgrading(BWAPI::UpgradeTypes::U_238_Shells) &&
                 !queue.anyInQueue(BWAPI::UpgradeTypes::U_238_Shells))
@@ -11138,13 +11843,15 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
                 goal.push_back(MetaPair(BWAPI::UpgradeTypes::U_238_Shells, 1));
             }
 
-            if (enemyRace == BWAPI::Races::Zerg && numMarines >= 8)
+            if (enemyRace == BWAPI::Races::Zerg && numMarines >= 8 &&
+                !(bioPolicy && bioPolicy->oneBaseTiming))
             {
                 const int numFirebats =
                     the.my.all.count(BWAPI::UnitTypes::Terran_Firebat);
 
-                const int firebatGoal =
-                    std::max(numFirebats, std::min(4, numMarines / 8));
+                const int firebatGoal = ordinaryBioTank
+                    ? BioTankPolicy::firebats(numMarines, bioEnemy.zerglings)
+                    : std::max(numFirebats, std::min(4, numMarines / 8));
 
                 if (firebatGoal > numFirebats)
                 {
@@ -11175,6 +11882,17 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             completedFactories > 0 &&
                 countIdleTerranProducers(BWAPI::UnitTypes::Terran_Factory) == 0);
 
+        if (ordinaryBioTank)
+        {
+            const int factoryArmyTarget = bioTankTankCeiling() +
+                BioTankPolicy::goliathTarget(carrierTechThreat);
+            desiredFactories = BioTankPolicy::factories(factoryArmyTarget,
+                completedFactories, numSCVs, self->minerals(), self->gas(),
+                completedFactories > 0 &&
+                countIdleTerranProducers(BWAPI::UnitTypes::Terran_Factory) == 0);
+        }
+        if (bioPolicy) desiredFactories = bioPolicy->factories;
+
         if (currentFactories < desiredFactories)
         {
             goal.push_back(MetaPair(
@@ -11188,8 +11906,11 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             (int)BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Machine_Shop) +
             (int)queue.numInQueue(BWAPI::UnitTypes::Terran_Machine_Shop);
 
-        const int desiredMachineShops =
-            std::max(desiredFactories, std::min(4, currentFactories));
+        const int desiredMachineShops = bioPolicy
+            ? bioPolicy->machineShops
+            : ordinaryBioTank
+                ? std::min(desiredFactories, std::max(1, (bioTankTankCeiling() + 3) / 4))
+                : std::max(desiredFactories, std::min(4, currentFactories));
 
         if (currentMachineShops < desiredMachineShops)
         {
@@ -11199,7 +11920,9 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             ));
         }
 
-        if (numTanks +
+        const bool fundCapitalAirCounter = ordinaryBioTank && numTanks >= 2 &&
+            numGoliaths < BioTankPolicy::goliathTarget();
+        if (!fundCapitalAirCounter && numTanks +
             (int)queue.numInQueue(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) <
             bioTankTankCeiling())
         {
@@ -11208,7 +11931,8 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
                 std::min(numTanks + 1, bioTankTankCeiling())));
         }
 
-        if (!self->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode) &&
+        if (bioTankUsesTanks() &&
+            !self->hasResearched(BWAPI::TechTypes::Tank_Siege_Mode) &&
             !self->isResearching(BWAPI::TechTypes::Tank_Siege_Mode) &&
             !techInQueue(ProductionManager::Instance().getQueue(), BWAPI::TechTypes::Tank_Siege_Mode))
         {
@@ -11233,7 +11957,8 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         const int desiredEngineeringBays =
             infantryUpgradesNeedWork && completedBases >= 2 ? 2 : 1;
 
-        if (numMarines >= 8 && engineeringBaysPlanned < desiredEngineeringBays)
+        if (numMarines >= 8 && engineeringBaysPlanned < desiredEngineeringBays &&
+            !(bioPolicy && bioPolicy->oneBaseTiming))
         {
             goal.push_back(MetaPair(
                 BWAPI::UnitTypes::Terran_Engineering_Bay,
@@ -11246,7 +11971,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         const bool advancedInfantryTechWanted =
             completedBases >= 2 &&
             numMarines >= 12 &&
-            numTanks >= 3 &&
+            (numTanks >= 3 || (bioPolicy && bioPolicy->push.vessels > 0)) &&
             ((infantryWeapons >= 1 && infantryArmor >= 1) ||
                 prepareAdvancedInfantryEarly) &&
             infantryUpgradesNeedWork;
@@ -11275,7 +12000,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             }
         }
 
-        if (hasEBay)
+        if (hasEBay && !(bioPolicy && bioPolicy->oneBaseTiming))
         {
             int idleEngineeringBays = 0;
             for (BWAPI::Unit unit : BWAPI::Broodwar->self()->getUnits())
@@ -11340,9 +12065,14 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
                     return true;
                 };
 
-            // Keep weapons and armor close in level. With two Engineering Bays,
-            // both lines can progress in parallel without competing for one slot.
-            if (infantryWeapons <= infantryArmor)
+            // Deep Six needs +1 armor for its first timing. Once that is
+            // secured, keep both upgrade lines progressing together.
+            if (deepSix && infantryArmor == 0)
+            {
+                queueInfantryUpgradeIfPossible(BWAPI::UpgradeTypes::Terran_Infantry_Armor);
+                queueInfantryUpgradeIfPossible(BWAPI::UpgradeTypes::Terran_Infantry_Weapons);
+            }
+            else if (infantryWeapons <= infantryArmor)
             {
                 queueInfantryUpgradeIfPossible(BWAPI::UpgradeTypes::Terran_Infantry_Weapons);
                 queueInfantryUpgradeIfPossible(BWAPI::UpgradeTypes::Terran_Infantry_Armor);
@@ -11354,47 +12084,49 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             }
         }
 
-        // Tanks still receive their vehicle upgrades through the shared Terran
-        // upgrade block below. The Armory also unlocks Valkyries against
-        // capital air without adding Goliaths to BioTank.
-        const bool needsArmory =
-            numTanks >= 3 || enemyAirThreatDetected || enemyFlyerSeen ||
-            airIntrusionSeen;
-
+        // Keep each counter tied to the fleet it can efficiently fight.
+        // Do not buy capital-air counters for an Overlord or a dead fleet.
+        const int guardianWraiths = BioTankPolicy::guardianWraiths(
+            bioEnemy.guardians, bioEnemy.antiAir);
+        const int counterGoliaths = !bioPolicy
+            ? BioTankPolicy::goliathTarget(carrierTechThreat) : 0;
+        const bool needsArmory = numTanks >= 3 || numGoliaths > 0 ||
+            counterGoliaths > 0 || counterValkyries > 0;
         const bool armoryExistsOrPlanned =
             the.my.all.count(BWAPI::UnitTypes::Terran_Armory) > 0 ||
             BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Armory) > 0 ||
             queue.anyInQueue(BWAPI::UnitTypes::Terran_Armory);
-
         if (needsArmory && !armoryExistsOrPlanned)
-        {
             goal.push_back(MetaPair(
-                MacroAct(BWAPI::UnitTypes::Terran_Armory, MacroLocation::Main),
-                1
-            ));
-        }
+                MacroAct(BWAPI::UnitTypes::Terran_Armory, MacroLocation::Main), 1));
 
-        // BioTank uses Marines/Medics and Turrets against ordinary air.
-        // Capital air receives a separate Valkyrie response below; the mech
-        // Goliath ratio must not leak into this composition.
-        const bool bioCapitalAir =
-            carrierTechThreat || currentCapitalAirThreat ||
-            the.your.seen.count(BWAPI::UnitTypes::Zerg_Guardian) > 0 ||
-            the.your.seen.count(BWAPI::UnitTypes::Terran_Battlecruiser) > 0;
-        if (bioCapitalAir)
+        if (!earlyGoliathGoal && counterGoliaths > numGoliaths &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Armory) > 0)
+            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Goliath,
+                std::min(counterGoliaths, numGoliaths + 2)));
+        if (counterGoliaths > 0 &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Machine_Shop) > 0 &&
+            self->getUpgradeLevel(BWAPI::UpgradeTypes::Charon_Boosters) == 0 &&
+            !self->isUpgrading(BWAPI::UpgradeTypes::Charon_Boosters) &&
+            !queue.anyInQueue(BWAPI::UpgradeTypes::Charon_Boosters))
+            goal.push_back(MetaPair(BWAPI::UpgradeTypes::Charon_Boosters, 1));
+
+        if (!bioPolicy && (guardianWraiths > 0 || counterValkyries > 0))
         {
-            // Four or more Valkyries need two independent production lanes;
-            // one Starport was serializing the entire capital-air response.
-            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Armory, 1));
-            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 2));
-            goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 2));
-            const int knownCapitalAir =
-                the.your.seen.count(BWAPI::UnitTypes::Protoss_Carrier) +
-                the.your.seen.count(BWAPI::UnitTypes::Zerg_Guardian) +
-                the.your.seen.count(BWAPI::UnitTypes::Terran_Battlecruiser);
-            goal.push_back(MetaPair(
-                BWAPI::UnitTypes::Terran_Valkyrie,
-                std::min(8, std::max(4, 2 * knownCapitalAir))));
+            const bool portPlanned = the.my.all.count(BWAPI::UnitTypes::Terran_Starport) > 0 ||
+                BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Starport) > 0 ||
+                queue.anyInQueue(BWAPI::UnitTypes::Terran_Starport);
+            if (!portPlanned) goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 1));
+            const bool towerPlanned = the.my.all.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0 ||
+                BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Control_Tower) > 0 ||
+                queue.anyInQueue(BWAPI::UnitTypes::Terran_Control_Tower);
+            if (the.my.completed.count(BWAPI::UnitTypes::Terran_Starport) > 0 && !towerPlanned)
+                goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 1));
+            if (the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0)
+            {
+                if (guardianWraiths > 0)
+                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Wraith, guardianWraiths));
+            }
         }
     }
     else if (_openingGroup == "vultures")
@@ -11424,7 +12156,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
 
         // Normal production scaling is a lower-priority lane than using the
         // Factories we already own. Emergency prerequisites are still posted
-        // immediately; these routine extra Factory/Machine Shop/Refinery goals
+        // immediately; these routine extra Factory/Machine Shop goals
         // are appended after the next Factory-unit decision.
         MetaPairVector delayedFactoryInfrastructure;
 
@@ -11558,6 +12290,19 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             desiredFactories,
             8);
 
+        if (!pureAirPlan)
+        {
+            // Tanks and Goliaths need gas. Building six to eight Factories on
+            // only two completed Refineries spends the gas needed to use them.
+            // Keep the plan-specific minimum, but expand routine capacity
+            // only as completed gas income catches up.
+            const int gasSupportedFactories = std::max(
+                terranPlan.minFactories,
+                2 * the.my.completed.count(BWAPI::UnitTypes::Terran_Refinery));
+            desiredFactories = std::min(desiredFactories,
+                std::max(2, gasSupportedFactories));
+        }
+
         if (completedBases <= 1 && !pureAirPlan &&
             the.self()->minerals() < 800)
         {
@@ -11620,14 +12365,6 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             delayedFactoryInfrastructure.push_back(std::make_pair(
                 BWAPI::UnitTypes::Terran_Machine_Shop,
                 desiredMachineShops
-            ));
-        }
-
-        if (numRefineries < desiredRefineries)
-        {
-            delayedFactoryInfrastructure.push_back(std::pair<MacroAct, int>(
-                BWAPI::UnitTypes::Terran_Refinery,
-                desiredRefineries
             ));
         }
 
@@ -12916,6 +13653,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         _openingGroup = "bio";       // we're misconfigured, but try to do something
     }
 
+    stage.next("shared support");
     // Normal Tank/Mech play needs two Armories as well: one for weapons and one
     // for plating. This used to be shared infrastructure, but the two-Armory
     // rule became scoped to the PureAir/Carrier branch and ordinary Tank plans
@@ -13037,10 +13775,11 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
     //    }
     //}
 
+    stage.next("vessel tech");
     const bool urgentDetectorNeeded =
         InformationManager::Instance().enemyHasCloakTech() ||
         enemyHasOpeningThreat(OpeningThreat::CloakTech) ||
-        currentCloakThreat ||
+        bioTankLurkerTankTarget() > 0 || currentCloakThreat ||
         learnedCloakPreparation ||
         carrierTechThreat;
 
@@ -13082,10 +13821,21 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         enemyRace == BWAPI::Races::Zerg &&
         learnedSpellcasterPreparation;
 
-    // Keep the first anti-Muta gas on the immediate Goliath screen, then begin
-    // Vessel tech without waiting to float 250 gas. Against a late Defiler the
-    // existing Tank/economy core is already large enough to support the tech.
+    // Mech funds its Goliath screen first. BioTank funds its Marine/Medic
+    // screen instead; requiring Goliaths in a bio plan blocked this response.
+    const bool bioIrradiateCoreReady = bioTankPlanActive() &&
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) >= 16 &&
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Medic) >=
+            BioProductionPolicy::medicTarget(16);
+    const bool ordinaryBioTankSupport = _terranPlan == TerranPlanId::BioTank &&
+        bioTankPlanActive();
+    const bool bioVesselCoreReady = ordinaryBioTankSupport && numCCCompleted >= 2 &&
+        numMarines >= 16 && numMedics >= BioProductionPolicy::medicTarget(16) && numTanks >= 2;
+    const bool bioLurkerIrradiateThreat = bioTankLurkerTankTarget() >= 3;
     const bool urgentZergIrradiatePlan =
+        (bioVesselCoreReady && enemyRace == BWAPI::Races::Zerg) ||
+        (bioIrradiateCoreReady &&
+            (zergMutaliskIrradiateThreat || bioLurkerIrradiateThreat)) ||
         (zergMutaliskIrradiateThreat && completedGoliathCount() >= 4) ||
         ((zergDefilerIrradiateThreat || learnedZergSpellcasterPreparation) &&
             (completedTankCount() >= 4 || numCC >= 2));
@@ -13110,6 +13860,13 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         desiredScienceVessels = std::max(desiredScienceVessels, 2);
     }
 
+    if (ordinaryBioTankSupport)
+    {
+        desiredScienceVessels = BioTankPolicy::vessels(numMarines, numCCCompleted,
+            enemyRace == BWAPI::Races::Zerg, bioTankLurkerTankTarget() > 0,
+            zergDefilerIrradiateThreat, urgentEmpPlan);
+    }
+
     if (_pureAirPlan)
     {
         // One Vessel is enough for ordinary Mutalisk vision. Capital ships or
@@ -13130,7 +13887,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         (
             urgentDetectorNeeded ||
             urgentZergIrradiatePlan ||
-            urgentEmpPlan ||
+            urgentEmpPlan || bioVesselCoreReady ||
             (_pureAirPlan && completedGoliathCount() >= 8) ||
             (
                 numCC >= 2 &&
@@ -13139,7 +13896,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
                 )
             );
 
-    if (vesselTechAllowed)
+    if (vesselTechAllowed && !bioPolicy)
     {
         // The shared Carrier plan owns its staged technology chain. Repeating
         // Starport + Control Tower + Science Facility here recreated the full
@@ -13147,6 +13904,11 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         const bool carrierGhostPipelineOwnsVesselTech =
             _pureAirPlan && activeProtossCarrierCounter;
 
+        const int desiredBioPorts = ordinaryBioTankSupport &&
+            enemyRace == BWAPI::Races::Zerg &&
+            (the.my.completed.count(BWAPI::UnitTypes::Terran_Starport) >= 2 ||
+             (desiredScienceVessels >= 3 && numVessels >= 2 &&
+              numSCVs >= 40 && self->gas() >= 300)) ? 2 : 1;
         if (!carrierGhostPipelineOwnsVesselTech)
         {
             BuildOrderQueue& vesselQueue =
@@ -13157,10 +13919,12 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
                 BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Starport) > 0 ||
                 vesselQueue.anyInQueue(BWAPI::UnitTypes::Terran_Starport);
 
-            if (!starportExistsOrPlanned)
-            {
-                goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, 1));
-            }
+            if (!starportExistsOrPlanned ||
+                (desiredBioPorts > 1 &&
+                 the.my.all.count(BWAPI::UnitTypes::Terran_Starport) +
+                 BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Starport) +
+                 vesselQueue.numInQueue(BWAPI::UnitTypes::Terran_Starport) < desiredBioPorts))
+                goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Starport, desiredBioPorts));
 
             // Do not hand BOSS a complete multi-building dependency tree in
             // one search. Expose the Tower/Facility only after the Starport is
@@ -13172,10 +13936,14 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
                     BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Control_Tower) > 0 ||
                     vesselQueue.anyInQueue(BWAPI::UnitTypes::Terran_Control_Tower);
 
-                if (!controlTowerExistsOrPlanned)
-                {
-                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, 1));
-                }
+                const int towerTarget = std::min(desiredBioPorts,
+                    the.my.completed.count(BWAPI::UnitTypes::Terran_Starport));
+                if (!controlTowerExistsOrPlanned ||
+                    (towerTarget > 1 &&
+                     the.my.all.count(BWAPI::UnitTypes::Terran_Control_Tower) +
+                     BuildingManager::Instance().getNumUnstarted(BWAPI::UnitTypes::Terran_Control_Tower) +
+                     vesselQueue.numInQueue(BWAPI::UnitTypes::Terran_Control_Tower) < towerTarget))
+                    goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Control_Tower, towerTarget));
 
                 const bool scienceFacilityExistsOrPlanned =
                     the.my.all.count(BWAPI::UnitTypes::Terran_Science_Facility) > 0 ||
@@ -13193,13 +13961,20 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
             the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower) > 0 &&
             the.my.completed.count(BWAPI::UnitTypes::Terran_Science_Facility) > 0;
 
-        if (vesselPrerequisitesCompleted &&
+        const int vesselLanes = std::min(desiredBioPorts,
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Control_Tower));
+        const bool fundFirstIrradiate = ordinaryBioTankSupport &&
+            enemyRace == BWAPI::Races::Zerg && numVessels > 0 &&
+            !self->hasResearched(BWAPI::TechTypes::Irradiate) &&
+            !self->isResearching(BWAPI::TechTypes::Irradiate);
+        if (vesselPrerequisitesCompleted && !fundFirstIrradiate &&
             numVessels < desiredScienceVessels &&
-            scienceVesselsCurrentlyTraining() == 0)
+            scienceVesselsCurrentlyTraining() < vesselLanes)
         {
             goal.push_back(std::pair<MacroAct, int>(
                 BWAPI::UnitTypes::Terran_Science_Vessel,
-                numVessels + 1
+                std::min(desiredScienceVessels,
+                    numVessels + vesselLanes - scienceVesselsCurrentlyTraining())
             ));
         }
 
@@ -13228,6 +14003,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         }
     }
 
+    stage.next("vehicle upgrades");
     // Continuous Terran vehicle upgrades. Tank/Mech and Carrier plans both
     // provide two Armories, allowing weapons and plating to run in parallel.
     if (hasArmory)
@@ -13365,6 +14141,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         }
     }
 
+    stage.next("expansion finish");
     // Bio and other Terran opening groups use the same expansion decision.
     if (!expansionGoalAdded && wantTerranExpansion)
     {
@@ -13388,6 +14165,7 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal()
         goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Dropship, 1));
     }
 
+    stage.next("normalize");
     return normalizeTerranBuildOrderGoal(goal);
 }
 
@@ -13727,10 +14505,26 @@ static bool queueUrgentTerranWraithPreparation(BuildOrderQueue& queue)
     return false;
 }
 
+// Comsat is prepared before this call. Get the first artillery pair and
+// Siege started before a long Vessel prerequisite chain can monopolize urgent
+// production. Further Tanks use the normal BioTank reinforcement lane.
+static bool queueBioTankLurkerSiege(BuildOrderQueue& queue)
+{
+    const int target = bioTankLurkerTankTarget();
+    if (target <= 0) return false;
+    if (ensureUrgentGasIncome(queue, 100, "BioTank Lurker Siege")) return true;
+    if (requireUrgentBuildingNow(queue, BWAPI::UnitTypes::Terran_Factory, 1)) return true;
+    if (requireUrgentBuildingNow(queue, BWAPI::UnitTypes::Terran_Machine_Shop, 1)) return true;
+    if (requireUrgentTechNow(queue, BWAPI::TechTypes::Tank_Siege_Mode)) return true;
+    return requireUrgentCombatUnitNow(queue,
+        BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode, std::min(2, target), 1);
+}
+
 static bool queueUrgentScienceVesselForCloak(BuildOrderQueue& queue)
 {
     if (!InformationManager::Instance().enemyHasCloakTech() &&
-        !enemyHasOpeningThreat(OpeningThreat::CloakTech))
+        !enemyHasOpeningThreat(OpeningThreat::CloakTech) &&
+        bioTankLurkerTankTarget() <= 0)
     {
         return false;
     }
@@ -13809,23 +14603,18 @@ static bool highestPriorityIsUnit(
     return top.isUnit() && top.getUnitType() == type;
 }
 
-// Convert a vulnerable bio opening into the normal tank macro plan after
-// confirmed Lurkers. Existing infantry continues fighting while new production
-// gradually favors Tanks. A Lair/Den warning alone retains BioTank and gets
-// the smaller urgent Siege response below.
+// Legacy bio openings may change their macro host. BioTank owns its Siege,
+// detection and Irradiate responses and keeps its infantry host even after
+// confirmed Lurkers; this path must not add the mech ten-Tank gather gate.
 bool StrategyManager::adaptTerranStrategyToEnemyPlan()
 {
-    const bool confirmedBioTankLurkers =
-        _terranBaselinePlan == TerranPlanId::BioTank &&
-        the.enemyRace() == BWAPI::Races::Zerg &&
-        (the.your.seen.count(BWAPI::UnitTypes::Zerg_Lurker) > 0 ||
-         the.your.seen.count(BWAPI::UnitTypes::Zerg_Lurker_Egg) > 0);
     if (!Config::Strategy::AdaptStrategyToEnemyPlan ||
         _selfRace != BWAPI::Races::Terran ||
         _openingGroup != "bio" ||
         _pureAirPlan ||
-        (_terranBaselinePlan == TerranPlanId::BioTank &&
-         !confirmedBioTankLurkers))
+        _terranBaselinePlan == TerranPlanId::BioTank ||
+        _terranBaselinePlan == TerranPlanId::TvP_DeepSix ||
+        tvzBioPolicy(_terranBaselinePlan))
     {
         return false;
     }
@@ -13843,17 +14632,13 @@ bool StrategyManager::adaptTerranStrategyToEnemyPlan()
     // A prediction may shape the stable post-book plan, but must not erase a
     // valid JSON opening. Current-game recognition is still allowed to make
     // the existing emergency conversion immediately.
-    if (predictedPlan && !confirmedBioTankLurkers &&
+    if (predictedPlan &&
         !ProductionManager::Instance().isOutOfBook())
     {
         return false;
     }
 
-    if (confirmedBioTankLurkers)
-    {
-        reason = "confirmed Zerg Lurker";
-    }
-    else if (enemyPlan == OpeningPlan::Contain)
+    if (enemyPlan == OpeningPlan::Contain)
     {
         reason = predictedPlan
             ? "70% predicted Opp Plan contain"
@@ -13890,8 +14675,6 @@ bool StrategyManager::adaptTerranStrategyToEnemyPlan()
             reason = "Opp Plan Fast Robotics";
         }
     }
-    // A tech warning without a Lurker remains with BioTank's Siege/detection
-    // response. The actual Lurker sighting takes the one-way transition above.
 
     if (reason.empty())
     {
@@ -14241,6 +15024,150 @@ static bool queueConfirmedMutaliskTurrets(BuildOrderQueue& queue)
     return false;
 }
 
+// Production emergencies can return while a prerequisite is still building.
+// Recompute BioTank's field order after that work on every production update,
+// so a pending Vessel, Depot or upgrade cannot preserve an old defensive order.
+void StrategyManager::updateBioTankAttackState()
+{
+    if (!bioTankPlanActive())
+    {
+        _bioTankAttackStatus.clear();
+        return;
+    }
+
+    bool attack = false;
+    if (!bioTankPushReady())
+    {
+        const auto* policy = tvzBioPolicy(_terranPlan);
+        _bioTankAttackStatus = policy ? policy->waiting : deepSixPlanActive()
+            ? "WAIT 24M/5Med/4T + Stim/Siege/Range/Armor1"
+            : "WAIT mobile core together + Stim/Siege";
+    }
+    else
+    {
+        const NearbyEnemyThreats& nearby = visibleEnemyThreatsNearOwnedBases();
+        if (_terranPlan == TerranPlanId::BioTank
+            ? BioTankPolicy::homeDefenseRequired() : nearby.hasGround())
+        {
+            _bioTankAttackStatus = _terranPlan == TerranPlanId::BioTank
+                ? "DEFEND base: local garrison outmatched" : "DEFEND ground threat at base";
+        }
+        else if (_terranPlan == TerranPlanId::TvZ_SK &&
+            rememberedEnemyUnitCount(BWAPI::UnitTypes::Zerg_Lurker) > 0 &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Science_Vessel) == 0)
+        {
+            _bioTankAttackStatus = "DEFEND replace Lurker detection Vessel";
+        }
+        else if (_terranPlan != TerranPlanId::BioTank && nearby.hasAir() &&
+            the.my.completed.count(BWAPI::UnitTypes::Terran_Marine) < 14)
+        {
+            _bioTankAttackStatus = "DEFEND air threat: need Marines";
+        }
+        else
+        {
+            // Opening labels and their predictions are sticky. Once the core
+            // is ready, a historical rush/contain alone must not park it until
+            // 11/13 minutes. Local combat and base responders still run.
+            attack = true;
+            _bioTankAttackStatus = "ATTACK core ready";
+            if (_bioFirstAttackFrame < 0) _bioFirstAttackFrame = the.now();
+        }
+    }
+    CombatCommander::Instance().setAggression(attack);
+}
+
+bool StrategyManager::airTanksPlanActive() const
+{
+    return _selfRace == BWAPI::Races::Terran && _terranPlan == TerranPlanId::AirTanks;
+}
+
+bool StrategyManager::airTanksPushReady()
+{
+    if (!airTanksPlanActive() || _airTanksFirstPushReleased) return true;
+    if (!AirTanks::coreTogether()) return false;
+    _airTanksFirstPushReleased = true;
+    return true;
+}
+
+bool StrategyManager::airTanksAirPushReady()
+{
+    if (!airTanksPlanActive()) return true;
+    if (AirTanks::homeDefenseRequired()) return false;
+    if (_airTanksAirReleased) return true;
+    const auto variant = AirTanks::variant();
+    if (variant == AirTanks::Variant::TankWraith)
+    {
+        // The one-port Wraiths are the Tank screen, not a separate early raid.
+        if (!airTanksPushReady()) return false;
+    }
+    else if (variant == AirTanks::Variant::TwoPortWraith)
+    {
+        // Keep the dedicated two-port harassment opening independent.
+        if (AirTanks::completed(BWAPI::UnitTypes::Terran_Wraith) < 2) return false;
+    }
+    else if (variant == AirTanks::Variant::Battlecruiser)
+    {
+        // Ground pressure does not wait for this expensive late-game transition.
+        if (AirTanks::completed(BWAPI::UnitTypes::Terran_Battlecruiser) < 2) return false;
+    }
+    else if (!airTanksPushReady()) return false;
+    _airTanksAirReleased = true;
+    return true;
+}
+
+bool StrategyManager::airTanksAirEscortsGround() const
+{
+    if (!airTanksPlanActive()) return false;
+    const auto variant = AirTanks::variant();
+    return variant == AirTanks::Variant::TankWraith ||
+        variant == AirTanks::Variant::Fantasy || variant == AirTanks::Variant::Valkonic ||
+        variant == AirTanks::Variant::FastVessel;
+}
+
+void StrategyManager::updateAirTanksAttackState()
+{
+    if (!airTanksPlanActive())
+    {
+        _airTanksAttackStatus.clear();
+        return;
+    }
+    bool attack = airTanksPushReady();
+    if (!attack) _airTanksAttackStatus = std::string("WAIT AirTanks ") +
+        (_airTanksVariant.empty() ? "tank_wraith" : _airTanksVariant) + " mobile core + tech";
+    else if (AirTanks::homeDefenseRequired())
+    {
+        attack = false;
+        _airTanksAttackStatus = "DEFEND local garrison outmatched";
+    }
+    else _airTanksAttackStatus = "ATTACK AirTanks core ready";
+    CombatCommander::Instance().setAggression(attack);
+}
+
+// Production can return early for a bunker, add-on or replacement unit. The
+// field order must still be updated after the army reaches its release size.
+void StrategyManager::updateTankAttackState()
+{
+    if (_selfRace != BWAPI::Races::Terran || _openingGroup != "tanks" ||
+        _pureAirPlan || !ProductionManager::Instance().isOutOfBook())
+    {
+        return;
+    }
+
+    const int tanks =
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode) +
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode);
+    const int goliaths =
+        the.my.completed.count(BWAPI::UnitTypes::Terran_Goliath);
+    const bool ready =
+        tanks >= _tankMassReleaseTanks &&
+        goliaths >= _tankMassReleaseGoliaths &&
+        (tanks + goliaths) > 0;
+    if (ready) _tankFirstAttackReleased = true;
+    // Replacements join the existing push; one casualty does not recall it.
+    CombatCommander::Instance().setAggression(
+        _tankFirstAttackReleased && (tanks + goliaths) >= 2);
+}
+
 void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
 {
     _slowestUrgentStage = "";
@@ -14375,17 +15302,19 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
         }
     }
 
-    stage.next("opening checks");
+    stage.next("main wall bunker");
     if (_selfRace == BWAPI::Races::Terran &&
         queueBioTankMainWallBunker(queue))
     {
         return;
     }
+    stage.next("natural bunker");
     if (_selfRace == BWAPI::Races::Terran &&
         queueNaturalExpansionBunker(queue))
     {
         return;
     }
+    stage.next("opening checks");
     const OpponentModel& opponentModel = OpponentModel::Instance();
     const OpeningPlan observedPlan = opponentModel.getEnemyPlan();
     const OpeningPlan preparationPlan = opponentModel.getPreparationEnemyPlan();
@@ -14563,7 +15492,7 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
             selectedTvPAntiCarrierPlanCanCommit(enemyMode);
 
         const bool hardPureAirEmergency =
-            _openingGroup != "bio" &&
+            _openingGroup != "bio" && !deepSixPlanActive() && !airTanksPlanActive() &&
             (currentPureAirCommitment || learnedAntiCarrierCommitment);
 
         const bool urgentPureAirPlan =
@@ -14594,8 +15523,11 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
         {
             _pureAirPlan = false;
             _defaultTankGather = _openingGroup == "tanks";
-            _tankMassReleaseTanks = _defaultTankGather ? 15 : 0;
-            _tankMassReleaseGoliaths = 0;
+            const TerranPlanProfile& activePlan = terranPlanProfile(_terranPlan);
+            _tankMassReleaseTanks = _defaultTankGather
+                ? activePlan.id == TerranPlanId::None ? 15 : activePlan.tankRelease : 0;
+            _tankMassReleaseGoliaths = _defaultTankGather
+                ? activePlan.goliathRelease : 0;
         }
 
         if (enteringPureAirPlan)
@@ -14751,7 +15683,7 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
         // Previously a queued SCV/Benzene marine/SiegeExpand bunker could return
         // from this function while Zealots or other rush units were already at
         // the base.
-        stage.next("air/rush response");
+        stage.next("nearby air response");
         if (!urgentPureAirPlan &&
             visibleEnemyAirNearOwnedBase() &&
             queueUrgentAntiAirForNearbyAttack(queue))
@@ -14759,12 +15691,14 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
             return;
         }
 
+        stage.next("early rush response");
         if (!urgentPureAirPlan &&
             queueEarlyRushBunkerAndMarines(queue))
         {
             return;
         }
 
+        stage.next("historical rush response");
         if (!urgentPureAirPlan &&
             queueHistoricalNoWallBunkerAndMarines(queue))
         {
@@ -14798,10 +15732,13 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
         stage.next("expansion check");
         const BWAPI::UnitType center =
             BWAPI::UnitTypes::Terran_Command_Center;
+        const bool airTanksGasShortage =
+            airTanksPlanActive() && the.self()->minerals() >= 900 &&
+            the.self()->gas() <= 250;
         const bool gasBankCrisis =
-            (urgentPureAirPlan || carrierTechThreat) &&
+            (urgentPureAirPlan || carrierTechThreat || airTanksGasShortage) &&
             the.self()->minerals() >= 900 &&
-            the.self()->gas() <= 125 &&
+            the.self()->gas() <= (airTanksGasShortage ? 250 : 125) &&
             desiredRefineryCountForOwnedTerranBases() > 0 &&
             the.my.all.count(BWAPI::UnitTypes::Terran_Refinery) >=
                 desiredRefineryCountForOwnedTerranBases();
@@ -14914,7 +15851,8 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
         // or create an immediate request before waiting for normal macro.
         const bool needEmergencyDetection =
             InformationManager::Instance().enemyHasCloakTech() ||
-            enemyHasOpeningThreat(OpeningThreat::CloakTech);
+            enemyHasOpeningThreat(OpeningThreat::CloakTech) ||
+            bioTankLurkerTankTarget() > 0;
 
         const bool academyExists =
             the.my.completed.count(BWAPI::UnitTypes::Terran_Academy) > 0;
@@ -14956,6 +15894,13 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
                 }
                 return;
             }
+        }
+
+        // BioTank can use Comsat while its first Siege pair clears a Lurker
+        // contain. Do not bury that short response behind Starport/Facility.
+        if (!urgentPureAirPlan && queueBioTankLurkerSiege(queue))
+        {
+            return;
         }
 
         // 6. Emergency Science Vessel only for cloak/detection.
@@ -15237,11 +16182,10 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
         // commitment needs a small Siege core, not the mech-only Vulture and
         // Factory targets below. Shared Bunker/Marine rush defense ran above.
         const bool bioZergGroundPressure =
-            bioTankPlanActive() &&
+            bioTankPlanActive() && bioTankUsesTanks() &&
             enemyRace == BWAPI::Races::Zerg &&
             (enemyHasOpeningThreat(OpeningThreat::HydraliskPressure) ||
-             enemyHasOpeningThreat(OpeningThreat::ZergTwoHatchLurker) ||
-             the.your.seen.count(BWAPI::UnitTypes::Zerg_Lurker) > 0);
+             bioTankLurkerTankTarget() > 0);
         if (bioZergGroundPressure && !hardPureAirEmergency)
         {
             if (visibleEnemyGroundNearMainOrClosestExpansion() &&
@@ -15270,7 +16214,8 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
             if (requireUrgentCombatUnitNow(
                     queue,
                     BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode,
-                    std::min(4, bioTankTankCeiling()),
+                    std::max(bioTankLurkerTankTarget(),
+                        std::min(4, bioTankTankCeiling())),
                     2))
             {
                 return;
@@ -15621,20 +16566,12 @@ void StrategyManager::handleUrgentProductionIssues(BuildOrderQueue& queue)
                 !antiAirCoreReadyForAttack
                 );
 
-        if (shouldStayDefensiveNow && bioTankPlanActive())
+        // BioTank's decision runs after urgent production, including frames
+        // where an earlier prerequisite branch returns from this function.
+        if (!bioTankPlanActive() && !shouldStayDefensiveNow &&
+            ProductionManager::Instance().isOutOfBook())
         {
-            CombatCommander::Instance().goDefensive();
-        }
-        else if (!shouldStayDefensiveNow)
-        {
-            // The BioTank opening can still have economy items after its
-            // "go aggressive" command. Release the first field army as soon
-            // as its combat core is ready, even before that book tail ends.
-            if (bioTankPlanActive() ||
-                ProductionManager::Instance().isOutOfBook())
-            {
-                CombatCommander::Instance().goAggressive();
-            }
+            CombatCommander::Instance().goAggressive();
         }
 
         // Emergency scan.

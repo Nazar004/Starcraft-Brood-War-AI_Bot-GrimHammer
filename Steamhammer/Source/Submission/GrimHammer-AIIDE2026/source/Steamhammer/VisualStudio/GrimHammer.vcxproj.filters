@@ -1,0 +1,677 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Combat">
+      <UniqueIdentifier>{0AFD1252-2357-5B4E-A303-5F2655C5D6E7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Combat\Micro">
+      <UniqueIdentifier>{ECD8F393-BCA1-5E24-A098-6F6623ACB25E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Combat\Micro\Terran">
+      <UniqueIdentifier>{13F707A6-E49B-5466-AFE2-47004A9E4939}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Combat\Simulation">
+      <UniqueIdentifier>{3B834303-A1F2-54CD-BC40-2E1DABC9E771}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Combat\Squads">
+      <UniqueIdentifier>{7FFC6775-F957-577A-AC6A-D5448B4F5EBE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Construction">
+      <UniqueIdentifier>{C9A1C81B-C9F7-5302-AEC6-41A4F68D30FC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{45680073-5B5F-5767-9434-3839E47702CE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Economy">
+      <UniqueIdentifier>{52FB6346-3B41-54F1-B124-213B87C6B13C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Intelligence">
+      <UniqueIdentifier>{2C1C7417-70C3-50CA-9F47-8FE16FD9678C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Intelligence\Learning">
+      <UniqueIdentifier>{5902E435-7693-533A-B858-B6179428F495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Intelligence\Skills">
+      <UniqueIdentifier>{506A192B-57FC-5EF9-AA39-A548E8344425}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Map">
+      <UniqueIdentifier>{1F040E03-080D-5209-B6B3-D536D4F70803}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Map\Grids">
+      <UniqueIdentifier>{621E1799-FD51-5685-9789-C18D52BAEC84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Production">
+      <UniqueIdentifier>{B233532C-42A0-52E2-926A-539241063939}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Strategy">
+      <UniqueIdentifier>{239DB988-DCFF-5464-BD75-B23ADC952360}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty">
+      <UniqueIdentifier>{55E62451-D03C-50D1-A58A-CC82CAEB8C53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\rapidjson">
+      <UniqueIdentifier>{6189AB27-F9CD-5BB4-B4D0-D0C536519129}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\rapidjson\error">
+      <UniqueIdentifier>{40FB52D7-0718-5F42-813E-3A65BB333BE4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\rapidjson\internal">
+      <UniqueIdentifier>{DCA1C55E-1414-503C-86F2-550A0C98549B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\rapidjson\msinttypes">
+      <UniqueIdentifier>{1077A68D-123F-5AA5-B62B-6C48796CCE83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{22E28C79-3DC5-5207-B146-882C87FA037C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Source\Combat\CombatCommander.cpp">
+      <Filter>Combat</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\CombatCommander.h">
+      <Filter>Combat</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\Micro.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\Micro.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\MicroAirToAir.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\MicroAirToAir.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\MicroDetectors.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\MicroDetectors.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\MicroManager.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\MicroManager.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\MicroMelee.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\MicroMelee.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\MicroRanged.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\MicroRanged.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\MicroTransports.cpp">
+      <Filter>Combat\Micro</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\MicroTransports.h">
+      <Filter>Combat\Micro</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\BioInfantryFront.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\ExpansionVultureReservation.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroGhost.cpp">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroGhost.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroGoliath.cpp">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroGoliath.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroMarines.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroMedics.cpp">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroMedics.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroTanks.cpp">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroTanks.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Micro\Terran\MicroVultures.cpp">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\MicroVultures.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\TerranFormation.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Combat\Micro\Terran\TerranSiegeSafety.h">
+      <Filter>Combat\Micro\Terran</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\OpsBoss.cpp">
+      <Filter>Combat</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\OpsBoss.h">
+      <Filter>Combat</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Simulation\CombatSimulation.cpp">
+      <Filter>Combat\Simulation</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Simulation\CombatSimulation.h">
+      <Filter>Combat\Simulation</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Simulation\FAP.cpp">
+      <Filter>Combat\Simulation</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Simulation\FAP.h">
+      <Filter>Combat\Simulation</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Squads\Squad.cpp">
+      <Filter>Combat\Squads</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Squads\Squad.h">
+      <Filter>Combat\Squads</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Squads\SquadData.cpp">
+      <Filter>Combat\Squads</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Squads\SquadData.h">
+      <Filter>Combat\Squads</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Combat\Squads\SquadOrder.cpp">
+      <Filter>Combat\Squads</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Combat\Squads\SquadOrder.h">
+      <Filter>Combat\Squads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Construction\BuildingData.h">
+      <Filter>Construction</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Construction\BuildingManager.cpp">
+      <Filter>Construction</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Construction\BuildingManager.h">
+      <Filter>Construction</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Construction\BuildingPlacer.cpp">
+      <Filter>Construction</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Construction\BuildingPlacer.h">
+      <Filter>Construction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Construction\BunkerPlacementPolicy.h">
+      <Filter>Construction</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Construction\StaticDefense.cpp">
+      <Filter>Construction</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Construction\StaticDefense.h">
+      <Filter>Construction</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\Common.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\Common.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\Config.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\Config.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\Dll.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Core\GameCommander.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\GameCommander.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\Task.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\Task.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\Tasks.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\Tasks.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\The.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\The.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Core\UAlbertaBotModule.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Core\UAlbertaBotModule.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Economy\WorkerData.cpp">
+      <Filter>Economy</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Economy\WorkerData.h">
+      <Filter>Economy</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Economy\WorkerManager.cpp">
+      <Filter>Economy</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Economy\WorkerManager.h">
+      <Filter>Economy</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\InformationManager.cpp">
+      <Filter>Intelligence</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\InformationManager.h">
+      <Filter>Intelligence</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Learning\GameRecord.cpp">
+      <Filter>Intelligence\Learning</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Learning\GameRecord.h">
+      <Filter>Intelligence\Learning</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Learning\GameRecordNow.cpp">
+      <Filter>Intelligence\Learning</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Learning\GameRecordNow.h">
+      <Filter>Intelligence\Learning</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Learning\OpeningTiming.cpp">
+      <Filter>Intelligence\Learning</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Learning\OpeningTiming.h">
+      <Filter>Intelligence\Learning</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Learning\OpeningTimingRecord.cpp">
+      <Filter>Intelligence\Learning</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Learning\OpeningTimingRecord.h">
+      <Filter>Intelligence\Learning</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Learning\OpponentModel.cpp">
+      <Filter>Intelligence\Learning</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Learning\OpponentModel.h">
+      <Filter>Intelligence\Learning</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\OpponentPlan.cpp">
+      <Filter>Intelligence</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\OpponentPlan.h">
+      <Filter>Intelligence</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\PlayerSnapshot.cpp">
+      <Filter>Intelligence</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\PlayerSnapshot.h">
+      <Filter>Intelligence</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\ScoutManager.cpp">
+      <Filter>Intelligence</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\ScoutManager.h">
+      <Filter>Intelligence</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Skills\Skill.cpp">
+      <Filter>Intelligence\Skills</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Skills\Skill.h">
+      <Filter>Intelligence\Skills</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillBattles.cpp">
+      <Filter>Intelligence\Skills</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillBattles.h">
+      <Filter>Intelligence\Skills</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillGasSteal.cpp">
+      <Filter>Intelligence\Skills</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillGasSteal.h">
+      <Filter>Intelligence\Skills</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillKit.cpp">
+      <Filter>Intelligence\Skills</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillKit.h">
+      <Filter>Intelligence\Skills</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillOpeningTiming.cpp">
+      <Filter>Intelligence\Skills</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillOpeningTiming.h">
+      <Filter>Intelligence\Skills</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\Skills\SkillUnitTimings.cpp">
+      <Filter>Intelligence\Skills</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\Skills\SkillUnitTimings.h">
+      <Filter>Intelligence\Skills</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Intelligence\UnitData.cpp">
+      <Filter>Intelligence</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Intelligence\UnitData.h">
+      <Filter>Intelligence</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Base.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Base.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Bases.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Bases.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Map\Grids\DistanceMap.hpp">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\Grid.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\Grid.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <None Include="..\Source\Map\Grids\GridAirDistances.cpp">
+      <Filter>Map\Grids</Filter>
+    </None>
+    <ClInclude Include="..\Source\Map\Grids\GridAirDistances.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridAttacks.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridAttacks.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridBuildable.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridBuildable.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridCreep.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridCreep.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridDistances.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridDistances.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridInset.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridInset.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridRoom.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridRoom.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridSafePath.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridSafePath.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridTasks.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridTasks.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridTileRoom.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridTileRoom.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridWalk.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridWalk.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\Grids\GridZone.cpp">
+      <Filter>Map\Grids</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\Grids\GridZone.h">
+      <Filter>Map\Grids</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\MapGrid.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\MapGrid.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\MapPartitions.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\MapPartitions.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\MapTools.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\MapTools.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Map\ResourceInfo.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Map\ResourceInfo.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\BOSSManager.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\BOSSManager.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\BOSimulator.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\BOSimulator.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\BuildOrder.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\BuildOrder.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\BuildOrderQueue.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\BuildOrderQueue.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\MacroAct.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\MacroAct.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\MacroCommand.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\MacroCommand.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\ProductionGoal.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\ProductionGoal.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Production\ProductionManager.cpp">
+      <Filter>Production</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Production\ProductionManager.h">
+      <Filter>Production</Filter>
+    </ClInclude>
+    <None Include="..\Source\README.md" />
+    <ClInclude Include="..\Source\Strategy\BioProductionPolicy.h">
+      <Filter>Strategy</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Strategy\StrategyManager.cpp">
+      <Filter>Strategy</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Strategy\StrategyManager.h">
+      <Filter>Strategy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\allocators.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\document.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\encodedstream.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\encodings.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\error\en.h">
+      <Filter>ThirdParty\rapidjson\error</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\error\error.h">
+      <Filter>ThirdParty\rapidjson\error</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\filereadstream.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\filewritestream.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\biginteger.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\diyfp.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\dtoa.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\ieee754.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\itoa.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\meta.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\pow10.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\stack.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\strfunc.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\internal\strtod.h">
+      <Filter>ThirdParty\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\memorybuffer.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\memorystream.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\msinttypes\inttypes.h">
+      <Filter>ThirdParty\rapidjson\msinttypes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\msinttypes\stdint.h">
+      <Filter>ThirdParty\rapidjson\msinttypes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\pointer.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\prettywriter.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\rapidjson.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\reader.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\stringbuffer.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\ThirdParty\rapidjson\writer.h">
+      <Filter>ThirdParty\rapidjson</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\JSONTools.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\JSONTools.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\Logger.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\Logger.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\ParseUtils.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\ParseUtils.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\Random.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\Random.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\TimerManager.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\TimerManager.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\UABAssert.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\UABAssert.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\Source\Utilities\UnitUtil.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClInclude Include="..\Source\Utilities\UnitUtil.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

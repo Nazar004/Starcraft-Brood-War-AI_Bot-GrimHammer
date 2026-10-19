@@ -32,9 +32,12 @@ class ProductionManager
     bool                _haveLocationForThisBuilding;
     int					_delayBuildingPredictionUntilFrame;
     int                 _unplaceableBunkerSinceFrame;
+    int                 _unplaceableMacroBuildingSinceFrame;
     int                 _nextTerranWallCheckFrame;
     int                 _terranWallGateOpenUntilFrame;
     int                 _terranWallLastGateCommandFrame;
+    std::map<int, int>   _terranWallGateOccupiedSince;
+    bool                _terranWallGateClearing = false;
     bool                _terranWallReleasedForVision;
     int                 _nextTerranBarracksVisionFrame;
     bool				_outOfBook;                      // production queue is beyond the opening book
@@ -64,6 +67,7 @@ class ProductionManager
     const char *        _slowestProductionPhase = "";
     double              _slowestProductionPhaseMs = 0.0;
     double              _lastTerranRulePlanMs = 0.0;
+    double              _lastTerranRuleGoalMs = 0.0;
     
     BWAPI::Unit         getClosestUnitToPosition(const std::vector<BWAPI::Unit> & units, BWAPI::Position closestTo) const;
     BWAPI::Unit         getFarthestUnitFromPosition(const std::vector<BWAPI::Unit> & units, BWAPI::Position farthest) const;
@@ -81,6 +85,9 @@ class ProductionManager
     bool                terranOpeningRequirementsPlanned(const MacroAct & act) const;
     bool                manageTerranOpeningGoals();
     bool                manageBioTankOpeningProduction();
+    bool                manageAirTanksOpeningVultures();
+    bool                manageOpeningDefensiveMarines(bool immediateBaseAttack = false);
+    int                 _openingDefensiveMarineTarget = 0;
     void                manageBuildOrderQueue();
     void				maybeReorderQueue();
     bool                canMakeNow(BWAPI::Unit producer,MacroAct t);
@@ -141,9 +148,11 @@ public:
     bool terranNaturalTransferReady() const;
     int terranBuildingQueueLimit(BWAPI::UnitType type, int fallback) const;
     void	update();
+    void requestOpeningDefensiveMarines(int target);
     const char * slowestProductionPhase() const { return _slowestProductionPhase; }
     double slowestProductionPhaseMilliseconds() const
         { return _slowestProductionPhaseMs; }
+    double lastTerranRuleGoalMilliseconds() const { return _lastTerranRuleGoalMs; }
     double lastTerranRulePlanMilliseconds() const
         { return _lastTerranRulePlanMs; }
     void	onUnitDestroy(BWAPI::Unit unit);

@@ -2,6 +2,7 @@
 
 #include "Utilities/UnitUtil.h"
 #include "Combat/Micro/Terran/TerranSiegeSafety.h"
+#include "Strategy/StrategyManager.h"
 #include <algorithm>
 #include <cmath>
 
@@ -25,7 +26,9 @@ public:
         const BWAPI::Unitset& nearbyEnemies)
     {
         if (!marine || !marine->exists() || marine->isStimmed() ||
-            marine->getHitPoints() <= 30 || !marine->getPosition().isValid())
+            marine->getHitPoints() <= 30 ||
+            (marine->isUnderStorm() && StrategyManager::Instance().bioTankPlanActive()) ||
+            !marine->getPosition().isValid())
         {
             return false;
         }
@@ -71,10 +74,14 @@ public:
 
     static bool shouldKite(BWAPI::Unit marine, BWAPI::Unit target)
     {
-        // Stim speed is spent attacking; moving between every volley gives
-        // Mutalisks free shots and pulls Marines away from their Medics.
-        return marine && target && !marine->isStimmed() &&
-            !target->isFlying();
+        if (!marine || !target || target->isFlying()) return false;
+        if (!marine->isStimmed()) return true;
+        // Keep firing at air and ranged targets, but spend Stim speed escaping
+        // a closing Zealot/Zergling rather than trading at melee range.
+        if (!StrategyManager::Instance().bioTankPlanActive() ||
+            target->getType().isBuilding() || !UnitUtil::CanAttack(target, marine)) return false;
+        const int enemyRange = UnitUtil::GetAttackRange(target, marine);
+        return enemyRange <= 64 && marine->getDistance(target) <= enemyRange + 80;
     }
 };
 }
